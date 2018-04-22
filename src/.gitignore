@@ -1,0 +1,8 @@
+sequences*
+kernel*.txt
+test.*.txt
+train.*.txt
+labels.txt
+kernel_*.txt
+GaKCo
+*.o
