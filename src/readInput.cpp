@@ -44,25 +44,27 @@ int ** Readinput_(char *filename, char *dictFileName, int *seqLabels, int *seqLe
     ifstream file;
     file.open(filename);
     printf("Reading %s\n", filename);
-    output = (int **) malloc(STRMAXLEN * sizeof(int *));
+    output = (int **) malloc(maxNumStr * sizeof(int *));
     string line, label;
     int row = 0;
     bool isLabel = true;
 
-    while (getline(file, line)) {
+    while (getline(file, line) && row < maxNumStr) {
         trimLine(line);
         if (!line.empty()) {
             if (isLabel) {
                 std::string::size_type pos = line.find_first_of('>');
                 label = line.substr(pos + 1);
-                cout << "label=" << label << endl;
                 if (label.length() > 2) labelErrorAndExit(label);
                 int asNum = (stoi(label) == 0) ? -1 : stoi(label);
-                printf("asNum = %d\n", asNum);
                 if (asNum != -1 && asNum != 1) labelErrorAndExit(label);
                 seqLabels[row] = asNum;
                 isLabel = false;
             } else {
+                int length = line.length();
+                if (length > STRMAXLEN) {
+                    line = line.substr(0, STRMAXLEN);
+                }
                 seq = line.c_str();
                 seqLengths[row] = strlen(seq);
                 if (seqLengths[row] > maxlen[0]) {
@@ -78,6 +80,7 @@ int ** Readinput_(char *filename, char *dictFileName, int *seqLabels, int *seqLe
                 isLabel = true;
             }
         }
+
     }
     nStr[0] = row;
     file.close();

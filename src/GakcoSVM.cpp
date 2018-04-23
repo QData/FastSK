@@ -85,11 +85,11 @@ double* GakcoSVM::construct_kernel(){
 	numThreads = this->params->threads;
 	maxNumStr = this->params->maxNumStr;
 
-	label = (int *)malloc(STRMAXLEN*sizeof(int));
-	len = (int *)malloc(STRMAXLEN * sizeof(int));
+	label = (int *) malloc(maxNumStr * sizeof(int));
+	len = (int *) malloc(maxNumStr * sizeof(int));
 	assert(len != 0);  
 	maxlen = 0;
-	minlen = maxNumStr;
+	minlen = STRMAXLEN;
 	nStr = maxNumStr;
 	
 	// Read input file
