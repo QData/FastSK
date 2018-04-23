@@ -1,4 +1,4 @@
-# Makefile for iGakco
+# Makefile for iGakcO
 
 # Compiler options
 CXX = g++ # use g++ compiler

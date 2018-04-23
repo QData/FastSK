@@ -41,8 +41,7 @@ int help() {
 	printf("\t labelsFile : file to place labels from the examples (simple text file)\n");
 	printf("\t kernelFile : name of the file to write the kernel that will be computed by GaKCo\n");
 	printf("\n");
-	printf("\nExample usage: ./Gakco -g 7 -k 5 -n 15000 -t 4 -C 1.0 trainingSet.fasta testingSet.fasta proteinDictionary.txt labelOutputFile.txt kernelOutputFile.txt\n\n");
-
+	printf("\nExample usage: ./Gakco -g 7 -m 2 -n 15000 -t 4 -C 1.0 trainingSet.fasta testingSet.fasta proteinDictionary.txt labelOutputFile.txt kernelOutputFile.txt\n\n");
 	return 1;
 }
 
@@ -169,6 +168,7 @@ int main(int argc, char *argv[]) {
 	int probability = 0;
 	float C = -1;
 	int c;
+  
 	while ((c = getopt(argc, argv, "g:m:n:t:C:p:")) != -1) {
 		switch (c) {
 			case 'g':
@@ -185,6 +185,7 @@ int main(int argc, char *argv[]) {
 				break;
 			case 'p':
 				probability = atoi(optarg);
+        break;
 		}
 	}
 	if (g == -1) {

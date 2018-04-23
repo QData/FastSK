@@ -5,11 +5,11 @@ Download and extract this repository, then enter:
   $ cd src
   $ cd make
 ```
-An executable file named `GaKCo` will now be located in the `iGakco-SVM/src` directory.
+An executable file named `Gakco` will now be located in the `iGakco-SVM/src` directory.
 ## Tutorial
 iGakco-SVM takes several parameters:
         
-        Usage: ./GaKCo [options] <trainingFile> <testingFile> <dictionaryFile> <labelsFile> <kernelFile>
+        Usage: ./Gakco [options] <trainingFile> <testingFile> <dictionaryFile> <labelsFile> <kernelFile>
           g : gmer length; length of substrings (with up to m mismatches) used to compare sequences. Constraints: 0 < g < 20
           k : kmer length; length of non-gapped substrings within gmers. Constraints: k < g
           t : (optional) number of threads to use. Set to 1 to not parallelize kernel computation. 
@@ -22,5 +22,5 @@ iGakco-SVM takes several parameters:
           kernelFile : where to write kernel matrix computed by iGakco (text file)
 For example:
 ```
-  $ ./GaKCo -g 7 -k 5 -p 1 -t 4 -C .01 trainingSet.fasta testSet.fasta protein.dictionary.txt labelsFile.txt kernel.txt
+  $ ./Gakco -g 7 -k 5 -p 1 -t 4 -C .01 trainingSet.fasta testSet.fasta protein.dictionary.txt labelsFile.txt kernel.txt
 ```
