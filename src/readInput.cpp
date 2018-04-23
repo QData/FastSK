@@ -6,6 +6,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <omp.h>
+
 
 int *string_replace (char *s, char *d);
 
@@ -25,6 +27,7 @@ int ** Readinput_(char *filename,char *dictfile,int *Labelout, int* len, long in
   FILE *inpfile;
   char *d;
  int c =0;
+ int realls = 0; //keep track of how many times we need to reallocate memory
   d = readDict(dictfile,na);
 
 
@@ -36,7 +39,7 @@ int ** Readinput_(char *filename,char *dictfile,int *Labelout, int* len, long in
   {
      line = (char *)malloc(STRMAXLEN*sizeof(char));
      int row=0;
-     output =  (int **)malloc(STRMAXLEN * sizeof(int *));
+     output =  (int **)malloc(MAXNSTR * sizeof(int *));
      bool read = true;
      while(read)
      {
@@ -69,9 +72,9 @@ int ** Readinput_(char *filename,char *dictfile,int *Labelout, int* len, long in
 	  {  
 
 	    trimline = trimwhitespace(line);
-	  strcpy(linetemp, trimline);
+      strcpy(linetemp, trimline);
 	    len[row] =strlen(linetemp) ;
-	   		if (len[row]>maxlen[0])
+	   	if (len[row]>maxlen[0])
 			{
 			    maxlen[0] = len[row];
 			}
@@ -80,17 +83,22 @@ int ** Readinput_(char *filename,char *dictfile,int *Labelout, int* len, long in
 			    minlen[0] = len[row];
 			}
 
-		output[row] = (int *)malloc(len[row] * sizeof(int));
-    //printf("leni %d",len[row]);
-    fflush(stdout);
-		memset(output[row], 0, sizeof(int) * len[row]);
-    strcpy(linetemp, trimline);
-		seq=trimline;
+  		output[row] = (int *)malloc(len[row] * sizeof(int));
+      //printf("leni %d",len[row]);
+      fflush(stdout);
+  		memset(output[row], 0, sizeof(int) * len[row]);
+      strcpy(linetemp, trimline);
+  		seq=trimline;
 
 
-		output[row]=string_replace(seq,d);
+		  output[row]=string_replace(seq,d);
 	    row++;
 	    i=0;
+      //allocate more space if ran out
+      if(row >= MAXNSTR && row % 1000 == 0){
+        realls++;
+        output = (int**)realloc(output, (MAXNSTR + 1000*realls)*sizeof(int*));
+      }
 	  }
 
 
