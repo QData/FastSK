@@ -6,46 +6,66 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <omp.h>
+#include <iostream>
+#include <fstream>
+#include <algorithm>
 
-int * string_replace (char *s, char *d);
+using namespace std;
+
+int * string_replace (const char *s, char *d);
 int help2();
 char * readDict (char *filename, int *na);
 int dictsize;
 
+void labelErrorAndExit(string label) {
+    printf("Error:\n");
+    printf("\tInvalid label: %s\n", label.c_str());
+    printf("\tPositive labels must be 1. Negative labels must be either 0 or -1\n");
+    printf("\tExample label line format:\n\t >0\n");
+    exit(1);
+}
+
+//Remove all white space from line
+static void inline trimLine(std::string &s) {
+    s.erase(s.begin(), std::find_if(s.begin(), s.end(),
+            std::not1(std::ptr_fun<int, int>(std::isspace))));
+    std::string::iterator end_pos = std::remove(s.begin(), s.end(), ' ');
+    s.erase(std::find_if(s.rbegin(), s.rend(),
+            std::not1(std::ptr_fun<int, int>(std::isspace))).base(), s.end());
+    s.erase(end_pos, s.end());
+}
 
 int ** Readinput_(char *filename, char *dictFileName, int *seqLabels, int *seqLengths, long int *nStr, long int *maxlen, long int *minlen, int *dictionarySize, int maxNumStr) {
     int **output;
-    char *labelfile, *seqfile;
-    char *str, *linetemp, *line, *seq, *trimline, *label;
-    bool isLabel = true;
-    FILE *inpfile;
+    const char *seq;
     char *d;
     int realls = 0; //keep track of how many times we need to reallocate memory
     d = readDict(dictFileName, dictionarySize);
-
-    printf("Reading %s\n", filename);
-    inpfile = fopen(filename, "r");
     
-    if (inpfile) {
-        line = (char *) malloc(STRMAXLEN * sizeof(char));
-        int row = 0; //counts rows of the output and line number of the sequence file
-        output =  (int **) malloc(MAXNSTR * sizeof(int *));
-
-        while (fgets(line, STRMAXLEN, inpfile) && row < maxNumStr) {
-            linetemp = (char *) malloc(STRMAXLEN * sizeof(char *));
-            strcpy(linetemp, line);
+    ifstream file;
+    file.open(filename);
+    printf("Reading %s\n", filename);
+    output = (int **) malloc(MAXNSTR * sizeof(int *));
+    string line, label;
+    int row = 0;
+    bool isLabel = true;
+    
+    while (getline(file, line)) {
+        trimLine(line);
+        if (!line.empty()) {
             if (isLabel) {
-                label = strtok(linetemp,">");
-                if(strcmp(label, "0\n") == 0) {
-                    strcpy(label, "-1\n");
-                }
-                seqLabels[row]= atoi(label);
+                std::string::size_type pos = line.find_first_of('>');
+                label = line.substr(pos + 1);
+                cout << "label=" << label << endl;
+                if (label.length() > 2) labelErrorAndExit(label);
+                int asNum = (stoi(label) == 0) ? -1 : stoi(label);
+                printf("asNum = %d\n", asNum);
+                if (asNum != -1 && asNum != 1) labelErrorAndExit(label);
+                seqLabels[row] = asNum;
                 isLabel = false;
             } else {
-                trimline = trimwhitespace(line);
-                strcpy(linetemp, trimline);
-                seqLengths[row] = strlen(linetemp);
+                seq = line.c_str();
+                seqLengths[row] = strlen(seq);
                 if (seqLengths[row] > maxlen[0]) {
                     maxlen[0] = seqLengths[row];
                 }
@@ -54,8 +74,6 @@ int ** Readinput_(char *filename, char *dictFileName, int *seqLabels, int *seqLe
                 }
                 output[row] = (int *) malloc(seqLengths[row] * sizeof(int));
                 memset(output[row], 0, sizeof(int) * seqLengths[row]);
-                strcpy(linetemp, trimline);
-                seq = trimline;
                 output[row] = string_replace(seq, d);
                 row++;
                 isLabel = true;
@@ -66,15 +84,10 @@ int ** Readinput_(char *filename, char *dictFileName, int *seqLabels, int *seqLe
                   output = (int**)realloc(output, (MAXNSTR + 1000*realls)*sizeof(int*));
                 }
             }
-            free(linetemp);
         }
-        nStr[0] = row;
-        fclose(inpfile);
-        free(line);
-    } else {
-        perror(filename);
     }
-
+    nStr[0] = row;
+    file.close();
     for (int kk = 0; kk < *nStr; kk++) {
         for(int jj = 0; jj < seqLengths[kk]; jj++) {
             if(output[kk][jj] > dictsize) {
@@ -119,7 +132,7 @@ char * readDict (char *dictFileName, int *dictionarySize) {
 
 //converts g-mers into numerical representation
 
-int * string_replace (char *s, char *d) {
+int * string_replace (const char *s, char *d) {
     int i, count, found;
     int *array;
     found = 0;
