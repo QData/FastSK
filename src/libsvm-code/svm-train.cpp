@@ -10,7 +10,7 @@
 #include "../gakco-svm.h"
 #include "../readInput.h"
 #include "../shared.h"
-#include "../GaKCo.h"
+#include "../Gakco.h"
 
 #define Malloc(type,n) (type *)malloc((n)*sizeof(type))
 
