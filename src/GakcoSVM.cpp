@@ -15,7 +15,6 @@ An attempt at a tool wrapping kernel calculation and SVM calculation into one se
 #include <math.h>
 #include "shared.h"
 #include <assert.h>
-#include <omp.h>
 #include <thread>
 #include <map>
 #include <iostream>
@@ -28,15 +27,6 @@ An attempt at a tool wrapping kernel calculation and SVM calculation into one se
 #include "GaKCo.h"
 #define ARG_REQUIRED 7
 #define Malloc(type,n) (type *)malloc((n)*sizeof(type))
-
-int inArray(int* arr, int len, int num){
-	for(int i = 0; i < len; i++){
-		if (arr[i] == num){
-			return 1;
-		}
-	}
-	return 0;
-}
 
 
 double* gakco_kernel_matrix  = NULL;
@@ -85,18 +75,17 @@ double* GakcoSVM::construct_kernel(){
 	k = this->params->k;
 	numThreads = this->params->threads;
 
-	label = (int *)malloc(STRMAXLEN*sizeof(int));
-	len = (int *)malloc(STRMAXLEN * sizeof(int));
+	label = (int *) malloc(MAXNSTR * sizeof(int));
+	len = (int *) malloc(MAXNSTR * sizeof(int));
 	assert(len != 0);  
 	maxlen = 0;
-	minlen = MAXNSTR;
+	minlen = STRMAXLEN;
 	nStr = MAXNSTR;
 	
 	// Read input file
 	
 	printf("Input file : %s\n", filename);
-	S = Readinput_(filename,Dicfilename,label,len, &nStr, &maxlen, &minlen,&na);
-	
+	S = Readinput_(filename, Dicfilename, label, len, &nStr, &maxlen, &minlen, &na);
 	
 	
 	if (k <= 0 || g <= k || g>20 || g - k>20 || na <= 0){
@@ -117,8 +106,7 @@ double* GakcoSVM::construct_kernel(){
 
 	int w[g - k];
 	printf("Weights (hm):");
-		for (int i = 0; i <= g - k; i++)
-		{
+	for (int i = 0; i <= g - k; i++) {
 			w[i] = nchoosek(g - i, k);
 			printf("%d ", w[i]);
 		}
@@ -146,14 +134,10 @@ double* GakcoSVM::construct_kernel(){
 	
 	memset(Ksfinal, 0, sizeof(unsigned int) * addr);
 	
-
-	
 	elems = (int *)malloc(g * sizeof(int));
-
 	
 	cnt_k = (int *)malloc(nfeat * sizeof(int));
-	for (int i = 0; i < g; ++i)
-	{
+	for (int i = 0; i < g; ++i) {
 		elems[i] = i;
 	}
 
@@ -233,6 +217,16 @@ double* GakcoSVM::construct_kernel(){
 		}
 	}
 
+	for(int i = 0; i < nStr; i++){
+		for (int j = 0; j < i; j++){
+			double temp = K[i*nStr + j] / sqrt(K[i*nStr + i] * K[j*nStr + j]);
+			K[i*nStr + j] = temp;
+			K[j*nStr + i] = temp;
+		}
+	}
+	for(int i = 0; i < nStr; i++){
+		K[i*nStr + i] = 1.0;
+	}
 
 	free(cnt_k);
 	free(Ksfinal);
@@ -253,7 +247,7 @@ double* GakcoSVM::construct_test_kernel(){
 	if (this->kernel == NULL) {
 		printf("Must calculate train kernel before test kernel");
 		return NULL;
-	}else if (this->model == NULL){
+	} else if (this->model == NULL){
 		printf("Must train SVM before constructing the test kernel");
 		return NULL;
 	}
@@ -262,7 +256,7 @@ double* GakcoSVM::construct_test_kernel(){
 	long int nTestStr;
 	int *label, *len;
 	int k, num_max_mismatches, max_m;
-	int m, g;
+	int m, g, numThreads;
 	int na;
 	unsigned int addr;
 	long int num_comb, value, maxlen, minlen;
@@ -273,10 +267,7 @@ double* GakcoSVM::construct_test_kernel(){
 	
 	g = this->params->g;
 	k = this->params->k;
-	int numThreads = this->params->threads;
-	if (numThreads == -1){
-		numThreads = 1;
-	}
+	numThreads = this->params->threads;
 
 	int* test_label = (int *)malloc(MAXNSTR * sizeof(int));
 	int* test_len = (int *)malloc(MAXNSTR * sizeof(int));
@@ -294,16 +285,29 @@ double* GakcoSVM::construct_test_kernel(){
 	//calculate the total number of support vectors in the model
 	int num_sv = this->model->nSV[0] + this->model->nSV[1];
 
-
 	//reading input from test file
 	int** test_S = Readinput_(&(this->params->testFilename)[0],&(this->params->dictFilename)[0],test_label,test_len, &nTestStr, &test_maxlen, &test_minlen,&test_na);
 	this->nTestStr = nTestStr;
 	this->test_labels = test_label;
-	printf("string %s",&(this->params->testFilename)[0]);
+
+	if (k <= 0 || g <= k || g>20 || g - k>20 || na <= 0){
+		help();
+		exit(1);
+	}
+	if (maxlen != minlen)
+		printf("Read %ld strings of max length = %ld and min length=%ld\n", nTestStr, test_maxlen, test_minlen);
+	else
+		printf("Read %ld strings of length = %ld\n", nTestStr, test_maxlen);
+
+	if (g > minlen){
+		errorID1();
+		exit(1);
+	}
+
+
 	//read train data
 	S = Readinput_(&(this->params->filename)[0],&(this->params->dictFilename)[0],label,len, &nStr, &maxlen, &minlen,&na);
 
-	printf("test len %d\nntestStr %ld\nlen %d\nnStr%ld\n", test_len[0], nTestStr, len[0], nStr);
 	
 	int totalStr = nTestStr + num_sv;
 	int** finalS = (int**)malloc(totalStr * sizeof(int*));
@@ -388,7 +392,8 @@ double* GakcoSVM::construct_test_kernel(){
 	}
 	//Determine how many threads will be used
 	if (numThreads == -1) {
-		numThreads = (queueSize < 20) ? queueSize : 20;
+		int numCores = std::thread::hardware_concurrency();
+		numThreads = (numCores > 20) ? 20 : numCores;
 	} else {
 		numThreads = (numThreads > queueSize) ? queueSize : numThreads;
 	}
@@ -446,8 +451,6 @@ double* GakcoSVM::construct_test_kernel(){
 		}
 	}
 
-	// double other = test_K[0] / sqrt(test_K[1] * test_K[3]);
-	// test_K[i * num_sv + j] = test_K[1] / sqrt(test_K[0] * test_K[2]);
 
 	double* K = (double*)malloc(nTestStr * num_sv * sizeof(double));
 	
@@ -456,10 +459,6 @@ double* GakcoSVM::construct_test_kernel(){
 			K[i*num_sv + j - nTestStr] = test_K[i*totalStr + j] / sqrt(test_K[i*totalStr + i] * test_K[j*totalStr + j]);
 		}
 	}
-
-	//printf("\nCurrent Kernel calc: %e\nProposed calc: %e\n2: %e\n 3: %e\n", test_K[i*num_sv+j], other, two_test_K[2], two_test_K[3]);
-		
-	//return NULL;
 
 
 	free(cnt_k);
@@ -511,8 +510,8 @@ void* GakcoSVM::train(double* K) {
 		svm_node* x_space = Malloc(svm_node, prob->l + 1);
 
 		for (int j = 0; j < prob->l; j++){
-			x_space[j].index = j + 1;
-			x_space[j].value = K[i * prob->l + j] / sqrt(K[i * prob->l + i] * K[j * prob->l + j]);
+			x_space[j].index = j+1;
+			x_space[j].value = K[i * prob->l + j];
 		}
 
 		x_space[prob->l].index = -1;
@@ -546,7 +545,7 @@ void* GakcoSVM::train(double* K) {
         free(target);
 	} else {
 		this->model = svm_train(prob, svm_param);
-		const char* model_filename = "GaKCoModelTEST.txt";
+		const char* model_filename = "GaKCoModel.txt";
 		svm_save_model(model_filename, this->model);
 	}
 
@@ -573,7 +572,7 @@ void GakcoSVM::write_files() {
 
 	for (int i = 0; i < nStr; ++i) {	
 		for (int j = 0; j < nStr; ++j) {
-			fprintf(kernelfile, "%d:%e ", j + 1, this->kernel[i + j*nStr] / sqrt(this->kernel[i + i*nStr] * this->kernel[j + j*nStr]));
+			fprintf(kernelfile, "%d:%e ", j + 1, this->kernel[i + j*nStr] );
 		}
 		fprintf(labelfile, "%d ", this->labels[i]);
 		fprintf(labelfile, "\n");
@@ -592,7 +591,7 @@ void GakcoSVM::write_test_kernel() {
 	int nTestStr = this->nTestStr;
 	int num_sv = this->model->nSV[0] + this->model->nSV[1];
 
-	printf("in write ntest %d", nTestStr);
+	printf("Writing test kernel %d", nTestStr);
 	for (int i = 0; i < nTestStr; ++i)
 	{	
 		for (int j = 0; j < num_sv; ++j)
@@ -628,11 +627,11 @@ double GakcoSVM::predict(double *test_K, int* test_labels){
 		if (this->model->label[i] == 1)
 			labelind = i;
 	}
-	printf("\nlabel%d   %d", this->model->label[labelind], labelind);
+
 	for(int i = 0; i < nTestStr; i++){
 
 		for (int j=0; j < num_sv; j++){
-			x[j].index = this->model->sv_indices[j];//j + 1;
+			x[j].index = this->model->sv_indices[j];
 			x[j].value = test_K[i * num_sv + j];
 		}
 		x[num_sv].index = -1;
@@ -649,10 +648,10 @@ double GakcoSVM::predict(double *test_K, int* test_labels){
 			nagg += 1;
 		} 
 
-		if(i <= 2 || i > nTestStr - 4){
-			printf("\n%f\n",probs[labelind]);
-			printf("Guess %f \t\t Label %d \n", guess, test_labels[i]);
-		}
+		// if(i <= 2 || i > nTestStr - 4){
+		// 	printf("\n%f\n",probs[labelind]);
+		// 	printf("Guess %f \t\t Label %d \n", guess, test_labels[i]);
+		// }
 	
 		if ((guess < 0.0 && test_labels[i] < 0) || (guess > 0.0 && test_labels[i] > 0)){
 			correct++;
@@ -665,7 +664,7 @@ double GakcoSVM::predict(double *test_K, int* test_labels){
 	free(pos);
 	free(neg);
 
-	return auc;//(double)correct / nTestStr;
+	return auc;
 }
 
 double calculate_auc(double* pos, double* neg, int npos, int nneg){
