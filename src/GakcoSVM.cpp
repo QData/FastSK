@@ -74,7 +74,7 @@ double* GakcoSVM::construct_kernel(){
 	long int maxIdx, maxlen, minlen;
 	char isVerbose;
 	Features *features;
-	int numThreads;
+	int numThreads, maxNumStr;
 	isVerbose = 0;
 
 	strcpy(filename, this->params->filename.c_str());
@@ -84,19 +84,19 @@ double* GakcoSVM::construct_kernel(){
 	g = this->params->g;
 	k = this->params->k;
 	numThreads = this->params->threads;
+	maxNumStr = this->params->maxNumStr;
 
 	label = (int *)malloc(STRMAXLEN*sizeof(int));
 	len = (int *)malloc(STRMAXLEN * sizeof(int));
 	assert(len != 0);  
 	maxlen = 0;
-	minlen = MAXNSTR;
-	nStr = MAXNSTR;
+	minlen = maxNumStr;
+	nStr = maxNumStr;
 	
 	// Read input file
 	
 	printf("Input file : %s\n", filename);
-	S = Readinput_(filename,Dicfilename,label,len, &nStr, &maxlen, &minlen,&na);
-	
+	S = Readinput_(filename, Dicfilename, label, len, &nStr, &maxlen, &minlen, &na, maxNumStr);
 	
 	
 	if (k <= 0 || g <= k || g>20 || g - k>20 || na <= 0){
@@ -117,8 +117,7 @@ double* GakcoSVM::construct_kernel(){
 
 	int w[g - k];
 	printf("Weights (hm):");
-		for (int i = 0; i <= g - k; i++)
-		{
+	for (int i = 0; i <= g - k; i++) {
 			w[i] = nchoosek(g - i, k);
 			printf("%d ", w[i]);
 		}
@@ -146,14 +145,10 @@ double* GakcoSVM::construct_kernel(){
 	
 	memset(Ksfinal, 0, sizeof(unsigned int) * addr);
 	
-
-	
 	elems = (int *)malloc(g * sizeof(int));
-
 	
 	cnt_k = (int *)malloc(nfeat * sizeof(int));
-	for (int i = 0; i < g; ++i)
-	{
+	for (int i = 0; i < g; ++i) {
 		elems[i] = i;
 	}
 
@@ -253,7 +248,7 @@ double* GakcoSVM::construct_test_kernel(){
 	if (this->kernel == NULL) {
 		printf("Must calculate train kernel before test kernel");
 		return NULL;
-	}else if (this->model == NULL){
+	} else if (this->model == NULL){
 		printf("Must train SVM before constructing the test kernel");
 		return NULL;
 	}
@@ -262,7 +257,7 @@ double* GakcoSVM::construct_test_kernel(){
 	long int nTestStr;
 	int *label, *len;
 	int k, num_max_mismatches, max_m;
-	int m, g;
+	int m, g, numThreads, maxNumStr;
 	int na;
 	unsigned int addr;
 	long int num_comb, value, maxlen, minlen;
@@ -273,35 +268,32 @@ double* GakcoSVM::construct_test_kernel(){
 	
 	g = this->params->g;
 	k = this->params->k;
-	int numThreads = this->params->threads;
-	if (numThreads == -1){
-		numThreads = 1;
-	}
+	numThreads = this->params->threads;
+	maxNumStr = this->params->maxNumStr;
 
-	int* test_label = (int *)malloc(MAXNSTR * sizeof(int));
-	int* test_len = (int *)malloc(MAXNSTR * sizeof(int));
+	int* test_label = (int *)malloc(maxNumStr * sizeof(int));
+	int* test_len = (int *)malloc(maxNumStr * sizeof(int));
 	long int test_maxlen = 0;
 	long int test_minlen = STRMAXLEN;
-	nTestStr = MAXNSTR;
+	nTestStr = maxNumStr;
 	int test_na;
 
-	label = (int *)malloc(MAXNSTR * sizeof(int));
-	len = (int *)malloc(MAXNSTR * sizeof(int));
+	label = (int *)malloc(maxNumStr * sizeof(int));
+	len = (int *)malloc(maxNumStr * sizeof(int));
 	maxlen = 0;
 	minlen = STRMAXLEN;
-	nStr = MAXNSTR;
+	nStr = maxNumStr;
 
 	//calculate the total number of support vectors in the model
 	int num_sv = this->model->nSV[0] + this->model->nSV[1];
 
-
 	//reading input from test file
-	int** test_S = Readinput_(&(this->params->testFilename)[0],&(this->params->dictFilename)[0],test_label,test_len, &nTestStr, &test_maxlen, &test_minlen,&test_na);
+	int** test_S = Readinput_(&(this->params->testFilename)[0],&(this->params->dictFilename)[0],test_label,test_len, &nTestStr, &test_maxlen, &test_minlen,&test_na, maxNumStr);
 	this->nTestStr = nTestStr;
 	this->test_labels = test_label;
 	printf("string %s",&(this->params->testFilename)[0]);
 	//read train data
-	S = Readinput_(&(this->params->filename)[0],&(this->params->dictFilename)[0],label,len, &nStr, &maxlen, &minlen,&na);
+	S = Readinput_(&(this->params->filename)[0],&(this->params->dictFilename)[0],label,len, &nStr, &maxlen, &minlen,&na, maxNumStr);
 
 	printf("test len %d\nntestStr %ld\nlen %d\nnStr%ld\n", test_len[0], nTestStr, len[0], nStr);
 	
@@ -387,8 +379,10 @@ double* GakcoSVM::construct_test_kernel(){
 		}
 	}
 	//Determine how many threads will be used
+	//Determine how many threads will be used
 	if (numThreads == -1) {
-		numThreads = (queueSize < 20) ? queueSize : 20;
+		int numCores = std::thread::hardware_concurrency();
+		numThreads = (numCores > 20) ? 20 : numCores;
 	} else {
 		numThreads = (numThreads > queueSize) ? queueSize : numThreads;
 	}
