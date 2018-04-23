@@ -24,7 +24,7 @@ An attempt at a tool wrapping kernel calculation and SVM calculation into one se
 #include <fstream>
 #include <future>
 #include "GakcoSVM.h"
-#include "GaKCo.h"
+#include "Gakco.h"
 #define ARG_REQUIRED 7
 #define Malloc(type,n) (type *)malloc((n)*sizeof(type))
 
