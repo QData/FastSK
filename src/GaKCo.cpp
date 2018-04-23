@@ -231,7 +231,6 @@ int main(int argc, char *argv[]) {
 	int k = -1;
 	int numThreads = -1;
 	double C = -1;
-
 	int c;
 	while ((c = getopt(argc, argv, "g:k:n:t:C")) != -1) {
 		switch (c) {
@@ -288,8 +287,7 @@ int main(int argc, char *argv[]) {
 	if (C != -1) {
 		arg.C = C;
 	}
-	//arg.crossfold = 1;
-	//arg.h = 0;
+
 	arg.eps = .001;
 	arg.h = 0;
 	arg.kernel_type = GAKCO;

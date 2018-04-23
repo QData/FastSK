@@ -35,6 +35,7 @@ static void inline trimLine(std::string &s) {
     s.erase(end_pos, s.end());
 }
 
+
 int ** Readinput_(char *filename, char *dictFileName, int *seqLabels, int *seqLengths, long int *nStr, long int *maxlen, long int *minlen, int *dictionarySize, int maxNumStr) {
     int **output;
     const char *seq;
@@ -133,6 +134,7 @@ char * readDict (char *dictFileName, int *dictionarySize) {
     }
     return D;
 }
+
 
 //converts g-mers into numerical representation
 
