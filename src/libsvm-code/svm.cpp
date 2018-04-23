@@ -240,7 +240,7 @@ private:
 	{
     // look up in precomputed kernel matrix
     //return get_tri_array(gakco_kernel_matrix, i, j, 0);
-	return x[j][i].value;//gakco_kernel_matrix[j + i*(this->l)]; //???? *this->l why is that his tri-array, should just get nStr in here (used to be i+j*l)
+	return x[i][j].value;//gakco_kernel_matrix[j + i*(this->l)]; //???? *this->l why is that his tri-array, should just get nStr in here (used to be i+j*l)
 	}
 	double kernel_linear(int i, int j) const
 	{
@@ -2579,11 +2579,8 @@ double svm_predict_values(const svm_model *model, const svm_node *x, double* dec
 					sum += coef1[si+k] * kvalue[si+k];
 				for(k=0;k<cj;k++)
 					sum += coef2[sj+k] * kvalue[sj+k];
-				//printf("\nSUM:    %f\n", sum);
-				//double myrho = 0;//model->rho[p];// (model->rho[p] / 6.77);//.0013; //677.8
 				sum -= model->rho[p];
 				dec_values[p] = sum;
-				//printf("RHO:    %f\n", model->rho[p]);
 				
 
 				if(dec_values[p] > 0)

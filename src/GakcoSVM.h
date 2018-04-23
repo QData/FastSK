@@ -15,6 +15,7 @@ typedef struct gakco_param {
 	int g;
 	int k;
 	int threads = 4; //Number of threads by default when operating in parallel
+
 	int svm_type = C_SVC;
 	int kernel_type = GAKCO;
 	double C 		= 1.0; //C param
@@ -49,7 +50,7 @@ public:
 	double predict(double* test_K, int* test_labels);
 	void write_files();
 	void write_test_kernel();
-	double *load_kernel(std::string kernel_name);
+	double* load_kernel(std::string kernel_name, std::string label_name);
 
 
 };

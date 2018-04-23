@@ -1,22 +1,21 @@
-/*
-iGAkco : Fast Gapped k-mer string Kernel using Counting
-Code Contibution by:
-Ritambhara Singh <rs3zz@virginia.edu>
-Kamran Kowsari <kk7nc@virginia.edu >
-Arshdeep Sekhon <as5cu@virginia.edu >
-Derrick Blakely <dcb7xz@virginia.edu>
-Eamon Collins <ec3bd@virginia.edu>
+// GaKCo : Fast Gapped k-mer string Kernel using Counting
+// Code Contibution by:
+//Ritambhara Singh <rs3zz@virginia.edu>
+//Kamran Kowsari <kk7nc@virginia.edu >
+//Arshdeep Sekhon <as5cu@virginia.edu >
 
-This file contains Main Code
-*/
+
+// This file contains Main Code
+
 
 #include <stdio.h>
-#include <stdlib.h>
+#include <cstdlib>
 #include <string.h>
 #include <math.h>
 #include "shared.h"
 #include "shared.cpp"
 #include <assert.h>
+#include <omp.h>
 #include <thread>
 #include <iostream>
 #include <random>
@@ -33,7 +32,8 @@ This file contains Main Code
 
 
 //extract g-mers from input sequences
-Features *extractFeatures(int **S, int *len, int nStr, int g) {
+Features *extractFeatures(int **S, int *len, int nStr, int g)
+{
 	 int i, j, j1;
 	 int n, sumLen, nfeat, addr;
 	int *group;
@@ -306,7 +306,7 @@ int main(int argc, char *argv[]) {
 	int k = -1;
 	int numThreads = -1;
 	long int maxNumStr = 15000;
-	double C = 1;
+	float C = 1;
 	
 	int c;
 	while ((c = getopt(argc, argv, "g:k:n:t:C")) != -1) {
@@ -316,9 +316,6 @@ int main(int argc, char *argv[]) {
 				break;
 			case 'k':
 				k = atoi(optarg);
-				break;
-			case 'n':
-				maxNumStr = atoi(optarg);
 				break;
 			case 't':
 				numThreads = atoi(optarg);
@@ -364,11 +361,11 @@ int main(int argc, char *argv[]) {
 	arg.threads = numThreads;
 	//arg.crossfold = 1;
 	//arg.h = 0;
-	arg.C = C;
-	arg.eps = .1;
+	arg.C = .01;
+	arg.eps = .001;
 	arg.h = 0;
 	arg.kernel_type = GAKCO;
-	arg.probability = 0;
+	arg.probability = 1;
 
 	//Create GakcoSVM object with specified params. Params can be modified in between kernel construction
 	//or training to make changes to how it behaves next time.
@@ -376,27 +373,28 @@ int main(int argc, char *argv[]) {
 
 	//returns a pointer to the kernel matrix, and also stores it as a member variable
 	K = gsvm.construct_kernel();
-	gsvm.write_files();
-
-	//trains the SVM on the provided dataset, outputs a model into GaKCoModel.txt
-	//gsvm.train(K);
 	//gsvm.write_files();
 
-	//gsvm.load_kernel(std::string("cutTestKernel.txt"));
+	//K = gsvm.load_kernel(std::string("../release/src/kernel.txt"), std::string("labels.txt"));
 
-	//test_K = gsvm.construct_test_kernel();
+	//trains the SVM on the provided dataset, outputs a model into GaKCoModel.txt
+	gsvm.train(K);
+	//gsvm.write_files();
+
+	
+
+	test_K = gsvm.construct_test_kernel();
 	//gsvm.write_test_kernel();
-	//double acc = gsvm.predict(test_K, gsvm.test_labels);
+
+	double acc = gsvm.predict(test_K, gsvm.test_labels);
 
 	//FILE* outfile = fopen("rezzies.txt", "a");
 
 	//fprintf(outfile, "\n%s\n%f\n", filename, acc); 
 	//fclose(outfile);
 
-	//printf("\nauc: %f\n", acc);
+	printf("\nauc: %f\n", acc);
 
-	//free(label);
-	//free(K);
 
 	return 0;
 }

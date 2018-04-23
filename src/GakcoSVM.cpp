@@ -10,11 +10,12 @@ ec3bd
 An attempt at a tool wrapping kernel calculation and SVM calculation into one seamless object
 **/
 #include <stdio.h>
-#include <stdlib.h>
+#include <cstdlib>
 #include <string.h>
 #include <math.h>
 #include "shared.h"
 #include <assert.h>
+#include <omp.h>
 #include <thread>
 #include <map>
 #include <iostream>
@@ -361,8 +362,9 @@ double* GakcoSVM::construct_test_kernel(){
 
 	
 
-	//memset test_Ksfinal before we use it
+	//memset test_Ksfinal and test_K before we use it
 	memset(test_Ksfinal, 0, sizeof(unsigned int) * addr);
+	memset(test_K, 0, sizeof(double) * totalStr*totalStr);
 	memset(nchoosekmat, 0, sizeof(unsigned int) * g * g);
 
 	cnt_k = (int *)malloc(features->n * sizeof(int));
@@ -549,15 +551,11 @@ void* GakcoSVM::train(double* K) {
 	}
 
 	free(svm_param);
+	for(int i = 0; i < prob->l; i++){
+		free(x[i]);
+	}
+	free(x);
 	free(prob);
-
-	// new_F->n = y;
-	//free the old info and replace it with new stuff
-	//free(this->kernel);
-	//free(this->kernel_features);
-	//this->nStr = num_sv;
-	//this->kernel = new_kernel;
-	//this->kernel_features = new_F;
 
 }
 
@@ -599,7 +597,7 @@ void GakcoSVM::write_test_kernel() {
 	{	
 		for (int j = 0; j < num_sv; ++j)
 		{
-			fprintf(kernelfile, "%d:%e ", j + 1, this->test_kernel[j + i*num_sv]);
+			fprintf(kernelfile, "%d:%e ", this->model->sv_indices[j], this->test_kernel[j + i*num_sv]);
 		}
 		//fprintf(labelfile, "%d ", this->labels[i]);
 		//fprintf(labelfile, "\n");
@@ -634,7 +632,7 @@ double GakcoSVM::predict(double *test_K, int* test_labels){
 	for(int i = 0; i < nTestStr; i++){
 
 		for (int j=0; j < num_sv; j++){
-			x[j].index = j + 1;
+			x[j].index = this->model->sv_indices[j];//j + 1;
 			x[j].value = test_K[i * num_sv + j];
 		}
 		x[num_sv].index = -1;
@@ -652,7 +650,7 @@ double GakcoSVM::predict(double *test_K, int* test_labels){
 		} 
 
 		if(i <= 2 || i > nTestStr - 4){
-			printf("\n%f\n",probs[0]);
+			printf("\n%f\n",probs[labelind]);
 			printf("Guess %f \t\t Label %d \n", guess, test_labels[i]);
 		}
 	
@@ -684,30 +682,54 @@ double calculate_auc(double* pos, double* neg, int npos, int nneg){
 	return (double)correct / total;
 }
 
-double *GakcoSVM::load_kernel(std::string kernel_name){
-
-	this->nTestStr = 1235;
-	int nTestStr = this->nTestStr;
-	int* test_labels = (int*) malloc(nTestStr * sizeof(int));
-	for(int i =0; i < nTestStr; i++){
-		test_labels[i] = -1;
-	}
-	for(int i =0; i < 8; i++){
-		test_labels[i] = 1;
-	}
-	
-	double *test_K = (double*) malloc(nTestStr * 1173 * sizeof(double));
+double *GakcoSVM::load_kernel(std::string kernel_name, std::string label_name){
 
 	std::string line;
-	std::ifstream inpfile ("cutTestKernel.txt");
+	std::ifstream inpfile (kernel_name);
+	double* K;
+	int lines = 0;
 	if (inpfile.is_open()){
+		while(!inpfile.eof()){
+			std::getline(inpfile, line);
+			lines++;
+		}
+		//int width = find last number for test kernel loading too
+		K = (double*) malloc(lines * lines * sizeof(double));
+		//return the cursor to the beginning of the file
+		inpfile.clear();
+		inpfile.seekg(0, std::ios::beg);
 		int idx = 0;
-		while(std::getline(inpfile, line, ' ')){
+		while(!inpfile.eof()){
+			std::getline(inpfile, line, ' ');
 			line = trim(line);
-			test_K[0] = std::stof(line.substr(line.find(":") + 1)); //get trimmed value without index and colon, convert to double
+			//printf("%s\n",line.c_str());
+			if(line.empty() || line==std::string("\n"))
+				continue;
+			K[idx] = std::stof(line.substr(line.find(":") + 1)); //get trimmed value without index and colon, convert to double
 			idx++;
 		}
 	}
-	double acc = this->predict(test_K, test_labels);
-	printf("acc %f", acc);
+
+	std::ifstream labelfile(label_name);
+	if(labelfile.is_open()){
+		int* labels = (int*) malloc(lines * sizeof(int));
+		int idx = 0;
+		while(!labelfile.eof()){
+			std::getline(labelfile, line);
+			line = trim(line);
+			if(line.empty() || line==std::string("\n"))
+				continue;
+			labels[idx] = std::stoi(line);
+			idx++;
+		}
+	}
+
+	if(this->kernel != NULL)
+		free(this->kernel);
+	if(this->labels != NULL)
+		free(this->labels);
+	this->nStr = lines;
+	this->kernel = K;
+	this->labels = labels;
+	return K;
 }	
