@@ -1,6 +1,7 @@
 #pragma once
 
 #define STRMAXLEN 15000
+#define MAXNSTR 15000
 #include <string>
 typedef struct Feature
 {

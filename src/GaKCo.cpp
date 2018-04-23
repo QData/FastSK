@@ -15,7 +15,6 @@
 #include "shared.h"
 #include "shared.cpp"
 #include <assert.h>
-#include <omp.h>
 #include <thread>
 #include <iostream>
 #include <random>
@@ -34,9 +33,9 @@ int help() {
 	printf("\nUsage: gakco [options] <trainingFile> <testingFile> <dictionaryFile> <labelsFile> <kernelFile>\n");
 	printf("\t g : length of gapped instance. Constraints: 0 < g < 20\n");
 	printf("\t k : length of k-mer. Constraints: k < g\n");
-	printf("\t n : (optional) maximum number of examples in the data set. Default: 15000\n");
 	printf("\t t : (optional) number of threads to use. Set to 1 to not parallelize kernel computation\n");
 	printf("\t C : (optional) SVM C parameter. Default is 1.0");
+	printf("\t p : (optional) Flag to generate probability of class or not. Without it, AUC can't be calculated Default is 0");
 	printf("\t trainingFile : set of training examples in FASTA format\n");
 	printf("\t testingFile : set of testing examples in FASTA format\n");
 	printf("\t dictionaryFile : file containing the alphabet of characters that appear in the sequences (simple text file)\n");
@@ -142,65 +141,6 @@ void build_cumulative_mismatch_profiles(WorkItem *workQueue, int queueSize, int 
 	}
 }
 
-void main_test_kernel(int *elems, Features *features, unsigned int *Ksfinal, int *cnt_k, int *feat, 
-					int g, int k, int na, int nfeat, int nStr, int nTestStr, int i) {
-	unsigned long int c = 0;
-	int num_comb;
-	Combinations * combinations = (Combinations *)malloc(sizeof(Combinations));
-    unsigned int *Ks = (unsigned int *)malloc(nTestStr * nStr * sizeof(unsigned int));
-	unsigned int *sortIdx = (unsigned int *)malloc(nfeat * sizeof(unsigned int));
-	unsigned int *features_srt  = (unsigned int *)malloc(nfeat*g * sizeof(unsigned int *));
-	unsigned int *group_srt = (unsigned int *)malloc(nfeat * sizeof(unsigned int));
-	unsigned int *cnt_comb = (unsigned int *)malloc(2 * sizeof(unsigned int));
-	unsigned int *feat1 = (unsigned int *)malloc(nfeat*g * sizeof(unsigned int));
-	int *pos = (int *)malloc(nfeat * sizeof(int));
-	memset(pos, 0, sizeof(int) * nfeat);
-	c =i*(nStr * nTestStr);
-
-	(*combinations).n = g;
-	(*combinations).k = g - i;
-	(*combinations).num_comb = nchoosek(g, g - i);
-
-	// number of possible positions
-	num_comb = nchoosek(g, g - i);
-
-	unsigned int  *out = (unsigned int *)malloc((g - i)*num_comb * sizeof(unsigned int));
-	unsigned int  *cnt_m = (unsigned int *)malloc(g * sizeof(unsigned int));
-
-	cnt_comb[0] = 0;
-
-	getCombinations(elems,(*combinations).n, (*combinations).k, pos, 0, 0, cnt_comb, out, num_comb);
-	cnt_m[i] = cnt_comb[0];
-
-	cnt_comb[0] += ((*combinations).k*num_comb);
-
-	for ( int j = 0; j < num_comb; ++j) {
-		//remove i positions
-		for ( int j1 = 0; j1 < nfeat; ++j1) {
-			for ( int j2 = 0; j2 < g - i; ++j2) {
-				feat1[j1 + j2*nfeat] = feat[j1 + (out[(cnt_m[i] - num_comb + j) + j2*num_comb])*nfeat];
-			}
-		}
-		//sort the g-mers
-		cntsrtna(sortIdx,feat1, g - i, nfeat, na);
-		for ( int j1 = 0; j1 < nfeat; ++j1) {
-			for ( int j2 = 0; j2 < g - i; ++j2) {
-				features_srt[j1 + j2*nfeat] = feat1[(sortIdx[j1]) + j2*nfeat];
-			}
-			group_srt[j1] = (*features).group[sortIdx[j1]];
-		}
-		//update cumulative mismatch profile
-		countAndUpdateTest(Ks, features_srt, group_srt, g - i, nfeat, nStr, nTestStr);
-		for ( int j1 = 0; j1 < nStr; ++j1) {
-			for ( int j2 = j1; j2 < nStr; ++j2) {
-				if (j1 != j2) {
-					Ksfinal[(c + j1) + j2*nStr] +=  Ks[j1 + j2*nStr];
-				}
-				Ksfinal[c +(j1)*nStr + j2] +=  Ks[j1 + j2*nStr];
-			}
-		}		
-	}
-}
 
 Features* merge_features(Features* train, Features* test, int g) {
 	int nfeat = train->n + test->n;
@@ -230,9 +170,10 @@ int main(int argc, char *argv[]) {
 	int g = -1;
 	int k = -1;
 	int numThreads = -1;
-	double C = -1;
+	int probability = 0;
+	float C = -1;
 	int c;
-	while ((c = getopt(argc, argv, "g:k:n:t:C")) != -1) {
+	while ((c = getopt(argc, argv, "g:k:n:t:C:p:")) != -1) {
 		switch (c) {
 			case 'g':
 				g = atoi(optarg);
@@ -246,6 +187,10 @@ int main(int argc, char *argv[]) {
 			case 'C':
 				C = atof(optarg);
 				break;
+			case 'p':
+				probability = atoi(optarg);
+
+
 		}
 	}
 	if (g == -1) {
@@ -281,17 +226,17 @@ int main(int argc, char *argv[]) {
 	arg.outputFilename = opfilename;
 	arg.g = g;
 	arg.k = k;
+	arg.probability = probability;
 	if (numThreads != -1) {
 		arg.threads = numThreads;
 	}
 	if (C != -1) {
 		arg.C = C;
 	}
-
 	arg.eps = .001;
 	arg.h = 0;
 	arg.kernel_type = GAKCO;
-	arg.probability = 1;
+	
 
 	//Create GakcoSVM object with specified params. Params can be modified in between kernel construction
 	//or training to make changes to how it behaves next time.

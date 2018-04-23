@@ -36,7 +36,7 @@ static void inline trimLine(std::string &s) {
 }
 
 
-int ** Readinput_(char *filename, char *dictFileName, int *seqLabels, int *seqLengths, long int *nStr, long int *maxlen, long int *minlen, int *dictionarySize, int maxNumStr) {
+int ** Readinput_(char *filename, char *dictFileName, int *seqLabels, int *seqLengths, long int *nStr, long int *maxlen, long int *minlen, int *dictionarySize) {
     int **output;
     const char *seq;
     char *d;
@@ -86,6 +86,8 @@ int ** Readinput_(char *filename, char *dictFileName, int *seqLabels, int *seqLe
                 if(row >= MAXNSTR && row % 1000 == 0){
                   realls++;
                   output = (int**)realloc(output, (MAXNSTR + 1000*realls)*sizeof(int*));
+                  seqLengths = (int*)realloc(seqLengths, (MAXNSTR + 1000*realls)*sizeof(int));
+                  seqLabels = (int*)realloc(seqLabels, (MAXNSTR + 1000*realls)*sizeof(int));
                 }
             }
         }

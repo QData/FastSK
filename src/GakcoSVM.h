@@ -28,7 +28,6 @@ typedef struct gakco_param {
 	int probability = 1;
 	int crossfold	= 0; //cross-fold validation mode, v-fold, 0 is no cv.
 	int q 			= 0; //quiet mode
-	int maxNumStr	= 15000; //maximum number of strings to read in; default is 15000
 } gakco_param;
 
 class GakcoSVM {
