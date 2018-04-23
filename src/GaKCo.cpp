@@ -29,61 +29,6 @@ This file contains Main Code
 #include <unistd.h>
 #include "GakcoSVM.h"
 #include "GaKCo.h"
-#define ARG_REQUIRED 9
-
-
-//extract g-mers from input sequences
-Features *extractFeatures(int **S, int *len, int nStr, int g) {
-	 int i, j, j1;
-	 int n, sumLen, nfeat, addr;
-	int *group;
-	int *features;
-
-	int *s;
-	 int c;
-	Features *F;
-
-	nfeat = 0;
-	sumLen = 0;
-
-	for (i = 0; i < nStr; ++i)
-	{
-		sumLen += len[i];
-		nfeat += (len[i] >= g) ? (len[i] - g + 1) : 0;
-	}
-
-	//printf("numF=%d, sumLen=%d\n", nfeat, sumLen); 
-	group = (int *)malloc(nfeat * sizeof(int));
-	features = (int *)malloc(nfeat*g * sizeof(int *));
-
-	c = 0;
-
-	for (i = 0; i < nStr; ++i)
-	{
-		s = S[i];
-
-
-		for (j = 0; j < len[i] - g + 1; ++j)
-		{
-
-			for (j1 = 0; j1 <g; ++j1)
-			{
-				features[c + j1*nfeat] = s[j + j1];
-			}
-			//tags gmer with what string it came from
-			group[c] = i;
-			c++;
-		}
-	}
-	if (nfeat != c)
-		printf("Something is wrong...\n");
-
-	F = (Features *)malloc(sizeof(Features));
-	(*F).features = features;
-	(*F).group = group;
-	(*F).n = nfeat;
-	return F;
-}
 
 int help() {
 	printf("\nUsage: gakco [options] <trainingFile> <testingFile> <dictionaryFile> <labelsFile> <kernelFile>\n");
@@ -106,8 +51,7 @@ int help() {
 	return 1;
 }
 
-int errorID1()
-{
+int errorID1() {
 	printf("Error: g >= Shortest sequence in the input file!\n");
 	return 1;
 }
@@ -198,8 +142,8 @@ void build_cumulative_mismatch_profiles(WorkItem *workQueue, int queueSize, int 
 	}
 }
 
-void main_test_kernel(int * elems,Features * features ,unsigned int *Ksfinal,int * cnt_k,   int *feat,int g, int k, int na,int nfeat,int nStr,int nTestStr,int i)
-{
+void main_test_kernel(int *elems, Features *features, unsigned int *Ksfinal, int *cnt_k, int *feat, 
+					int g, int k, int na, int nfeat, int nStr, int nTestStr, int i) {
 	unsigned long int c = 0;
 	int num_comb;
 	Combinations * combinations = (Combinations *)malloc(sizeof(Combinations));
@@ -209,14 +153,12 @@ void main_test_kernel(int * elems,Features * features ,unsigned int *Ksfinal,int
 	unsigned int *group_srt = (unsigned int *)malloc(nfeat * sizeof(unsigned int));
 	unsigned int *cnt_comb = (unsigned int *)malloc(2 * sizeof(unsigned int));
 	unsigned int *feat1 = (unsigned int *)malloc(nfeat*g * sizeof(unsigned int));
-	
 	int *pos = (int *)malloc(nfeat * sizeof(int));
 	memset(pos, 0, sizeof(int) * nfeat);
 	c =i*(nStr * nTestStr);
 
 	(*combinations).n = g;
 	(*combinations).k = g - i;
-
 	(*combinations).num_comb = nchoosek(g, g - i);
 
 	// number of possible positions
@@ -232,52 +174,35 @@ void main_test_kernel(int * elems,Features * features ,unsigned int *Ksfinal,int
 
 	cnt_comb[0] += ((*combinations).k*num_comb);
 
-	for ( int j = 0; j < num_comb; ++j)
-	{
+	for ( int j = 0; j < num_comb; ++j) {
 		//remove i positions
-		for ( int j1 = 0; j1 < nfeat; ++j1)
-		{
-				for ( int j2 = 0; j2 < g - i; ++j2)
-				{
-					feat1[j1 + j2*nfeat] = feat[j1 + (out[(cnt_m[i] - num_comb + j) + j2*num_comb])*nfeat];
-					
-				}
-			
-			
+		for ( int j1 = 0; j1 < nfeat; ++j1) {
+			for ( int j2 = 0; j2 < g - i; ++j2) {
+				feat1[j1 + j2*nfeat] = feat[j1 + (out[(cnt_m[i] - num_comb + j) + j2*num_comb])*nfeat];
+			}
 		}
 		//sort the g-mers
 		cntsrtna(sortIdx,feat1, g - i, nfeat, na);
-		    
-		       
-		for ( int j1 = 0; j1 < nfeat; ++j1)
-		{
-
-				for ( int j2 = 0; j2 < g - i; ++j2)
-				{
-					features_srt[j1 + j2*nfeat] = feat1[(sortIdx[j1]) + j2*nfeat];
-					
-				}
+		for ( int j1 = 0; j1 < nfeat; ++j1) {
+			for ( int j2 = 0; j2 < g - i; ++j2) {
+				features_srt[j1 + j2*nfeat] = feat1[(sortIdx[j1]) + j2*nfeat];
+			}
 			group_srt[j1] = (*features).group[sortIdx[j1]];
 		}
 		//update cumulative mismatch profile
 		countAndUpdateTest(Ks, features_srt, group_srt, g - i, nfeat, nStr, nTestStr);
-		
-		for ( int j1 = 0; j1 < nStr; ++j1)
-		{
-			for ( int j2 = j1; j2 < nStr; ++j2)
-				
-			{
-			      if(j1!=j2)
-				Ksfinal[(c + j1) + j2*nStr] +=  Ks[j1 + j2*nStr];
+		for ( int j1 = 0; j1 < nStr; ++j1) {
+			for ( int j2 = j1; j2 < nStr; ++j2) {
+				if (j1 != j2) {
+					Ksfinal[(c + j1) + j2*nStr] +=  Ks[j1 + j2*nStr];
+				}
 				Ksfinal[c +(j1)*nStr + j2] +=  Ks[j1 + j2*nStr];
-				
 			}
 		}		
 	}
-
 }
 
-Features* merge_features(Features* train, Features* test, int g){
+Features* merge_features(Features* train, Features* test, int g) {
 	int nfeat = train->n + test->n;
 	int* features = (int *)malloc((nfeat)*g * sizeof(int *));
 	int* group = (int *)malloc(nfeat * sizeof(int));
@@ -305,7 +230,7 @@ int main(int argc, char *argv[]) {
 	int g = -1;
 	int k = -1;
 	int numThreads = -1;
-	long int maxNumStr = 15000;
+	int maxNumStr = -1;
 	double C = 1;
 	
 	int c;
@@ -361,10 +286,17 @@ int main(int argc, char *argv[]) {
 	arg.outputFilename = opfilename;
 	arg.g = g;
 	arg.k = k;
-	arg.threads = numThreads;
+	if (numThreads != -1) {
+		arg.threads = numThreads;
+	}
+	if (maxNumStr != -1) {
+		arg.maxNumStr = maxNumStr;
+	}
+	if (C != -1) {
+		arg.C = C;
+	}
 	//arg.crossfold = 1;
 	//arg.h = 0;
-	arg.C = C;
 	arg.eps = .1;
 	arg.h = 0;
 	arg.kernel_type = GAKCO;
@@ -400,10 +332,3 @@ int main(int argc, char *argv[]) {
 
 	return 0;
 }
-
-
-
-
-
-
-

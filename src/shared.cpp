@@ -19,6 +19,44 @@
 
 char *trimwhitespace(char *s);
 
+//extract g-mers from input sequences
+Features *extractFeatures(int **S, int *len, int nStr, int g) {
+	int i, j, j1;
+	int n, sumLen, nfeat, addr;
+	int *group;
+	int *features;
+	int *s;
+	int c;
+	Features *F;
+	nfeat = 0;
+	sumLen = 0;
+	for (i = 0; i < nStr; ++i) {
+		sumLen += len[i];
+		nfeat += (len[i] >= g) ? (len[i] - g + 1) : 0;
+	}
+	printf("numF=%d, sumLen=%d\n", nfeat, sumLen); 
+	group = (int *)malloc(nfeat * sizeof(int));
+	features = (int *)malloc(nfeat*g * sizeof(int *));
+	c = 0;\
+	for (i = 0; i < nStr; ++i) {
+		s = S[i];
+		for (j = 0; j < len[i] - g + 1; ++j) {
+			for (j1 = 0; j1 <g; ++j1) {
+				features[c + j1*nfeat] = s[j + j1];
+			}
+			group[c] = i;
+			c++;
+		}
+	}
+	if (nfeat != c) {
+		printf("Something is wrong...\n");
+	}
+	F = (Features *)malloc(sizeof(Features));
+	(*F).features = features;
+	(*F).group = group;
+	(*F).n = nfeat;
+	return F;
+}
 
 // array: pointer to space (N*(N-1)/2)
 // i    : row

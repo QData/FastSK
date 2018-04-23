@@ -14,7 +14,7 @@ typedef struct gakco_param {
 	std::string outputFilename; //kernel file
 	int g;
 	int k;
-	int threads = 4; //Number of threads by default when operating in parallel
+	int threads = -1; //Number of threads by default
 	int svm_type = C_SVC;
 	int kernel_type = GAKCO;
 	double C 		= 1.0; //C param
@@ -28,7 +28,8 @@ typedef struct gakco_param {
 	int probability = 1;
 	int crossfold	= 0; //cross-fold validation mode, v-fold, 0 is no cv.
 	int q 			= 0; //quiet mode
-}gakco_param;
+	int maxNumStr	= 15000; //maximum number of strings to read in; default is 15000
+} gakco_param;
 
 class GakcoSVM {
 public:
@@ -50,8 +51,6 @@ public:
 	void write_files();
 	void write_test_kernel();
 	double *load_kernel(std::string kernel_name);
-
-
 };
 
 #endif
