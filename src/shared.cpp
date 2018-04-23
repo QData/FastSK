@@ -9,14 +9,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <cstdlib>
-#include <malloc.h>
 #include <string.h>
 #include <fstream>
 #include <thread>
-
 #include <iostream>
 #include <random>
-
 
 char *trimwhitespace(char *s);
 

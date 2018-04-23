@@ -28,11 +28,10 @@
 #include "GakcoSVM.h"
 #include "Gakco.h"
 
-
 int help() {
 	printf("\nUsage: gakco [options] <trainingFile> <testingFile> <dictionaryFile> <labelsFile> <kernelFile>\n");
-	printf("\t g : length of gapped instance. Constraints: 0 < g < 20\n");
-	printf("\t k : length of k-mer. Constraints: k < g\n");
+	printf("\t g : gmer length; length of substrings (allowing up to m mismatches) used to compare sequences. Constraints: 0 < g < 20\n");
+	printf("\t m : maximum number of mismatches when comparing two gmers. Constraints: 0 <= m < g\n");
 	printf("\t t : (optional) number of threads to use. Set to 1 to not parallelize kernel computation\n");
 	printf("\t C : (optional) SVM C parameter. Default is 1.0");
 	printf("\t p : (optional) Flag to generate probability of class or not. Without it, AUC can't be calculated Default is 0");
@@ -42,11 +41,7 @@ int help() {
 	printf("\t labelsFile : file to place labels from the examples (simple text file)\n");
 	printf("\t kernelFile : name of the file to write the kernel that will be computed by GaKCo\n");
 	printf("\n");
-	printf("\t IMPORTANT: \n");
-	printf("\t\t sequence elements must be in the range [0,AlphabetSize - 1].\n");
-	printf("\t\t g - k should be less than 20\n");
-	printf("\nExample usage: ./GaKCo -g 7 -k 5 -n 15000 -t 4 -C 1.0 trainingSet.fasta testingSet.fasta proteinDictionary.txt labelOutputFile.txt kernelOutputFile.txt\n\n");
-
+	printf("\nExample usage: ./Gakco -g 7 -m 2 -n 15000 -t 4 -C 1.0 trainingSet.fasta testingSet.fasta proteinDictionary.txt labelOutputFile.txt kernelOutputFile.txt\n\n");
 	return 1;
 }
 
@@ -168,18 +163,19 @@ Features* merge_features(Features* train, Features* test, int g) {
 int main(int argc, char *argv[]) {
 	// Get g, k, nStr, and t values from command line
 	int g = -1;
-	int k = -1;
+	int M = -1;
 	int numThreads = -1;
 	int probability = 0;
 	float C = -1;
 	int c;
-	while ((c = getopt(argc, argv, "g:k:n:t:C:p:")) != -1) {
+  
+	while ((c = getopt(argc, argv, "g:m:n:t:C:p:")) != -1) {
 		switch (c) {
 			case 'g':
 				g = atoi(optarg);
 				break;
-			case 'k':
-				k = atoi(optarg);
+			case 'm':
+				M = atoi(optarg);
 				break;
 			case 't':
 				numThreads = atoi(optarg);
@@ -189,16 +185,15 @@ int main(int argc, char *argv[]) {
 				break;
 			case 'p':
 				probability = atoi(optarg);
-
-
+        break;
 		}
 	}
 	if (g == -1) {
 		printf("Must provide a value for the g parameter\n");
 		return help();
 	}
-	if (k == -1) {
-		printf("Must provide a value for the k parameter\n");
+	if (M == -1) {
+		printf("Must provide a value for the m parameter\n");
 		return help();
 	}
 
@@ -225,7 +220,7 @@ int main(int argc, char *argv[]) {
 	arg.labelFilename = filename_label;
 	arg.outputFilename = opfilename;
 	arg.g = g;
-	arg.k = k;
+	arg.k = g - M;
 	arg.probability = probability;
 	if (numThreads != -1) {
 		arg.threads = numThreads;
