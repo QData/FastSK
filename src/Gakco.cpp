@@ -35,6 +35,7 @@ int help() {
 	printf("\t t : (optional) number of threads to use. Set to 1 to not parallelize kernel computation\n");
 	printf("\t C : (optional) SVM C parameter. Default is 1.0");
 	printf("\t p : (optional) Flag to generate probability of class or not. Without it, AUC can't be calculated Default is 0");
+	printf("\t k : (optional) Flag to print the kernel to file, rather than training and predicting on it");
 	printf("\t trainingFile : set of training examples in FASTA format\n");
 	printf("\t testingFile : set of testing examples in FASTA format\n");
 	printf("\t dictionaryFile : file containing the alphabet of characters that appear in the sequences (simple text file)\n");
@@ -168,8 +169,9 @@ int main(int argc, char *argv[]) {
 	int probability = 0;
 	float C = -1;
 	int c;
+	int print = 0;
   
-	while ((c = getopt(argc, argv, "g:m:n:t:C:p:")) != -1) {
+	while ((c = getopt(argc, argv, "g:m:t:C:p:k")) != -1) {
 		switch (c) {
 			case 'g':
 				g = atoi(optarg);
@@ -185,6 +187,8 @@ int main(int argc, char *argv[]) {
 				break;
 			case 'p':
 				probability = atoi(optarg);
+			case 'k':
+				print = 1;
         break;
 		}
 	}
@@ -239,7 +243,10 @@ int main(int argc, char *argv[]) {
 
 	//returns a pointer to the kernel matrix, and also stores it as a member variable
 	K = gsvm.construct_kernel();
-	//gsvm.write_files();
+	if(print){
+		gsvm.write_files();
+		return 0;
+	}
 
 	//K = gsvm.load_kernel(std::string("../release/src/kernel.txt"), std::string("labels.txt"));
 
