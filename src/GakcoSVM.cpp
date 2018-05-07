@@ -131,7 +131,7 @@ double* GakcoSVM::construct_kernel(){
 		//gakco_kernel_matrix = K;//for the svm train to access it
 		this->nStr = nStr;
 		this->labels = label;
-		this.load_kernel(this->params->outputFilename);
+		this->load_kernel(this->params->outputFilename);
 	}
 
 	/*Compute gapped kernel.*/
@@ -557,7 +557,7 @@ void* GakcoSVM::train(double* K) {
 	} else {
 		this->model = svm_train(prob, svm_param);
 		if (!this->params->modelName.empty()){
-			svm_save_model(this->params-modelName.c_str(), this->model);
+			svm_save_model(this->params->modelName.c_str(), this->model);
 		}
 	}
 
@@ -575,7 +575,6 @@ void* GakcoSVM::train(double* K) {
 //file output name specified via command line or specially by modifying the parameter struct
 void GakcoSVM::write_files() {
 	FILE *kernelfile;
-	FILE *labelfile;
 	std::string kernelfileName = this->params->outputFilename;
 	if(kernelfileName.empty()){
 		kernelfileName = "kernel.txt";
@@ -638,6 +637,8 @@ double GakcoSVM::predict(double *test_K, int* test_labels){
 		if (this->model->label[i] == 1)
 			labelind = i;
 	}
+	FILE* labelfile;
+	labelfile = fopen(this->params->labelFilename.c_str(), "w");
 
 	for(int i = 0; i < nTestStr; i++){
 
@@ -663,6 +664,9 @@ double GakcoSVM::predict(double *test_K, int* test_labels){
 		// 	printf("\n%f\n",probs[labelind]);
 		// 	printf("Guess %f \t\t Label %d \n", guess, test_labels[i]);
 		// }
+
+		fprintf(labelfile, "%d ", (int)guess);
+		fprintf(labelfile, "\n");
 	
 		if ((guess < 0.0 && test_labels[i] < 0) || (guess > 0.0 && test_labels[i] > 0)){
 			correct++;
@@ -672,6 +676,7 @@ double GakcoSVM::predict(double *test_K, int* test_labels){
 	double auc = calculate_auc(pos, neg, pagg, nagg);
 	printf("\nacc: %f", (double)correct / nTestStr);
 
+	fclose(labelfile);
 	free(pos);
 	free(neg);
 

@@ -37,7 +37,7 @@ int help() {
 	printf("\t C : (optional) SVM C parameter. Default is 1.0");
 	printf("\t p : (optional) Flag to generate probability of class or not. Without it, AUC can't be calculated Default is 0");
 	printf("\t k : (optional) Specify a kernel filename to print to. If -l is also set, this will instead be used as the filename to load the kernel from");
-	printf("\t o : (optional) Specify a model filename to print to. If -s is also set, this will instead be used as the filename to load the model from")
+	printf("\t o : (optional) Specify a model filename to print to. If -s is also set, this will instead be used as the filename to load the model from");
 	printf("\t l : (optional) If 1, will load the train kernel from the file specified by -k");
 	printf("\t s : (optional) If 1, will load the train kernel from the file specified by -k and will load the model from the file specified by -o");
 	printf("\t h : (optional) set to 1 or 2. If 1, will halt the program after constructing and printing out the kernel. If 2, will halt after training and printing out the model");

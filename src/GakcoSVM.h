@@ -52,7 +52,7 @@ public:
 	double predict(double* test_K, int* test_labels);
 	void write_files();
 	void write_test_kernel();
-	double* load_kernel(std::string kernel_name, std::string label_name);
+	double* load_kernel(std::string kernel_name);
 
 };
 
