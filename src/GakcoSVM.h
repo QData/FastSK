@@ -12,6 +12,7 @@ typedef struct gakco_param {
 	std::string dictFilename; //dictionary file
 	std::string labelFilename; //label file
 	std::string outputFilename; //kernel file
+	std::string modelName; //name of either the model you will save or load depending on whether load model is set
 	int g;
 	int k;
 	int threads = -1; //Number of threads by default
@@ -28,6 +29,8 @@ typedef struct gakco_param {
 	int probability = 1;
 	int crossfold	= 0; //cross-fold validation mode, v-fold, 0 is no cv.
 	int q 			= 0; //quiet mode
+	int loadkernel = 0; //1 if this instance needs to load a precomputed kernel
+	int loadmodel = 0; //1 if this instance needs to load a model
 } gakco_param;
 
 class GakcoSVM {
