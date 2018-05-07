@@ -3,7 +3,7 @@
 Download and extract this repository, then enter:
 ```
   $ cd src
-  $ cd make
+  $ make
 ```
 An executable file named `Gakco` will now be located in the `iGakco-SVM/src` directory.
 ## Tutorial
