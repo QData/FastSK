@@ -132,6 +132,7 @@ double* GakcoSVM::construct_kernel(){
 		this->nStr = nStr;
 		this->labels = label;
 		this->load_kernel(this->params->outputFilename);
+		return this->kernel;
 	}
 
 	/*Compute gapped kernel.*/
@@ -301,7 +302,7 @@ double* GakcoSVM::construct_test_kernel(){
 	this->nTestStr = nTestStr;
 	this->test_labels = test_label;
 
-	if (k <= 0 || g <= k || g>20 || g - k>20 || na <= 0){
+	if (k <= 0 || g <= k || g>20 || g - k>20 || test_na <= 0){
 		help();
 		exit(1);
 	}
@@ -674,7 +675,7 @@ double GakcoSVM::predict(double *test_K, int* test_labels){
 	}
 
 	double auc = calculate_auc(pos, neg, pagg, nagg);
-	printf("\nacc: %f", (double)correct / nTestStr);
+	printf("\nacc: %f\n", (double)correct / nTestStr);
 
 	fclose(labelfile);
 	free(pos);

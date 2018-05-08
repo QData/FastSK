@@ -15,6 +15,7 @@ typedef struct gakco_param {
 	std::string modelName; //name of either the model you will save or load depending on whether load model is set
 	int g;
 	int k;
+	int m;
 	int threads = -1; //Number of threads by default
 	int svm_type = C_SVC;
 	int kernel_type = GAKCO;
@@ -35,13 +36,13 @@ typedef struct gakco_param {
 
 class GakcoSVM {
 public:
-	gakco_param *params;
-	double* kernel;
-	double* test_kernel;
-	Features *kernel_features; //so that each test feature-set can be appended but keep the original list
-	struct svm_model* model;
-	int* labels;
-	int* test_labels;
+	gakco_param *params = NULL;
+	double* kernel = NULL;
+	double* test_kernel = NULL;
+	Features *kernel_features = NULL; //so that each test feature-set can be appended but keep the original list
+	struct svm_model* model = NULL;
+	int* labels = NULL;
+	int* test_labels = NULL;
 	long int nStr; //here instead of params because it is not set by user ever.
 	long int nTestStr;
 

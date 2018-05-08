@@ -156,7 +156,7 @@ int main(int argc, char *argv[]) {
 	int onlyprint = 0;
 	int nopredict = 0;
   
-	while ((c = getopt(argc, argv, "g:m:t:C:p:k:o:h:ls")) != -1) {
+	while ((c = getopt(argc, argv, "g:m:t:C:k:o:h:lsp")) != -1) {
 		switch (c) {
 			case 'g':
 				g = atoi(optarg);
@@ -171,21 +171,28 @@ int main(int argc, char *argv[]) {
 				C = atof(optarg);
 				break;
 			case 'p':
-				probability = atoi(optarg);
+				probability = 1;
+				break;
 			case 'k':
 				arg.outputFilename = optarg;
+				break;
 			case 'o':
 				arg.modelName = optarg;
+				break;
 			case 'l':
 				arg.loadkernel = 1;
+				break;
 			case 's':
+				arg.loadkernel = 1;
 				arg.loadmodel = 1;
+				 break;
 			case 'h':
 				if (atoi(optarg) == 1){
 					onlyprint = 1;
 				}else if (atoi(optarg) == 2){
 					nopredict = 1;
 				}
+				break;
 
         break;
 		}
@@ -198,6 +205,7 @@ int main(int argc, char *argv[]) {
 		printf("Must provide a value for the m parameter\n");
 		return help();
 	}
+
 
 	int argNum = optind;
 	// Get names of sequence, dictionary, labels, and kernel files 	
@@ -263,8 +271,8 @@ int main(int argc, char *argv[]) {
 
 	double acc = gsvm.predict(test_K, gsvm.test_labels);
 
-
-	printf("\nauc: %f\n", acc);
+	if(arg.probability)
+		printf("auc: %f\n", acc);
 
 
 	return 0;
