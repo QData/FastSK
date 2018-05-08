@@ -30,19 +30,27 @@
 
 int help() {
 	printf("\nUsage: gakco [options] <trainingFile> <testingFile> <dictionaryFile> <labelsFile> <kernelFile>\n");
+	printf("FLAGS WITH ARGUMENTS\n");
 	printf("\t g : gmer length; length of substrings (allowing up to m mismatches) used to compare sequences. Constraints: 0 < g < 20\n");
 	printf("\t m : maximum number of mismatches when comparing two gmers. Constraints: 0 <= m < g\n");
 	printf("\t t : (optional) number of threads to use. Set to 1 to not parallelize kernel computation\n");
-	printf("\t C : (optional) SVM C parameter. Default is 1.0");
-	printf("\t p : (optional) Flag to generate probability of class or not. Without it, AUC can't be calculated Default is 0");
-	printf("\t k : (optional) Flag to print the kernel to file, rather than training and predicting on it");
+	printf("\t C : (optional) SVM C parameter. Default is 1.0\n");
+	printf("\t p : (optional) Flag to generate probability of class or not. Without it, AUC can't be calculated Default is 0\n");
+	printf("\t k : (optional) Specify a kernel filename to print to. If -l is also set, this will instead be used as the filename to load the kernel from\n");
+	printf("\t o : (optional) Specify a model filename to print to. If -s is also set, this will instead be used as the filename to load the model from\n");
+	printf("NO ARGUMENT FLAGS\n");
+	printf("\t l : (optional) If set, will load the train kernel from the file specified by -k\n");
+    printf("\t s : (optional) If set, will load the train kernel from the file specified by -k and will load the model from the file specified by -o\n");
+    printf("\t p : (optional) Flag for model to generate probability of class. Without it, AUC can't be calculated.\n");
+    printf("\t h : (optional) set to 1 or 2. If 1, will halt the program after constructing and printing out the kernel. If 2, will halt after training and printing out the model\n");
+	printf("ORDERED PARAMETERS\n");
 	printf("\t trainingFile : set of training examples in FASTA format\n");
 	printf("\t testingFile : set of testing examples in FASTA format\n");
 	printf("\t dictionaryFile : file containing the alphabet of characters that appear in the sequences (simple text file)\n");
 	printf("\t labelsFile : file to place labels from the examples (simple text file)\n");
 	printf("\t kernelFile : name of the file to write the kernel that will be computed by GaKCo\n");
 	printf("\n");
-	printf("\nExample usage: ./Gakco -g 7 -m 2 -n 15000 -t 4 -C 1.0 trainingSet.fasta testingSet.fasta proteinDictionary.txt labelOutputFile.txt kernelOutputFile.txt\n\n");
+	printf("\nExample usage: ./iGakco -g 7 -m 2 -t 4 -C 1.0 trainingSet.fasta testingSet.fasta proteinDictionary.txt labelOutputFile.txt\n\n");
 	return 1;
 }
 
