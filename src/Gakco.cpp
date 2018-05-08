@@ -5,6 +5,7 @@
 //Arshdeep Sekhon <as5cu@virginia.edu >
 
 
+
 // This file contains Main Code
 
 
@@ -35,12 +36,15 @@ int help() {
 	printf("\t t : (optional) number of threads to use. Set to 1 to not parallelize kernel computation\n");
 	printf("\t C : (optional) SVM C parameter. Default is 1.0");
 	printf("\t p : (optional) Flag to generate probability of class or not. Without it, AUC can't be calculated Default is 0");
-	printf("\t k : (optional) Flag to print the kernel to file, rather than training and predicting on it");
+	printf("\t k : (optional) Specify a kernel filename to print to. If -l is also set, this will instead be used as the filename to load the kernel from");
+	printf("\t o : (optional) Specify a model filename to print to. If -s is also set, this will instead be used as the filename to load the model from");
+	printf("\t l : (optional) If 1, will load the train kernel from the file specified by -k");
+	printf("\t s : (optional) If 1, will load the train kernel from the file specified by -k and will load the model from the file specified by -o");
+	printf("\t h : (optional) set to 1 or 2. If 1, will halt the program after constructing and printing out the kernel. If 2, will halt after training and printing out the model");
 	printf("\t trainingFile : set of training examples in FASTA format\n");
 	printf("\t testingFile : set of testing examples in FASTA format\n");
 	printf("\t dictionaryFile : file containing the alphabet of characters that appear in the sequences (simple text file)\n");
-	printf("\t labelsFile : file to place labels from the examples (simple text file)\n");
-	printf("\t kernelFile : name of the file to write the kernel that will be computed by GaKCo\n");
+	printf("\t labelsFile : file to place labels from the test examples (simple text file)\n");
 	printf("\n");
 	printf("\nExample usage: ./Gakco -g 7 -m 2 -n 15000 -t 4 -C 1.0 trainingSet.fasta testingSet.fasta proteinDictionary.txt labelOutputFile.txt kernelOutputFile.txt\n\n");
 	return 1;
@@ -138,40 +142,21 @@ void build_cumulative_mismatch_profiles(WorkItem *workQueue, int queueSize, int 
 }
 
 
-Features* merge_features(Features* train, Features* test, int g) {
-	int nfeat = train->n + test->n;
-	int* features = (int *)malloc((nfeat)*g * sizeof(int *));
-	int* group = (int *)malloc(nfeat * sizeof(int));
-
-	memcpy(features, train->features, train->n * g * sizeof(int*));
-	memcpy(&(features[train->n * g]), test->features, test->n * g * sizeof(int*));
-
-	memcpy(group, train->group, train->n * sizeof(int));
-	memcpy(&(group[train->n]), test->group, test->n * sizeof(int));
-
-	Features* F = (Features *)malloc(sizeof(Features));
-	(*F).features = features;
-	(*F).group = group;
-	(*F).n = nfeat;
-
-	//free(test);
-
-	return F;
-}
-
 //Main function 
 
 int main(int argc, char *argv[]) {
 	// Get g, k, nStr, and t values from command line
+	struct gakco_param arg;
 	int g = -1;
 	int M = -1;
 	int numThreads = -1;
 	int probability = 0;
 	float C = -1;
 	int c;
-	int print = 0;
+	int onlyprint = 0;
+	int nopredict = 0;
   
-	while ((c = getopt(argc, argv, "g:m:t:C:p:k")) != -1) {
+	while ((c = getopt(argc, argv, "g:m:t:C:k:o:h:lsp")) != -1) {
 		switch (c) {
 			case 'g':
 				g = atoi(optarg);
@@ -186,9 +171,29 @@ int main(int argc, char *argv[]) {
 				C = atof(optarg);
 				break;
 			case 'p':
-				probability = atoi(optarg);
+				probability = 1;
+				break;
 			case 'k':
-				print = 1;
+				arg.outputFilename = optarg;
+				break;
+			case 'o':
+				arg.modelName = optarg;
+				break;
+			case 'l':
+				arg.loadkernel = 1;
+				break;
+			case 's':
+				arg.loadkernel = 1;
+				arg.loadmodel = 1;
+				 break;
+			case 'h':
+				if (atoi(optarg) == 1){
+					onlyprint = 1;
+				}else if (atoi(optarg) == 2){
+					nopredict = 1;
+				}
+				break;
+
         break;
 		}
 	}
@@ -201,6 +206,7 @@ int main(int argc, char *argv[]) {
 		return help();
 	}
 
+
 	int argNum = optind;
 	// Get names of sequence, dictionary, labels, and kernel files 	
 	char filename[100], testFilename[100], filename_label[100], Dicfilename[100], opfilename[100];
@@ -208,7 +214,6 @@ int main(int argc, char *argv[]) {
 	strcpy(testFilename, argv[argNum++]);
 	strcpy(Dicfilename, argv[argNum++]);
 	strcpy(filename_label, argv[argNum++]);
-	strcpy(opfilename, argv[argNum++]);
 
 	int *label;
 	long int nStr;
@@ -217,12 +222,10 @@ int main(int argc, char *argv[]) {
 	isVerbose = 0;
 	
 	// Create a Gakco SVM object to construct kernel, train, and test
-	struct gakco_param arg;
 	arg.filename = filename;
 	arg.testFilename = testFilename;
 	arg.dictFilename = Dicfilename;
 	arg.labelFilename = filename_label;
-	arg.outputFilename = opfilename;
 	arg.g = g;
 	arg.k = g - M;
 	arg.probability = probability;
@@ -242,31 +245,34 @@ int main(int argc, char *argv[]) {
 	GakcoSVM gsvm = GakcoSVM(&arg);
 
 	//returns a pointer to the kernel matrix, and also stores it as a member variable
+	//still needed even if we are loading a kernel as it reads labels and dataset info, but won't calculate if it doesn't need to.
 	K = gsvm.construct_kernel();
-	if(print){
+	if(!arg.loadkernel && !arg.outputFilename.empty()){
 		gsvm.write_files();
-		return 0;
 	}
 
-	//K = gsvm.load_kernel(std::string("../release/src/kernel.txt"), std::string("labels.txt"));
+	//exit program if only need to print out the kernel
+	if (onlyprint)
+		return 0;
 
-	//trains the SVM on the provided dataset, outputs a model into GaKCoModel.txt
-	gsvm.train(K);
-	//gsvm.write_files();
+	if(arg.loadmodel){
+		gsvm.model = svm_load_model(arg.modelName.c_str());
+	}else{
+		//trains the SVM on the provided dataset, outputs a model into modelName if provided
+		gsvm.train(K);
+	}
 
 	
+	if(nopredict)
+		return 0;
 
 	test_K = gsvm.construct_test_kernel();
 	//gsvm.write_test_kernel();
 
 	double acc = gsvm.predict(test_K, gsvm.test_labels);
 
-	//FILE* outfile = fopen("rezzies.txt", "a");
-
-	//fprintf(outfile, "\n%s\n%f\n", filename, acc); 
-	//fclose(outfile);
-
-	printf("\nauc: %f\n", acc);
+	if(arg.probability)
+		printf("auc: %f\n", acc);
 
 
 	return 0;

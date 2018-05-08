@@ -240,7 +240,7 @@ private:
 	{
     // look up in precomputed kernel matrix
     //return get_tri_array(gakco_kernel_matrix, i, j, 0);
-	return x[i][j].value;//gakco_kernel_matrix[j + i*(this->l)]; //???? *this->l why is that his tri-array, should just get nStr in here (used to be i+j*l)
+		return x[i][j].value;//gakco_kernel_matrix[j + i*(this->l)]; //???? *this->l why is that his tri-array, should just get nStr in here (used to be i+j*l)
 	}
 	double kernel_linear(int i, int j) const
 	{
@@ -392,7 +392,7 @@ double Kernel::k_function(const svm_node *x, const svm_node *y,
 		case PRECOMPUTED:  //x: test (validation), y: SV
 			return x[(int)(y->value)].value;
 		case GAKCO:
-			return 0;
+			return 0;//*(x).value;
 		default:
 			return 0;  // Unreachable 
 	}
@@ -2963,6 +2963,7 @@ svm_model *svm_load_model(const char *model_file_name)
 	for(i=0;i<m;i++)
 		model->sv_coef[i] = Malloc(double,l);
 	model->SV = Malloc(svm_node*,l);
+	model->sv_indices = Malloc(int, l);
 	svm_node *x_space = NULL;
 	if(l>0) x_space = Malloc(svm_node,elements);
 
@@ -2989,7 +2990,7 @@ svm_model *svm_load_model(const char *model_file_name)
 				break;
 			x_space[j].index = (int) strtol(idx,&endptr,10);
 			x_space[j].value = strtod(val,&endptr);
-
+			model->sv_indices[j] = x_space[j].index;
 			++j;
 		}
 		x_space[j++].index = -1;
