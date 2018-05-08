@@ -9,8 +9,8 @@ INCLUDE=-I/usr/include/libsvm-code
 OFILES = Gakco.o GakcoSVM.o libsvm-code/svm.o
 
 gakco: $(OFILES)
-	$(CXX) $(CXXFLAGS) $(OFILES) -o Gakco
-	@echo Produced Gakco executable 
+	$(CXX) $(CXXFLAGS) $(OFILES) -o iGakco
+	@echo Produced iGakco executable 
 
 clean:
 	$(RM) *.o *~
