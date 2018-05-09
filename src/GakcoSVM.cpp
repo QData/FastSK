@@ -249,7 +249,7 @@ double* GakcoSVM::construct_kernel(){
 
 	this->kernel_features = features;
 	this->kernel = K;
-	//gakco_kernel_matrix = K;//for the svm train to access it
+	gakco_kernel_matrix = K;//for the svm train to access it
 	this->nStr = nStr;
 	this->labels = label;
 	return K;
