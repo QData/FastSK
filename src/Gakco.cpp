@@ -39,6 +39,7 @@ int help() {
 	printf("\t p : (optional) Flag to generate probability of class or not. Without it, AUC can't be calculated Default is 0\n");
 	printf("\t k : (optional) Specify a kernel filename to print to. If -l is also set, this will instead be used as the filename to load the kernel from\n");
 	printf("\t o : (optional) Specify a model filename to print to. If -s is also set, this will instead be used as the filename to load the model from\n");
+	printf("\t r : (optional) 1 for GAKCO (default), 2 for LINEAR");
 	printf("NO ARGUMENT FLAGS\n");
 	printf("\t l : (optional) If set, will load the train kernel from the file specified by -k\n");
     printf("\t s : (optional) If set, will load the train kernel from the file specified by -k and will load the model from the file specified by -o\n");
@@ -160,7 +161,7 @@ int main(int argc, char *argv[]) {
 	int onlyprint = 0;
 	int nopredict = 0;
   
-	while ((c = getopt(argc, argv, "g:m:t:C:k:o:h:lsp")) != -1) {
+	while ((c = getopt(argc, argv, "g:m:t:C:k:o:h:r:lsp")) != -1) {
 		switch (c) {
 			case 'g':
 				g = atoi(optarg);
@@ -190,6 +191,12 @@ int main(int argc, char *argv[]) {
 				arg.loadkernel = 1;
 				arg.loadmodel = 1;
 				 break;
+			case 'r':
+				if (atoi(optarg) == 1)
+					arg.kernel_type = GAKCO;
+				else
+					arg.kernel_type = LINEAR;
+				break;
 			case 'h':
 				if (atoi(optarg) == 1){
 					onlyprint = 1;
@@ -241,7 +248,6 @@ int main(int argc, char *argv[]) {
 	}
 	arg.eps = .001;
 	arg.h = 0;
-	arg.kernel_type = GAKCO;
 	
 
 	//Create GakcoSVM object with specified params. Params can be modified in between kernel construction

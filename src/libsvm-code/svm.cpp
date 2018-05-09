@@ -241,6 +241,7 @@ private:
     // look up in precomputed kernel matrix
     //return get_tri_array(gakco_kernel_matrix, i, j, 0);
 		return x[i][j].value;//gakco_kernel_matrix[j + i*(this->l)]; //???? *this->l why is that his tri-array, should just get nStr in here (used to be i+j*l)
+		//return gakco_kernel_matrix[j+ i*2339];
 	}
 	double kernel_linear(int i, int j) const
 	{
@@ -901,8 +902,9 @@ int Solver::select_working_set(int &out_i, int &out_j)
 		}
 	}
 
-	if(Gmax+Gmax2 < eps || Gmin_idx == -1)
+	if(Gmax+Gmax2 < eps || Gmin_idx == -1){
 		return 1;
+	}
 
 	out_i = Gmax_idx;
 	out_j = Gmin_idx;
@@ -2551,8 +2553,12 @@ double svm_predict_values(const svm_model *model, const svm_node *x, double* dec
 		
 		double *kvalue = Malloc(double,l);
 		for(i=0;i<l;i++)
-			kvalue[i] = x[i].value;//Kernel::k_function(x,model->SV[i],model->param);
-
+			if (model->param.kernel_type == GAKCO){
+				kvalue[i] = x[i].value;//model->sv_indices[i]-1
+			}else{
+				kvalue[i] = Kernel::k_function(x,model->SV[i],model->param);
+			}
+			
 		int *start = Malloc(int,nr_class);
 		start[0] = 0;
 		for(i=1;i<nr_class;i++)
