@@ -45,6 +45,10 @@ int ** Readinput_(char *filename, char *dictFileName, int *seqLabels, int *seqLe
     
     ifstream file;
     file.open(filename);
+    if (file.fail()) {
+        printf("Error opening %s. Check that the file exists.\n", filename);
+        exit(1);
+    }
     printf("Reading %s\n", filename);
 
     output = (int **) malloc(MAXNSTR * sizeof(int *));
@@ -133,6 +137,7 @@ char * readDict (char *dictFileName, int *dictionarySize) {
         *dictionarySize = dictsize + 2;
     } else {
         perror(dictFileName);
+        exit(1);
     }
     return D;
 }
