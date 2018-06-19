@@ -279,10 +279,8 @@ int main(int argc, char *argv[]) {
 	test_K = gsvm.construct_test_kernel();
 	//gsvm.write_test_kernel();
 
-	double acc = gsvm.predict(test_K, gsvm.test_labels);
+	double auc = gsvm.predict(test_K, gsvm.test_labels);
 
-	if(arg.probability)
-		printf("auc: %f\n", acc);
 
 
 	return 0;

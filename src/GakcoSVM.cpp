@@ -633,6 +633,7 @@ double GakcoSVM::predict(double *test_K, int* test_labels){
 	int pagg =0, nagg=0; //aggregators for finding num of pos and neg samples for auc
 	double* neg = Malloc(double, nTestStr);
 	double* pos = Malloc(double, nTestStr);
+	int fp = 0, fn = 0; //counters for false postives and negatives
 	int labelind = 0;
 	for (int i =0; i < 2; i++){
 		if (this->model->label[i] == 1)
@@ -652,13 +653,18 @@ double GakcoSVM::predict(double *test_K, int* test_labels){
 		double probs[2];
 		double guess = svm_predict_probability(this->model, x, probs);
 		//double guess = svm_predict_values(this->model, x, probs);
+		
 		if (test_labels[i] > 0){
 			pos[pagg] = probs[labelind];
 			pagg += 1;
+			if(guess < 0)
+				fn++;
 		} 
 		else{
 			neg[nagg] = probs[labelind];
 			nagg += 1;
+			if(guess > 0)
+				fp++;
 		} 
 
 		// if(i <= 2 || i > nTestStr - 4){
@@ -676,6 +682,13 @@ double GakcoSVM::predict(double *test_K, int* test_labels){
 
 	double auc = calculate_auc(pos, neg, pagg, nagg);
 	printf("\nacc: %f\n", (double)correct / nTestStr);
+
+	if(this->params->probability)
+		printf("auc: %f\n", auc);
+
+	printf("fp: %d\tfn: %d\n", fp, fn);
+	printf("num pos: %d\n", pagg);
+	printf("percent pos: %f\n", ((double)pagg/(nagg+pagg)));
 
 	fclose(labelfile);
 	free(pos);
