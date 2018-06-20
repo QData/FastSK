@@ -576,28 +576,32 @@ void* GakcoSVM::train(double* K) {
 //file output name specified via command line or specially by modifying the parameter struct
 void GakcoSVM::write_files() {
 	FILE *kernelfile;
+	FILE *labelfile;
 	std::string kernelfileName = this->params->outputFilename;
 	if(kernelfileName.empty()){
 		kernelfileName = "kernel.txt";
 	}
 	printf("Writing kernel to %s\n", kernelfileName.c_str());
 	kernelfile = fopen(kernelfileName.c_str(), "w");
+	labelfile = fopen("train_labels.txt", "w");
 	int nStr = this->nStr;
 
 	for (int i = 0; i < nStr; ++i) {	
-		for (int j = 0; j < nStr; ++j) {
+		for (int j = 0; j <= i; ++j) {
 			fprintf(kernelfile, "%d:%e ", j + 1, this->kernel[i + j*nStr] );
 		}
 		fprintf(kernelfile, "\n");
+		fprintf(labelfile, "%d\n", this->labels[i]);
 	}
 	fclose(kernelfile);
+	fclose(labelfile);
 }
 
 void GakcoSVM::write_test_kernel() {
 	FILE *kernelfile;
 	FILE *labelfile;
 	kernelfile = fopen("test_Kernel.txt", "w");
-	//labelfile = fopen(this->params->labelFilename.c_str(), "w");
+	labelfile = fopen(this->params->labelFilename.c_str(), "w");
 	int nStr = this->nStr;
 	int nTestStr = this->nTestStr;
 	int num_sv = this->model->nSV[0] + this->model->nSV[1];
@@ -609,13 +613,12 @@ void GakcoSVM::write_test_kernel() {
 		{
 			fprintf(kernelfile, "%d:%e ", this->model->sv_indices[j], this->test_kernel[j + i*num_sv]);
 		}
-		//fprintf(labelfile, "%d ", this->labels[i]);
-		//fprintf(labelfile, "\n");
+		fprintf(labelfile, "%d\n", this->test_labels[i]);
 		fprintf(kernelfile, "\n");
 	}
 		
 	fclose(kernelfile);
-	//fclose(labelfile);
+	fclose(labelfile);
 }
 
 
