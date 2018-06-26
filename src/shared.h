@@ -37,6 +37,7 @@ typedef struct WorkItem
 Features *extractFeatures(int **S, int *len, int nStr, int g);
 double& tri_access(double* array, int i, int j, int N);
 unsigned int& tri_access(unsigned int* array, int i, int j, int N);
+unsigned int& tri_access(unsigned int* array, int i, int j);
 char *trimwhitespace(char *s);
 std::string trim(std::string& s);
 void cntsrtna(unsigned int *out,unsigned int *sx, int k, int r, int na);

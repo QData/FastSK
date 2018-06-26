@@ -73,6 +73,12 @@ unsigned int& tri_access(unsigned int* array, int i, int j, int N) {
 	return array[i*(i+1)/2 + j];
 	//return array[i*N + j];
 }
+unsigned int& tri_access(unsigned int* array, int i, int j) {
+	if (j > i)
+		std::swap(i, j);
+	return array[i*(i+1)/2 + j];
+	//return array[i*N + j];
+}
 
 char *trimwhitespace(char *str)
 {

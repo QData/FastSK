@@ -52,7 +52,8 @@ double* GakcoSVM::construct_kernel(){
 	
 	int nfeat;
 	double *K;
-	unsigned int *nchoosekmat, *Ks, *Ksfinal, *Ksfinalmat; //not all freed atm
+	unsigned int *nchoosekmat, *Ks, *Ksfinalmat; //not all freed atm
+	unsigned int **Ksfinal
 	int *len;
 	int **S;
 	unsigned int *sortIdx;
@@ -136,13 +137,17 @@ double* GakcoSVM::construct_kernel(){
 	}
 
 	/*Compute gapped kernel.*/
-	K = (double *)malloc(nStr*nStr * sizeof(double));
+	K = (double *)malloc(num_str_pairs * sizeof(double));
 
 	
 
-	addr = ((g - k) + 1)*nStr*nStr;
+	addr = ((g - k) + 1)*num_str_pairs;
 	
-	Ksfinal = (unsigned int *)malloc(addr * sizeof(unsigned int));
+	Ksfinal = (unsigned int **)malloc((g-k+1) * sizeof(unsigned int*));
+		for(int i =0; i < g-k+1; i++){
+			Ksfinal[i] = (unsigned int*)malloc(num_str_pairs * sizeof(unsigned int));
+			memset(Ksfinal[i], 0, sizeof(unsigned int) * num_str_pairs);
+		}
 	
 	memset(Ksfinal, 0, sizeof(unsigned int) * addr);
 	
@@ -215,7 +220,8 @@ double* GakcoSVM::construct_kernel(){
 				value = 0;
 				int x = 0;
 				for (int j2 = 0; j2 < nStr; ++j2) {
-					Ksfinal[(c1 + j1) + j2*nStr] -=  nchoosekmat[(g - j - 1) + (i - j - 1)*g] * Ksfinal[(c2 + j1) + j2*nStr];
+					//Ksfinal[(c1 + j1) + j2*nStr] -=  nchoosekmat[(g - j - 1) + (i - j - 1)*g] * Ksfinal[(c2 + j1) + j2*nStr];
+				tri_access(Ksfinal[i], j1, j2) -= nchoosekmat[(g - j - 1) + (i - j - 1)*g] * tri_access(Ksfinal[j], j1, j2);
 				}
 			}
 		}
@@ -224,16 +230,14 @@ double* GakcoSVM::construct_kernel(){
 		c1 = cnt_k[i];
 		for (int j1 = 0; j1 < nStr; ++j1) {
 			for (int j2 = 0; j2 < nStr; ++j2) {
-				K[j1 + j2*nStr] += w[i] * Ksfinal[(c1 + j1) + j2*nStr];
+				tri_access(K, j1, j2) += w[i] * tri_access(Ksfinal[i], j1, j2);
 			}
 		}
 	}
 
 	for(int i = 0; i < nStr; i++){
 		for (int j = 0; j < i; j++){
-			double temp = K[i*nStr + j] / sqrt(K[i*nStr + i] * K[j*nStr + j]);
-			K[i*nStr + j] = temp;
-			K[j*nStr + i] = temp;
+			tri_access(K, i, j) = tri_access(K,i,j) / sqrt(tri_access(K,i,i) * tri_access(K,j,j));
 		}
 	}
 	for(int i = 0; i < nStr; i++){
@@ -241,6 +245,9 @@ double* GakcoSVM::construct_kernel(){
 	}
 
 	free(cnt_k);
+	for(int i=0; i <= max_m; i++){
+		free(Ksfinal[i]);
+	}
 	free(Ksfinal);
 	free(nchoosekmat);
 	//free(feat); //can't free it cause we need it later for test kernel generation
