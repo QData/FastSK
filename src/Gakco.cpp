@@ -36,7 +36,6 @@ int help() {
 	printf("\t m : maximum number of mismatches when comparing two gmers. Constraints: 0 <= m < g\n");
 	printf("\t t : (optional) number of threads to use. Set to 1 to not parallelize kernel computation\n");
 	printf("\t C : (optional) SVM C parameter. Default is 1.0\n");
-	printf("\t p : (optional) Flag to generate probability of class or not. Without it, AUC can't be calculated Default is 0\n");
 	printf("\t k : (optional) Specify a kernel filename to print to. If -l is also set, this will instead be used as the filename to load the kernel from\n");
 	printf("\t o : (optional) Specify a model filename to print to. If -s is also set, this will instead be used as the filename to load the model from\n");
 	printf("\t r : (optional) 1 for GAKCO (default), 2 for LINEAR");
@@ -366,12 +365,10 @@ int main(int argc, char *argv[]) {
 		return 0;
 
 	test_K = gsvm.construct_test_kernel();
-	//gsvm.write_test_kernel();
+	gsvm.write_test_kernel();
 
-	double acc = gsvm.predict(test_K, gsvm.test_labels);
+	double auc = gsvm.predict(test_K, gsvm.test_labels);
 
-	if(arg.probability)
-		printf("auc: %f\n", acc);
 
 
 	return 0;
