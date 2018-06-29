@@ -138,8 +138,8 @@ double* GakcoSVM::construct_kernel(){
 
 	/*Compute gapped kernel.*/
 	K = (double *)malloc(num_str_pairs * sizeof(double));
+	memset(K, 0, num_str_pairs*sizeof(double));
 
-	
 
 	addr = ((g - k) + 1)*num_str_pairs;
 	
@@ -593,7 +593,7 @@ void GakcoSVM::write_files() {
 
 	for (int i = 0; i < nStr; ++i) {	
 		for (int j = 0; j <= i; ++j) {
-			fprintf(kernelfile, "%d:%e ", j + 1, this->kernel[i + j*nStr] );
+			fprintf(kernelfile, "%d:%e ", j + 1, tri_access(this->kernel,i,j));
 		}
 		fprintf(kernelfile, "\n");
 		fprintf(labelfile, "%d\n", this->labels[i]);

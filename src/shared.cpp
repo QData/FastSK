@@ -304,7 +304,7 @@ void countAndUpdateTri(unsigned int *outK, unsigned int *sx, unsigned int *g, in
 		else
 		{
 			for (j = startInd;j <= endInd; ++j)
-				for (j1 = startInd;j1 <= endInd; ++j1)
+				for (j1 = startInd;j1 <= j; ++j1)
 					tri_access(outK, g[j1], g[j])++;
 		}
    }
