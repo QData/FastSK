@@ -53,7 +53,7 @@ double* GakcoSVM::construct_kernel(){
 	int nfeat;
 	double *K;
 	unsigned int *nchoosekmat, *Ks, *Ksfinalmat; //not all freed atm
-	unsigned int **Ksfinal
+	unsigned int **Ksfinal;
 	int *len;
 	int **S;
 	unsigned int *sortIdx;
@@ -149,7 +149,6 @@ double* GakcoSVM::construct_kernel(){
 			memset(Ksfinal[i], 0, sizeof(unsigned int) * num_str_pairs);
 		}
 	
-	memset(Ksfinal, 0, sizeof(unsigned int) * addr);
 	
 	elems = (int *)malloc(g * sizeof(int));
 	
@@ -191,7 +190,7 @@ double* GakcoSVM::construct_kernel(){
 	printf("Computing mismatch profiles using %d threads...\n", numThreads);
 	std::vector<std::thread> threads;
 	for (int i = 0; i < numThreads; i++) {
-		threads.push_back(std::thread(&build_cumulative_mismatch_profiles, workQueue, queueSize, i, numThreads,
+		threads.push_back(std::thread(&build_cumulative_mismatch_profiles_tri, workQueue, queueSize, i, numThreads,
 			elems, features, Ksfinal, cnt_k, feat, g, na, nfeat, nStr, mutexes));
 	}
 	for(auto &t : threads) {
@@ -219,9 +218,8 @@ double* GakcoSVM::construct_kernel(){
 			for (int j1 = 0; j1 < nStr; ++j1) {
 				value = 0;
 				int x = 0;
-				for (int j2 = 0; j2 < nStr; ++j2) {
-					//Ksfinal[(c1 + j1) + j2*nStr] -=  nchoosekmat[(g - j - 1) + (i - j - 1)*g] * Ksfinal[(c2 + j1) + j2*nStr];
-				tri_access(Ksfinal[i], j1, j2) -= nchoosekmat[(g - j - 1) + (i - j - 1)*g] * tri_access(Ksfinal[j], j1, j2);
+				for (int j2 = 0; j2 <= j1; ++j2) {
+					tri_access(Ksfinal[i], j1, j2) -= nchoosekmat[(g - j - 1) + (i - j - 1)*g] * tri_access(Ksfinal[j], j1, j2);
 				}
 			}
 		}
@@ -229,7 +227,7 @@ double* GakcoSVM::construct_kernel(){
 	for (int i = 0; i <= g - k; i++) {
 		c1 = cnt_k[i];
 		for (int j1 = 0; j1 < nStr; ++j1) {
-			for (int j2 = 0; j2 < nStr; ++j2) {
+			for (int j2 = 0; j2 <= j1; ++j2) {
 				tri_access(K, j1, j2) += w[i] * tri_access(Ksfinal[i], j1, j2);
 			}
 		}
@@ -241,7 +239,7 @@ double* GakcoSVM::construct_kernel(){
 		}
 	}
 	for(int i = 0; i < nStr; i++){
-		K[i*nStr + i] = 1.0;
+		tri_access(K,i,i) = 1.0;
 	}
 
 	free(cnt_k);
