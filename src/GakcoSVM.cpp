@@ -72,6 +72,7 @@ double* GakcoSVM::construct_kernel(){
 	strcpy(opfilename, this->params->outputFilename.c_str());
 	g = this->params->g;
 	k = this->params->k;
+	m = g - k;
 	numThreads = this->params->threads;
 
 	label = (int *) malloc(MAXNSTR * sizeof(int));
@@ -148,7 +149,7 @@ double* GakcoSVM::construct_kernel(){
 	
 	elems = (int *)malloc(g * sizeof(int));
 	
-	cnt_k = (int *)malloc(nfeat * sizeof(int));
+	cnt_k = (int *)malloc((m+1) * sizeof(int));
 	for (int i = 0; i < g; ++i) {
 		elems[i] = i;
 	}

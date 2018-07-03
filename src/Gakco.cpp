@@ -85,8 +85,8 @@ void build_cumulative_mismatch_profiles(WorkItem *workQueue, int queueSize, int 
 		unsigned int *cnt_comb = (unsigned int *) malloc(2 * sizeof(unsigned int)); //
 		unsigned int *feat1 = (unsigned int *) malloc(nfeat * g * sizeof(unsigned int)); //the sorted features once mismatch positions are removed
 		
-		int *pos = (int *) malloc(nfeat * sizeof(int));
-		memset(pos, 0, sizeof(int) * nfeat);
+		int *pos = (int *) malloc(k * sizeof(int));
+		memset(pos, 0, sizeof(int) * k);
 
 		unsigned int *out = (unsigned int *) malloc(k * num_comb * sizeof(unsigned int));
 		unsigned int *cnt_m = (unsigned int *) malloc(g * sizeof(unsigned int));
