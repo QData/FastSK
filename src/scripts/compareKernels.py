@@ -33,7 +33,7 @@ def main():
                     colon = arr1[i].find(":")
                     if colon == -1:
                         continue
-                    if abs(float(arr1[i][colon+1:]) - float(arr2[i][colon+1:])) > float(0.0001):
+                    if abs(float(arr1[i][colon+1:]) - float(arr2[i][colon+1:])) > float(0.000001):
                         #print(arr1[i] + "  vs  " + arr2[i])
                         mismatch+=1
                         if(len(graph)>1000 and len(graph) < 1010):

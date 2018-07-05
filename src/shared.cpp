@@ -280,7 +280,7 @@ void countAndUpdateTri(unsigned int *outK, unsigned int *sx, unsigned int *g, in
 		}
 		endInd= (i<r) ? (i-1):(r-1);
 
-		if ((long int)endInd-startInd+1>2)
+		if ((long int)endInd-startInd+1>1)
 		{
 			memset(ucnts, 0, nStr * sizeof(int));
 	        for (j = startInd;j <= endInd; ++j)  ucnts[g[j]]++;
