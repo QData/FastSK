@@ -240,8 +240,8 @@ private:
 	{
     // look up in precomputed kernel matrix
     //return get_tri_array(gakco_kernel_matrix, i, j, 0);
-		return x[i][j].value;//gakco_kernel_matrix[j + i*(this->l)]; //???? *this->l why is that his tri-array, should just get nStr in here (used to be i+j*l)
-		//return gakco_kernel_matrix[j+ i*2339];
+		//return x[i][j].value;//gakco_kernel_matrix[j + i*(this->l)]; //???? *this->l why is that his tri-array, should just get nStr in here (used to be i+j*l)
+		return tri_access(gakco_kernel_matrix, i, j);
 	}
 	double kernel_linear(int i, int j) const
 	{
