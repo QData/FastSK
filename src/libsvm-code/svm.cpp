@@ -2554,7 +2554,13 @@ double svm_predict_values(const svm_model *model, const svm_node *x, double* dec
 		double *kvalue = Malloc(double,l);
 		for(i=0;i<l;i++)
 			if (model->param.kernel_type == GAKCO){
-				kvalue[i] = x[i].value;//model->sv_indices[i]-1
+				//handles case of prediction as part of probability training
+				if(x[0].value == x[0].index){
+					kvalue[i] = tri_access(gakco_kernel_matrix, x[0].index, i);
+				}else{
+					//this is the case that we are submitting x by way of the GakcoSVM.cpp:predict function
+					kvalue[i] = x[i].value;//model->sv_indices[i]-1
+				}
 			}else{
 				kvalue[i] = Kernel::k_function(x,model->SV[i],model->param);
 			}
