@@ -34,7 +34,7 @@ Features *extractFeatures(int **S, int *len, int nStr, int g) {
 	}
 	printf("numF=%d, sumLen=%d\n", nfeat, sumLen); 
 	group = (int *)malloc(nfeat * sizeof(int));
-	features = (int *)malloc(nfeat*g * sizeof(int *));
+	features = (int *)malloc(nfeat*g * sizeof(int));
 	c = 0;\
 	for (i = 0; i < nStr; ++i) {
 		s = S[i];

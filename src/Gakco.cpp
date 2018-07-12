@@ -83,7 +83,7 @@ void build_cumulative_mismatch_profiles_tri(WorkItem *workQueue, int queueSize, 
 		
 		unsigned int *Ks = (unsigned int *) malloc(num_str_pairs * sizeof(unsigned int)); //where this thread will store its work
 		unsigned int *sortIdx = (unsigned int *) malloc(nfeat * sizeof(unsigned int)); //an array of gmer indices associated with group_srt and features_srt
-		unsigned int *features_srt = (unsigned int *) malloc(nfeat * g * sizeof(unsigned int *)); //sorted features
+		unsigned int *features_srt = (unsigned int *) malloc(nfeat * g * sizeof(unsigned int)); //sorted features
 		unsigned int *group_srt = (unsigned int *) malloc(nfeat * sizeof(unsigned int)); //the gmer numbers; associated with features_srt and sortIdx
 		unsigned int *cnt_comb = (unsigned int *) malloc(2 * sizeof(unsigned int)); //
 		unsigned int *feat1 = (unsigned int *) malloc(nfeat * g * sizeof(unsigned int)); //the sorted features once mismatch positions are removed
@@ -135,6 +135,7 @@ void build_cumulative_mismatch_profiles_tri(WorkItem *workQueue, int queueSize, 
 		free(feat1);
 		free(cnt_comb);
 		free(pos);
+		free(combinations);
 
 		//Check if the thread needs to handle more mismatch profiles
 		itemNum += numThreads;

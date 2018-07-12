@@ -106,6 +106,14 @@ double* GakcoSVM::construct_kernel(){
 
 	/*Extract g-mers.*/
 	features = extractFeatures(S, len, nStr, g);
+
+	//now we can free the strings because we have the features
+	for(int i = 0; i < nStr; i++){
+		if(S[i] != NULL)
+			free(S[i]);
+	}
+	free(len);
+	free(S);
 	
 	nfeat = (*features).n;
 	feat = (*features).features;
@@ -197,6 +205,11 @@ double* GakcoSVM::construct_kernel(){
 		t.join();
 	}
 	printf("\n");
+
+	//no longer need the features list so can free it here
+	free(features->features);
+	free(features->group);
+	free(features);
 	
 	// hm coefficients
 	nchoosekmat = (unsigned int *) malloc(g * g * sizeof(unsigned int));
@@ -346,17 +359,27 @@ double* GakcoSVM::construct_test_kernel(){
 			svcount++;
 		}else{
 			free(S[i]);
+			S[i] = NULL;
 		}
 	}
 
-	//now we can free the length arrays and the arrays holding the references to the strings
-	free(test_len);
-	free(len);
-	free(S);
-	free(test_S);
-
 
 	features = extractFeatures(finalS, finalLen, totalStr, g);
+
+	//now we can free the strings because we have the features
+	for(int i = 0; i < nStr; i++){
+		if(S[i] != NULL)
+			free(S[i]);
+	}
+	for(int i = 0; i < nTestStr; i++){
+		free(test_S[i]);
+	}
+	free(test_len);
+	free(len);
+	free(finalLen);
+	free(S);
+	free(test_S);
+	free(finalS);
 
 
 	/* Precompute weights hm.*/
@@ -435,6 +458,11 @@ double* GakcoSVM::construct_test_kernel(){
 		t.join();
 	}
 	printf("\n");
+
+	//no longer need the features list so can free it here
+	free(features->features);
+	free(features->group);
+	free(features);
 	
 	// hm coefficients
 	nchoosekmat = (unsigned int *) malloc(g * g * sizeof(unsigned int));
@@ -589,6 +617,7 @@ void* GakcoSVM::train(double* K) {
 	free(x);
 	free(x_space);
 	free(prob);
+	free(this->kernel);
 
 }
 
