@@ -12,7 +12,7 @@
 
 using namespace std;
 
-int * string_replace (const char *s, char *d);
+int * string_replace (const char *s, char *d, int seqLength);
 int help2();
 char * readDict (char *filename, int *na);
 int dictsize;
@@ -80,9 +80,8 @@ int ** Readinput_(char *filename, char *dictFileName, int *seqLabels, int *seqLe
                 if (seqLengths[row] < minlen[0]) {
                     minlen[0] = seqLengths[row];
                 }
-                output[row] = (int *) malloc(seqLengths[row] * sizeof(int));
-                memset(output[row], 0, sizeof(int) * seqLengths[row]);
-                output[row] = string_replace(seq, d);
+
+                output[row] = string_replace(seq, d, seqLengths[row]);
                 row++;
                 isLabel = true;
 
@@ -97,6 +96,11 @@ int ** Readinput_(char *filename, char *dictFileName, int *seqLabels, int *seqLe
         }
 
     }
+    //final realloc to relieve memory waste
+    output = (int**)realloc(output, row*sizeof(int*));
+    seqLengths = (int*)realloc(seqLengths, row*sizeof(int));
+    seqLabels = (int*)realloc(seqLabels, row*sizeof(int));
+
     nStr[0] = row;
     file.close();
     for (int kk = 0; kk < *nStr; kk++) {
@@ -145,11 +149,12 @@ char * readDict (char *dictFileName, int *dictionarySize) {
 
 //converts g-mers into numerical representation
 
-int * string_replace (const char *s, char *d) {
+int * string_replace (const char *s, char *d, int seqLength) {
     int i, count, found;
     int *array;
     found = 0;
-    array = (int *) malloc(STRMAXLEN*sizeof(int));
+    array = (int *) malloc(seqLength*sizeof(int));
+    memset(array, 0, seqLength*sizeof(int));
     count = 0;
     while(s[count] != '\0') {
         for (i = 0; i <= dictsize; i++) {

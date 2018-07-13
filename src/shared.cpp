@@ -34,7 +34,7 @@ Features *extractFeatures(int **S, int *len, int nStr, int g) {
 	}
 	printf("numF=%d, sumLen=%d\n", nfeat, sumLen); 
 	group = (int *)malloc(nfeat * sizeof(int));
-	features = (int *)malloc(nfeat*g * sizeof(int *));
+	features = (int *)malloc(nfeat*g * sizeof(int));
 	c = 0;\
 	for (i = 0; i < nStr; ++i) {
 		s = S[i];
@@ -60,7 +60,7 @@ Features *extractFeatures(int **S, int *len, int nStr, int g) {
 // i    : row
 // j    : col
 // N    : length of one side
-double& tri_access(double* array, int i, int j, int N) {
+double& tri_access(double* array, int i, int j) {
 	if (j > i)
 		std::swap(i, j);
 	return array[i*(i+1)/2 + j];
@@ -68,6 +68,12 @@ double& tri_access(double* array, int i, int j, int N) {
 	}
 
 unsigned int& tri_access(unsigned int* array, int i, int j, int N) {
+	if (j > i)
+		std::swap(i, j);
+	return array[i*(i+1)/2 + j];
+	//return array[i*N + j];
+}
+unsigned int& tri_access(unsigned int* array, int i, int j) {
 	if (j > i)
 		std::swap(i, j);
 	return array[i*(i+1)/2 + j];
@@ -222,6 +228,84 @@ void countAndUpdate(unsigned int *outK, unsigned int *sx, unsigned int *g, int k
 			for (j = startInd;j <= endInd; ++j)
 				for (j1 = startInd;j1 <= endInd; ++j1)
 					outK[ g[j]+nStr*g[j1] ]++;
+		}
+   }
+  free(updind);
+  free(ucnts);
+  free(curfeat);
+
+}
+
+//update cumulative mismatch profile for a triangular outK
+void countAndUpdateTri(unsigned int *outK, unsigned int *sx, unsigned int *g, int k, int r, int nStr)
+{
+   bool same;
+   long int i, j;
+   long int cu;
+   long int startInd, endInd, j1;
+   int *curfeat = (int *)malloc(k*sizeof(int));
+   int *ucnts= (int *)malloc(nStr*sizeof(int));
+   int num_str_pairs = nStr * (nStr+1) / 2;
+
+   int *updind = (int *)malloc(nStr*sizeof(int));
+   memset(updind, 0, sizeof(int) * nStr);
+   memset(outK, 0, sizeof(unsigned int) * num_str_pairs);
+   
+   i = 0;
+   while (i<r)
+   {
+		for (j = 0; j < k; ++j)
+			curfeat[j]=sx[i+j*r]; 
+     	same=1;
+		for (j = 0;j < k; ++j)
+		if (curfeat[j]!=sx[i+j*r])
+		{
+			same=false;
+			break;
+		}
+
+		same=true;
+		startInd=i;
+		while (same && i<r)
+		{
+			i++;
+			if (i >= r) break;
+			same = true;
+			for (j = 0; j < k; ++j)
+				if (curfeat[j]!=sx[i+j*r])
+				{
+					same=false;
+					break;
+				}
+		}
+		endInd= (i<r) ? (i-1):(r-1);
+
+		if ((long int)endInd-startInd+1>1)
+		{
+			memset(ucnts, 0, nStr * sizeof(int));
+	        for (j = startInd;j <= endInd; ++j)  ucnts[g[j]]++;
+			cu = 0;
+			for (j=0;j<nStr;j++)
+			{
+				if (ucnts[j]>0)
+				{
+					updind[cu] = j;
+					cu++;
+				}
+	      	}
+			for (j=0;j<cu;j++)
+			{
+			    for (j1=j;j1<cu;j1++)
+				{
+					tri_access(outK, updind[j1], updind[j]) += ucnts[updind[j]]*ucnts[updind[j1]];
+				}
+			}
+		}
+		else
+		{
+			for (j = startInd;j <= endInd; ++j)
+				for (j1 = startInd;j1 <= j; ++j1)
+					tri_access(outK, g[j1], g[j])++;
 		}
    }
   free(updind);

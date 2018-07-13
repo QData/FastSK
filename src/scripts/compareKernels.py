@@ -8,9 +8,9 @@ import matplotlib.cm as cm
 import numpy as np
 
 def main():
-    kernel1 = "/mnt/c/Users/student/gakco/eamon/TRAINkernel.txt"
-    kernel2 = "/mnt/c/Users/student/gakco/eamon/REMSVkernel.txt"
-    #kernel1 ="/mnt/c/Users/student/gakco/eamon/kernel.txt"
+    kernel1 = "/home/eamon/repos/gakco/release/src/kernel.txt"
+    kernel2 = "/home/eamon/repos/igakco/src/train_kernel.txt"
+    #kernel1 ="/home/eamon/repos/igakco/src/kernel.txt"
     #kernel2 = "/mnt/c/Users/student/gakco/alibsvm/kernel.txt"
     
     graph = []
@@ -33,16 +33,20 @@ def main():
                     colon = arr1[i].find(":")
                     if colon == -1:
                         continue
-                    if abs(float(arr1[i][colon+1:]) - float(arr2[i][colon+1:])) > float(0.01):
+                    if abs(float(arr1[i][colon+1:]) - float(arr2[i][colon+1:])) > float(0.000001):
                         #print(arr1[i] + "  vs  " + arr2[i])
                         mismatch+=1
+                        if(len(graph)>1000 and len(graph) < 1010):
+                            print(repr(len(graph)+1)+" " + arr1[i])
                         linemm.append(1)
                     else:
                         linemm.append(0)
                 graph.append(linemm)
             print("\nTotal: " + repr(total) + "\nMismatch: " + repr(mismatch))
 
+    max_len = len(graph[-1])
     data = np.array(graph)
+    data = np.asarray([np.pad(a, (0, max_len - len(a)), 'constant', constant_values=0) for a in graph])
     length = data.shape[0]
     width = data.shape[1]
     x, y = np.meshgrid(np.arange(length), np.arange(width))
@@ -52,7 +56,7 @@ def main():
     #ax.plot_surface(x, y, data)
     plt.imshow(data,
            interpolation='nearest', cmap="Greys")
-    plt.savefig("/mnt/c/Users/student/gakco/eamon/compare.png")
+    plt.savefig("/home/eamon/repos/igakco/src/compare.png")
 
 
 if __name__ == '__main__':
