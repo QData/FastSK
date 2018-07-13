@@ -137,10 +137,10 @@ double* GakcoSVM::construct_kernel(){
 	//if this gakco is loading a kernel we don't need to calculate it
 	if(this->params->loadkernel || this->params->loadmodel){
 		this->kernel_features = features;
-		//gakco_kernel_matrix = K;//for the svm train to access it
 		this->nStr = nStr;
 		this->labels = label;
 		this->load_kernel(this->params->outputFilename);
+		gakco_kernel_matrix = this->kernel;//for the svm train to access it
 		return this->kernel;
 	}
 
@@ -776,7 +776,7 @@ double *GakcoSVM::load_kernel(std::string kernel_name){
 			lines++;
 		}
 		//int width = find last number for test kernel loading too
-		K = (double*) malloc(lines * lines * sizeof(double));
+		K = (double*) malloc(lines * (lines+1) / 2 * sizeof(double));
 		//return the cursor to the beginning of the file
 		inpfile.clear();
 		inpfile.seekg(0, std::ios::beg);
@@ -796,5 +796,6 @@ double *GakcoSVM::load_kernel(std::string kernel_name){
 	if(this->kernel != NULL)
 		free(this->kernel);
 	this->kernel = K;
+
 	return K;
 }	

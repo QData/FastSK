@@ -8,9 +8,9 @@ import matplotlib.cm as cm
 import numpy as np
 
 def main():
-    #kernel1 = "/home/eamon/repos/gakco/release/src/kernel.txt"
+    kernel1 = "/home/eamon/repos/gakco/release/src/kernel.txt"
     kernel2 = "/home/eamon/repos/igakco/src/train_kernel.txt"
-    kernel1 ="/home/eamon/repos/igakco/src/kernel.txt"
+    #kernel1 ="/home/eamon/repos/igakco/src/kernel.txt"
     #kernel2 = "/mnt/c/Users/student/gakco/alibsvm/kernel.txt"
     
     graph = []
