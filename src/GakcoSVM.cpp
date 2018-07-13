@@ -562,23 +562,41 @@ void* GakcoSVM::train(double* K) {
 	prob->l = this->nStr;
 	prob->y = Malloc(double, prob->l);
 	x = Malloc(svm_node*, prob->l);
-	x_space = Malloc(struct svm_node, prob->l); // Kind-of hacky, but we're just going to have 1 node per thing.
 
-	for (int i = 0; i < prob->l; i++){
+	if(this->params->kernel_type == GAKCO){
+		x_space = Malloc(struct svm_node, prob->l); // Kind-of hacky, but we're just going to have 1 node per thing.
 
-		// svm_node* x_space = Malloc(svm_node, prob->l + 1);
+		for (int i = 0; i < prob->l; i++){
 
-		// for (int j = 0; j < prob->l; j++){
-		// 	x_space[j].index = j+1;
-		// 	x_space[j].value = K[i * prob->l + j];
-		// }
+			// svm_node* x_space = Malloc(svm_node, prob->l + 1);
 
-		// x_space[prob->l].index = -1;
-		x_space[i].index = i;
-		x_space[i].value = i;
-		x[i] = &x_space[i];
-		prob->y[i] = this->labels[i];
+			// for (int j = 0; j < prob->l; j++){
+			// 	x_space[j].index = j+1;
+			// 	x_space[j].value = K[i * prob->l + j];
+			// }
 
+			// x_space[prob->l].index = -1;
+			x_space[i].index = i;
+			x_space[i].value = i;
+			x[i] = &x_space[i];
+			prob->y[i] = this->labels[i];
+
+		}
+	}else if(this->params->kernel_type == LINEAR){
+		for (int i = 0; i < prob->l; i++){
+
+			svm_node* x_space = Malloc(svm_node, prob->l + 1);
+
+			for (int j = 0; j < prob->l; j++){
+				x_space[j].index = j+1;
+				x_space[j].value = tri_access(K,i,j);
+			}
+
+			x_space[prob->l].index = -1;
+			x[i] = &x_space[i];
+			prob->y[i] = this->labels[i];
+
+		}
 	}
 
 	prob->x = x;
