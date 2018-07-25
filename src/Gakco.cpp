@@ -347,7 +347,8 @@ int main(int argc, char *argv[]) {
 	//still needed even if we are loading a kernel as it reads labels and dataset info, but won't calculate if it doesn't need to.
 	K = gsvm.construct_kernel();
 	if(!arg.loadkernel && !arg.outputFilename.empty()){
-		gsvm.write_files();
+		//gsvm.write_files();
+		gsvm.write_libsvm_kernel();
 	}
 
 	//exit program if only need to print out the kernel
