@@ -50,6 +50,7 @@ public:
 	GakcoSVM(gakco_param* arg);
 	double* construct_kernel();
 	double* construct_test_kernel();
+	void* construct_linear_kernel();
 	void* train(double* K);
 	double predict(double* test_K, int* test_labels);
 	void write_files();

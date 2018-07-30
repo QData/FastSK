@@ -343,12 +343,19 @@ int main(int argc, char *argv[]) {
 	//or training to make changes to how it behaves next time.
 	GakcoSVM gsvm = GakcoSVM(&arg);
 
+	if(arg.loadkernel)
+		gsvm.load_kernel(arg.outputFilename);
+
 	//returns a pointer to the kernel matrix, and also stores it as a member variable
 	//still needed even if we are loading a kernel as it reads labels and dataset info, but won't calculate if it doesn't need to.
-	K = gsvm.construct_kernel();
+	if(arg.kernel_type == GAKCO)
+		K = gsvm.construct_kernel();
+	else if(arg.kernel_type == LINEAR)
+		gsvm.construct_linear_kernel();
+
 	if(!arg.loadkernel && !arg.outputFilename.empty()){
-		//gsvm.write_files();
-		gsvm.write_libsvm_kernel();
+		gsvm.write_files();
+		//gsvm.write_libsvm_kernel();
 	}
 
 	//exit program if only need to print out the kernel
@@ -359,17 +366,17 @@ int main(int argc, char *argv[]) {
 		gsvm.model = svm_load_model(arg.modelName.c_str());
 	}else{
 		//trains the SVM on the provided dataset, outputs a model into modelName if provided
-		gsvm.train(K);
+		gsvm.train(gsvm.kernel);
 	}
-
 	
 	if(nopredict)
 		return 0;
+	if(arg.kernel_type == GAKCO)
+		test_K = gsvm.construct_test_kernel();
 
-	test_K = gsvm.construct_test_kernel();
 	gsvm.write_test_kernel();
 
-	double auc = gsvm.predict(test_K, gsvm.test_labels);
+	double auc = gsvm.predict(gsvm.test_kernel, gsvm.test_labels);
 
 
 
