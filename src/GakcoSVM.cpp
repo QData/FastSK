@@ -975,6 +975,7 @@ double GakcoSVM::predict(double *test_K, int* test_labels){
 		if (this->model->label[i] == 1)
 			labelind = i;
 	}
+
 	FILE* labelfile, *predictionfile;
 	labelfile = fopen(this->params->labelFilename.c_str(), "w");
 	std::string predfile = "probs."+this->params->testFilename.substr(this->params->testFilename.find("data")+5);
@@ -1001,6 +1002,7 @@ double GakcoSVM::predict(double *test_K, int* test_labels){
 		double guess = svm_predict_probability(this->model, x, probs);
 		//double guess = svm_predict_values(this->model, x, probs);
 		
+
 		if (test_labels[i] > 0){
 			pos[pagg] = probs[labelind];
 			pagg += 1;
@@ -1023,15 +1025,17 @@ double GakcoSVM::predict(double *test_K, int* test_labels){
 		}
 	}
 
-	double auc = calculate_auc(pos, neg, pagg, nagg);
+	
 	printf("\nacc: %f\n", (double)correct / nTestStr);
 
-	if(this->params->probability)
+	if(this->params->probability && this->numClasses){
+		double auc = calculate_auc(pos, neg, pagg, nagg);
 		printf("auc: %f\n", auc);
 
-	printf("fp: %d\tfn: %d\n", fp, fn);
-	printf("num pos: %d\n", pagg);
-	printf("percent pos: %f\n", ((double)pagg/(nagg+pagg)));
+		printf("fp: %d\tfn: %d\n", fp, fn);
+		printf("num pos: %d\n", pagg);
+		printf("percent pos: %f\n", ((double)pagg/(nagg+pagg)));
+	}
 
 	fclose(labelfile);
 	fclose(predictionfile);

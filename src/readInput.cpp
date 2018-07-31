@@ -64,7 +64,7 @@ int ** Readinput_(char *filename, char *dictFileName, int *seqLabels, int *seqLe
                 label = line.substr(pos + 1);
                 if (label.length() > 2) labelErrorAndExit(label);
                 int asNum = (stoi(label) == 0) ? -1 : stoi(label);
-                if (asNum != -1 && asNum != 1) labelErrorAndExit(label);
+                //if (asNum != -1 && asNum != 1) labelErrorAndExit(label);
                 seqLabels[row] = asNum;
                 isLabel = false;
             } else {
@@ -136,7 +136,7 @@ char * readDict (char *dictFileName, int *dictionarySize) {
             i++;
         }
         dictsize = i - 1;
-        printf("Dictionary size = %d (+1 for uknown character)\n", dictsize + 1);
+        printf("Dictionary size = %d (+1 for unknown character)\n", dictsize + 1);
         fclose(inpfile);
         *dictionarySize = dictsize + 2;
     } else {
@@ -144,6 +144,10 @@ char * readDict (char *dictFileName, int *dictionarySize) {
         exit(1);
     }
     return D;
+}
+
+char* parseDict(int* dictionarySize){
+
 }
 
 

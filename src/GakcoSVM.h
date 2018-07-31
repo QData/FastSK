@@ -46,6 +46,7 @@ public:
 	int* test_labels = NULL;
 	long int nStr; //here instead of params because it is not set by user ever.
 	long int nTestStr;
+	int numClasses = 2;
 
 	GakcoSVM(gakco_param* arg);
 	double* construct_kernel();
