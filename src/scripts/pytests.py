@@ -13,14 +13,14 @@ datapath = '../data'
 resultspath = '/localtmp/ec3bd/testresults'
 
 datasets = [
-			# {'name':'1.1', 'g':7, 'm':2, 'c': .01},
-			# {'name':'1.34', 'g':10, 'm':9, 'c': .1},
-			# {'name':'2.19', 'g':7, 'm':6, 'c': 100},
-			# {'name':'2.31', 'g':10, 'm':3, 'c': 10},
-			# {'name':'2.1', 'g':10, 'm':7, 'c': 10},
-			# {'name':'2.34', 'g':7, 'm':1, 'c': .01},
-			# {'name':'2.41', 'g':10, 'm':4, 'c': .01},
-			# {'name':'2.8', 'g':10, 'm':9, 'c': 10},
+			{'name':'1.1', 'g':7, 'm':2, 'c': .01},
+			{'name':'1.34', 'g':10, 'm':9, 'c': .1},
+			{'name':'2.19', 'g':7, 'm':6, 'c': 100},
+			{'name':'2.31', 'g':10, 'm':3, 'c': 10},
+			{'name':'2.1', 'g':10, 'm':7, 'c': 10},
+			{'name':'2.34', 'g':7, 'm':1, 'c': .01},
+			{'name':'2.41', 'g':10, 'm':4, 'c': .01},
+			{'name':'2.8', 'g':10, 'm':9, 'c': 10},
 			{'name':'3.19', 'g':8, 'm':7, 'c': .1},
 			{'name':'3.25', 'g':10, 'm':2, 'c': 1},
 			{'name':'3.33', 'g':10, 'm':5, 'c': .01},
@@ -127,7 +127,7 @@ def test_igakco():
 				outfile.write(infile.read())
 
 		#command = ["./iGakco", "-g", repr(data['g']), "-m", repr(data['m']), "-t", repr(20), '-C', repr(data['c']), "-p", "-k", os.path.join(outputpath, "kernel.txt"), '-o', os.path.join(outputpath, "model.txt"), 'sequences.fasta', 'sequences.fasta', dictfile, os.path.join(outputpath, "labels.txt")]
-		command = "./iGakco -r 2 -g "+ repr(data['g']) + " -m " + repr(data['m']) + " -t "+ repr(20) + ' -C ' + repr(data['c']) + " -p " + " -k "+ os.path.join(outputpath, "kernel.txt") + ' -o ' + os.path.join(outputpath, "model.txt") +" "+ os.path.join(datapath, data['name']+".train.fasta")+ " "+os.path.join(datapath, data['name']+".test.fasta") +" "+ dictfile + " "+ os.path.join(outputpath, "labels.txt")
+		command = "./iGakco -h 1 -r 2 -g "+ repr(data['g']) + " -m " + repr(data['m']) + " -t "+ repr(5*data['g']) + ' -C ' + repr(data['c']) + " -p " + " -k "+ os.path.join(outputpath, "kernel.txt") + ' -o ' + os.path.join(outputpath, "model.txt") +" "+ os.path.join(datapath, data['name']+".train.fasta")+ " "+os.path.join(datapath, data['name']+".test.fasta") +" "+ dictfile + " "+ os.path.join(outputpath, "labels.txt")
 		#Execute the command and time it
 		start_time = time.time()
 		output = subprocess.call(command, shell=True)
@@ -217,7 +217,7 @@ def test_gkm():
 
 		gkmify(trainfile, "pos.fa", "neg.fa")
 
-		command = ["valgrind", "--tool=massif", "./gkmsvm_kernel", "-l",repr(data['g']), "-k",repr(data['g']-data['m']), "-d",repr(data['m']), "-R", "-A", dictfile, "-T", repr(20), "pos.fa", "neg.fa", os.path.join(outputpath, "kernel.txt")]
+		command = ["./gkmsvm_kernel", "-l",repr(data['g']), "-k",repr(data['g']-data['m']), "-d",repr(data['m']), "-R", "-A", dictfile, "-T", repr(5*data['g']), "pos.fa", "neg.fa", os.path.join(outputpath, "kernel.txt")]
 		#"-R", '-A', dictfile, '-T', repr(data['m']),
 
 
@@ -227,16 +227,16 @@ def test_gkm():
 		exec_time = time.time() - start_time
 
 		#move massif file over to output path for analysis
-		subprocess.call("mv massif.out.* "+ os.path.join(outputpath, "massif.out"), shell=True)
+		# subprocess.call("mv massif.out.* "+ os.path.join(outputpath, "massif.out"), shell=True)
 
-		command = ["./gkmsvm_train", os.path.join(outputpath, "kernel.txt"), "pos.fa", "neg.fa", outputpath+"/svmtrain"]
-		trainoutput = subprocess.check_output(command)
+		# command = ["./gkmsvm_train", os.path.join(outputpath, "kernel.txt"), "pos.fa", "neg.fa", outputpath+"/svmtrain"]
+		# trainoutput = subprocess.check_output(command)
 		
 
-		gkmify(testfile, "testseq.fa", "bunkparam", True)
+		# gkmify(testfile, "testseq.fa", "bunkparam", True)
 
-		command = ["./gkmsvm_classify", "-l", repr(data['g']), "-k",repr(data['g']-data['m']), "-d",repr(data['m']), "-R", "-A", dictfile, "testseq.fa", os.path.join(outputpath, "svmtrain_svseq.fa"), os.path.join(outputpath, "svmtrain_svalpha.out"), os.path.join(outputpath, "probs.txt")]
-		classifyoutput = subprocess.check_output(command)
+		# command = ["./gkmsvm_classify", "-l", repr(data['g']), "-k",repr(data['g']-data['m']), "-d",repr(data['m']), "-R", "-A", dictfile, "testseq.fa", os.path.join(outputpath, "svmtrain_svseq.fa"), os.path.join(outputpath, "svmtrain_svalpha.out"), os.path.join(outputpath, "probs.txt")]
+		# classifyoutput = subprocess.check_output(command)
 
 
 		print(exec_time)
@@ -248,10 +248,10 @@ def test_gkm():
 
 		with open(os.path.join(outputpath, "output.txt"), 'w') as outfile:
 			outfile.write(output)
-			outfile.write("\n#########\n")
-			outfile.write(trainoutput)
-			outfile.write("\n#########\n")
-			outfile.write(classifyoutput)
+			# outfile.write("\n#########\n")
+			# outfile.write(trainoutput)
+			# outfile.write("\n#########\n")
+			# outfile.write(classifyoutput)
 
 
 

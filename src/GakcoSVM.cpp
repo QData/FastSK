@@ -823,15 +823,6 @@ void* GakcoSVM::train(double* K) {
 		x_space = Malloc(struct svm_node, prob->l); // Kind-of hacky, but we're just going to have 1 node per thing.
 
 		for (int i = 0; i < prob->l; i++){
-
-			// svm_node* x_space = Malloc(svm_node, prob->l + 1);
-
-			// for (int j = 0; j < prob->l; j++){
-			// 	x_space[j].index = j+1;
-			// 	x_space[j].value = K[i * prob->l + j];
-			// }
-
-			// x_space[prob->l].index = -1;
 			x_space[i].index = i;
 			x_space[i].value = i;
 			x[i] = &x_space[i];
@@ -839,20 +830,7 @@ void* GakcoSVM::train(double* K) {
 
 		}
 	}else if(this->params->kernel_type == LINEAR){
-		// for (int i = 0; i < prob->l; i++){
 
-		// 	svm_node* x_space = Malloc(svm_node, prob->l + 1);
-
-		// 	for (int j = 0; j < prob->l; j++){
-		// 		x_space[j].index = j+1;
-		// 		x_space[j].value = tri_access(K,i,j);
-		// 	}
-
-		// 	x_space[prob->l].index = -1;
-		// 	x[i] = x_space;
-		// 	prob->y[i] = this->labels[i];
-
-		// }
 		x_space = Malloc(struct svm_node, (nStr+1)*nStr);
 		int totalind = 0;
 		for (int i = 0; i < nStr; i++){
@@ -879,39 +857,17 @@ void* GakcoSVM::train(double* K) {
 		exit(1);
 	}
 
-	// if (this->params->crossfold) {//not working yet
-	// 	return NULL;
- //        int total_correct = 0;
- //        double *target = Malloc(double, prob->l);
+	//train that ish
+	this->model = svm_train(prob, svm_param);
 
- //        svm_cross_validation(prob, svm_param, this->params->crossfold, target);
- //        for (int i = 0; i < prob->l; i++)
- //            if (target[i] == prob->y[i])
- //                ++total_correct;
- //        printf("Cross Validation Accuracy = %g%%\n",
- //            100.0 * total_correct / prob->l);
- //        free(target);
-	// } else {
-		this->model = svm_train(prob, svm_param);
-		if (!this->params->modelName.empty()){
-			svm_save_model(this->params->modelName.c_str(), this->model);
-		//}
+	if (!this->params->modelName.empty()){
+		svm_save_model(this->params->modelName.c_str(), this->model);
 	}
 
 	free(svm_param);
-	// if(this->params->kernel_type == LINEAR){
-	// 	int sv_count = 0;
-	// 	for(int i = 0; i < prob->l; i++){
-	// 		if(i != this->model->sv_indices[sv_count])
-	// 			free(x[i]);
-	// 		else
-	// 			sv_count++;
-	// 	}
-	// }else{
-	// 	free(x_space);
-	// }
-	// free(x);
-	//free(prob);
+	//free(x_space);
+	//free(x);
+	free(prob);
 	free(this->kernel);
 
 }
@@ -971,7 +927,7 @@ void GakcoSVM::write_test_kernel() {
 	FILE *kernelfile;
 	FILE *labelfile;
 	kernelfile = fopen("test_Kernel.txt", "w");
-	//labelfile = fopen(this->params->labelFilename.c_str(), "w");
+	labelfile = fopen(this->params->labelFilename.c_str(), "w");
 	int nStr = this->nStr;
 	int nTestStr = this->nTestStr;
 	int num_sv = this->model->nSV[0] + this->model->nSV[1];
@@ -980,16 +936,23 @@ void GakcoSVM::write_test_kernel() {
 	for (int i = 0; i < nTestStr; ++i)
 	{	
 		//fprintf(kernelfile, "%d ", this->test_labels[i]);
-		for (int j = 0; j < num_sv; ++j)
-		{
-			fprintf(kernelfile, "%d:%.17f ", this->model->sv_indices[j], this->test_kernel[j + i*num_sv]);
+		if(this->params->kernel_type == GAKCO){
+			for (int j = 0; j < num_sv; j++)
+			{
+				fprintf(kernelfile, "%d:%.12f ", this->model->sv_indices[j], this->test_kernel[j + i*num_sv]);
+			}
+		}else if (this->params->kernel_type == LINEAR){
+			for (int j = 0; j < nStr; j++)
+			{
+				fprintf(kernelfile, "%d:%.12f ", j+1, this->test_kernel[j + i*nStr]);
+			}
 		}
-		//fprintf(labelfile, "%d\n", this->test_labels[i]);
+		fprintf(labelfile, "%d\n", this->test_labels[i]);
 		fprintf(kernelfile, "\n");
 	}
 		
 	fclose(kernelfile);
-	//fclose(labelfile);
+	fclose(labelfile);
 }
 
 
@@ -999,9 +962,7 @@ double GakcoSVM::predict(double *test_K, int* test_labels){
 	int num_sv = this->model->nSV[0] + this->model->nSV[1];
 	int nTestStr = this->nTestStr;
 	int totalStr = nStr + nTestStr;
-	// test_K = (double*) malloc(totalStr * totalStr * sizeof(double));
-	// memset(test_K, 0, totalStr * totalStr * sizeof(double));
-	// test_K[0] = 1.0;
+
 
 	struct svm_node *x = Malloc(struct svm_node, nStr + 1);
 	int correct = 0;
@@ -1053,10 +1014,6 @@ double GakcoSVM::predict(double *test_K, int* test_labels){
 				fp++;
 		} 
 
-		// if(i <= 2 || i > nTestStr - 4){
-		// 	printf("\n%f\n",probs[labelind]);
-		// 	printf("Guess %f \t\t Label %d \n", guess, test_labels[i]);
-		// }
 
 		fprintf(labelfile, "%d\n", (int)guess);
 		fprintf(predictionfile, "%d\t%f\n", test_labels[i], probs[labelind]);
