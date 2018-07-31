@@ -528,6 +528,260 @@ double* GakcoSVM::construct_test_kernel(){
 	return K;
 }
 
+void* GakcoSVM::construct_linear_kernel(){
+	int ** S;
+	long int nTestStr;
+	int *label, *len;
+	int k, num_max_mismatches, max_m;
+	int m, g, numThreads;
+	int na;
+	unsigned int addr;
+	long int num_comb, value, maxlen, minlen;
+	int *elems, *cnt_k;
+	Features *features;
+	double *total_K;
+	unsigned int* nchoosekmat;
+	unsigned int** total_Ksfinal;
+	
+	g = this->params->g;
+	k = this->params->k;
+	numThreads = this->params->threads;
+
+	int* test_label = (int *)malloc(MAXNSTR * sizeof(int));
+	int* test_len = (int *)malloc(MAXNSTR * sizeof(int));
+	long int test_maxlen = 0;
+	long int test_minlen = STRMAXLEN;
+	nTestStr = MAXNSTR;
+	int test_na;
+
+	label = (int *)malloc(MAXNSTR * sizeof(int));
+	len = (int *)malloc(MAXNSTR * sizeof(int));
+	maxlen = 0;
+	minlen = STRMAXLEN;
+	nStr = MAXNSTR;
+
+
+	//reading input from test file
+	int** test_S = Readinput_(&(this->params->testFilename)[0],&(this->params->dictFilename)[0],test_label,test_len, &nTestStr, &test_maxlen, &test_minlen,&test_na);
+	this->nTestStr = nTestStr;
+	this->test_labels = test_label;
+
+	if (k <= 0 || g <= k || g>20 || g - k>20 || test_na <= 0){
+		help();
+		exit(1);
+	}
+	if (maxlen != minlen)
+		printf("Read %ld strings of max length = %ld and min length=%ld\n", nTestStr, test_maxlen, test_minlen);
+	else
+		printf("Read %ld strings of length = %ld\n", nTestStr, test_maxlen);
+
+	if (g > minlen){
+		errorID1();
+		exit(1);
+	}
+
+
+	//read train data
+	S = Readinput_(&(this->params->filename)[0],&(this->params->dictFilename)[0],label,len, &nStr, &maxlen, &minlen,&na);
+	this->nStr = nStr;
+	this->labels = label;
+	
+	int totalStr = nTestStr + nStr;
+	int** finalS = (int**)malloc(totalStr * sizeof(int*));
+	//create a unified length array
+	int* finalLen = (int*)malloc(totalStr * sizeof(int));
+	
+	//copy the references to train strings
+	memcpy(finalS, S, nStr * sizeof(int*));
+	memcpy(finalLen, len, nStr * sizeof(int));
+
+	//copy in the references to the test strings
+	memcpy(&finalS[nStr], test_S, nTestStr * sizeof(int*));
+	memcpy(&finalLen[nStr], test_len, nTestStr*sizeof(int));
+
+
+	features = extractFeatures(finalS, finalLen, totalStr, g);
+
+	//now we can free the strings because we have the features
+	for(int i = 0; i < nStr; i++){
+		free(S[i]);
+	}
+	for(int i = 0; i < nTestStr; i++){
+		free(test_S[i]);
+	}
+	free(test_len);
+	free(len);
+	free(finalLen);
+	free(S);
+	free(test_S);
+	free(finalS);
+
+
+	/* Precompute weights hm.*/
+
+	int w[g - k];
+	printf("Weights (hm):");
+	for (int i = 0; i <= g - k; i++){
+		w[i] = nchoosek(g - i, k);
+		printf("%d ", w[i]);
+	}
+
+	
+	addr = ((g - k) + 1)*totalStr*totalStr;
+	int tri_totalStr = totalStr * (totalStr+1) / 2;
+
+	//malloc things we have the size info on already here so there isn't excessive mallocing inside the loop
+	//test kernel is a non-triangular matrix of dim nTestStr x nSV
+	total_K = (double *)malloc(tri_totalStr * sizeof(double));
+	//malloc test_Ksfinal here, memset it each time we use it tho
+	total_Ksfinal = (unsigned int **)malloc((g - k + 1) * sizeof(unsigned int*));
+	for(int i = 0; i < g - k + 1; i++){
+		total_Ksfinal[i] = (unsigned int*)malloc(tri_totalStr * sizeof(unsigned int));
+		memset(total_Ksfinal[i], 0, tri_totalStr * sizeof(unsigned int));
+	}
+	elems = (int *)malloc(g * sizeof(int));
+	for (int i = 0; i < g; ++i){
+		elems[i] = i;
+	}
+	nchoosekmat = (unsigned int *)malloc(g*g * sizeof(unsigned int));
+
+	
+
+	//memset test_K before we use it
+	memset(total_K, 0, sizeof(double) * tri_totalStr);
+	memset(nchoosekmat, 0, sizeof(unsigned int) * g * g);
+
+	cnt_k = (int *)malloc(features->n * sizeof(int));
+
+	max_m = g - k;
+
+	//Create the work queue used for distributing tasks among threads
+	int queueSize = 0;
+	for (int m = 0; m <= max_m; m++) {
+		queueSize += nchoosek(g, m);
+	}
+	WorkItem *workQueue = new WorkItem[queueSize];
+	int itemNum = 0;
+	for (int m = 0; m <= max_m; m++) {
+		int numCombinations = nchoosek(g, m);
+		for (int combNum = 0; combNum < numCombinations; combNum++) {
+			workQueue[itemNum].m = m;
+			workQueue[itemNum].combo_num = combNum;
+			itemNum++;
+		}
+	}
+	//Determine how many threads will be used
+	if (numThreads == -1) {
+		int numCores = std::thread::hardware_concurrency();
+		numThreads = (numCores > 20) ? 20 : numCores;
+	} else {
+		numThreads = (numThreads > queueSize) ? queueSize : numThreads;
+	}
+	//Create an array of mutex locks (one for each value of m)
+	pthread_mutex_t *mutexes = (pthread_mutex_t *) malloc((max_m + 1) * sizeof(pthread_mutex_t));
+	for (int i = 0; i <= max_m; i++) {
+		pthread_mutex_init(&mutexes[i], NULL);
+	}
+	//Create the threads and compute cumulative mismatch profiles
+	printf("Computing mismatch profiles using %d threads...\n", numThreads);
+	std::vector<std::thread> threads;
+	for (int i = 0; i < numThreads; i++) {
+		threads.push_back(std::thread(&build_cumulative_mismatch_profiles_tri, workQueue, queueSize, i, numThreads,
+			elems, features, total_Ksfinal, cnt_k, features->features, g, na, features->n, totalStr, mutexes));
+	}
+	for(auto &t : threads) {
+		t.join();
+	}
+	printf("\n");
+
+	//no longer need the features list so can free it here
+	free(features->features);
+	free(features->group);
+	free(features);
+	
+	// hm coefficients
+	nchoosekmat = (unsigned int *) malloc(g * g * sizeof(unsigned int));
+	memset(nchoosekmat, 0, sizeof(unsigned int) * g * g);
+	
+	for ( int i = g; i >= 0; --i) {
+		for ( int j = 1; j <= i; ++j) {
+			nchoosekmat[(i - 1) + (j - 1)*g] = nchoosek(i, j);
+		}
+	}
+
+	int c1 = 0,
+	c2 = 0;
+	
+	//get exact mismatch profile (remove the overcounting)
+	
+	for (int i = 1; i <= max_m; ++i) {
+		c1 = cnt_k[i];
+		for (int j = 0; j <= i - 1; ++j) {
+			c2 = cnt_k[j];
+			for (int j1 = 0; j1 < totalStr; ++j1) {
+				value = 0;
+				int x = 0;
+				for (int j2 = 0; j2 <= j1; ++j2) {
+					//test_Ksfinal[(c1 + j1) + j2*totalStr] -=  nchoosekmat[(g - j - 1) + (i - j - 1)*g] * test_Ksfinal[(c2 + j1) + j2*totalStr];
+					tri_access(total_Ksfinal[i], j1, j2) -= nchoosekmat[(g - j - 1) + (i - j - 1)*g] * tri_access(total_Ksfinal[j], j1, j2);
+				}
+			}
+		}
+	}
+	for (int i = 0; i <= g - k; i++) {
+		c1 = cnt_k[i];
+		for (int j1 = 0; j1 < totalStr; ++j1) {
+			for (int j2 = 0; j2 <= j1; ++j2) {
+				//test_K[j1 + j2*totalStr] += w[i] * test_Ksfinal[(c1 + j1) + j2*totalStr];
+				tri_access(total_K, j1, j2) += w[i] * tri_access(total_Ksfinal[i], j1, j2);
+			}
+		}
+	}
+
+	//free test_Ksfinal before allocating K so total memory usage at any given point is reduced
+	for(int i = 0; i <= max_m; i++){
+		free(total_Ksfinal[i]);
+	}
+	free(total_Ksfinal);
+
+
+	double* test_K = (double*)malloc(nTestStr * nStr * sizeof(double));
+	
+	for(int i = nStr; i < totalStr; i++){
+		for(int j = 0; j < nStr; j++){
+			test_K[(i-nStr)*nStr + j] = tri_access(total_K, i, j) / sqrt(tri_access(total_K, i, i) * tri_access(total_K, j, j));
+		}
+	}
+
+	//if loadkernel is 1, we already have a train kernel and don't need this extra computation
+	if(!this->params->loadkernel){
+		//reallocate to a smaller size to encapsulate only the 
+		double* K = (double*)realloc(total_K, nStr*(nStr+1) / 2 * sizeof(double));
+
+		for(int i = 0; i < nStr; i++){
+			for(int j = 0; j < i; j++){
+				tri_access(K, i, j) = tri_access(total_K, i, j) / sqrt(tri_access(total_K, i, i) * tri_access(total_K, j, j));
+			}
+		}
+
+		for(int i = 0; i < nStr; i++){
+			tri_access(K,i,i) = 1.0;
+		}
+
+		this->kernel = K;
+	}else{
+		free(total_K);
+	}
+
+
+	free(cnt_k);
+
+
+	this->test_kernel = test_K;
+
+	return this->kernel;
+}
+
 
 void* GakcoSVM::train(double* K) {
 	if(K == NULL){
@@ -536,6 +790,8 @@ void* GakcoSVM::train(double* K) {
 	struct svm_parameter* svm_param = Malloc(svm_parameter, 1);
 	struct svm_problem* prob = Malloc(svm_problem, 1);
 	struct svm_model *model;
+
+	this->prob = prob;
 	
 
 	const char* error_msg;
@@ -567,15 +823,6 @@ void* GakcoSVM::train(double* K) {
 		x_space = Malloc(struct svm_node, prob->l); // Kind-of hacky, but we're just going to have 1 node per thing.
 
 		for (int i = 0; i < prob->l; i++){
-
-			// svm_node* x_space = Malloc(svm_node, prob->l + 1);
-
-			// for (int j = 0; j < prob->l; j++){
-			// 	x_space[j].index = j+1;
-			// 	x_space[j].value = K[i * prob->l + j];
-			// }
-
-			// x_space[prob->l].index = -1;
 			x_space[i].index = i;
 			x_space[i].value = i;
 			x[i] = &x_space[i];
@@ -583,19 +830,19 @@ void* GakcoSVM::train(double* K) {
 
 		}
 	}else if(this->params->kernel_type == LINEAR){
-		for (int i = 0; i < prob->l; i++){
 
-			svm_node* x_space = Malloc(svm_node, prob->l + 1);
-
-			for (int j = 0; j < prob->l; j++){
-				x_space[j].index = j+1;
-				x_space[j].value = tri_access(K,i,j);
+		x_space = Malloc(struct svm_node, (nStr+1)*nStr);
+		int totalind = 0;
+		for (int i = 0; i < nStr; i++){
+			x[i] = &x_space[totalind];
+			for(int j = 0; j < nStr; j++){
+				x_space[j+i*(nStr+1)].index = j+1; 
+				x_space[j+i*(nStr+1)].value = tri_access(K, i, j);
 			}
-
-			x_space[prob->l].index = -1;
-			x[i] = &x_space[i];
+			totalind += nStr;
+			x_space[totalind].index = -1;
+			totalind++;
 			prob->y[i] = this->labels[i];
-
 		}
 	}
 
@@ -610,31 +857,16 @@ void* GakcoSVM::train(double* K) {
 		exit(1);
 	}
 
-	if (this->params->crossfold) {//not working yet
-		return NULL;
-        int total_correct = 0;
-        double *target = Malloc(double, prob->l);
+	//train that ish
+	this->model = svm_train(prob, svm_param);
 
-        svm_cross_validation(prob, svm_param, this->params->crossfold, target);
-        for (int i = 0; i < prob->l; i++)
-            if (target[i] == prob->y[i])
-                ++total_correct;
-        printf("Cross Validation Accuracy = %g%%\n",
-            100.0 * total_correct / prob->l);
-        free(target);
-	} else {
-		this->model = svm_train(prob, svm_param);
-		if (!this->params->modelName.empty()){
-			svm_save_model(this->params->modelName.c_str(), this->model);
-		}
+	if (!this->params->modelName.empty()){
+		svm_save_model(this->params->modelName.c_str(), this->model);
 	}
 
 	free(svm_param);
-	// for(int i = 0; i < prob->l; i++){
-	// 	free(x[i]);
-	// }
-	free(x);
-	free(x_space);
+	//free(x_space);
+	//free(x);
 	free(prob);
 	free(this->kernel);
 
@@ -666,6 +898,31 @@ void GakcoSVM::write_files() {
 	fclose(labelfile);
 }
 
+//outputs a kernel compatible for use with svm-train executable
+void GakcoSVM::write_libsvm_kernel() {
+	FILE *kernelfile;
+	FILE *labelfile;
+	std::string kernelfileName = this->params->outputFilename;
+	if(kernelfileName.empty()){
+		kernelfileName = "kernel.txt";
+	}
+	printf("Writing kernel to %s\n", kernelfileName.c_str());
+	kernelfile = fopen(kernelfileName.c_str(), "w");
+	labelfile = fopen("train_labels.txt", "w");
+	int nStr = this->nStr;
+
+	for (int i = 0; i < nStr; ++i) {
+		fprintf(kernelfile, "%d ", this->labels[i]);	
+		for (int j = 0; j < nStr; ++j) {
+			fprintf(kernelfile, "%d:%e ", j + 1, tri_access(this->kernel,i,j));
+		}
+		fprintf(kernelfile, "\n");
+		fprintf(labelfile, "%d\n", this->labels[i]);
+	}
+	fclose(kernelfile);
+	fclose(labelfile);
+}
+
 void GakcoSVM::write_test_kernel() {
 	FILE *kernelfile;
 	FILE *labelfile;
@@ -678,9 +935,17 @@ void GakcoSVM::write_test_kernel() {
 	printf("Writing test kernel %d", nTestStr);
 	for (int i = 0; i < nTestStr; ++i)
 	{	
-		for (int j = 0; j < num_sv; ++j)
-		{
-			fprintf(kernelfile, "%d:%e ", this->model->sv_indices[j], this->test_kernel[j + i*num_sv]);
+		//fprintf(kernelfile, "%d ", this->test_labels[i]);
+		if(this->params->kernel_type == GAKCO){
+			for (int j = 0; j < num_sv; j++)
+			{
+				fprintf(kernelfile, "%d:%.12f ", this->model->sv_indices[j], this->test_kernel[j + i*num_sv]);
+			}
+		}else if (this->params->kernel_type == LINEAR){
+			for (int j = 0; j < nStr; j++)
+			{
+				fprintf(kernelfile, "%d:%.12f ", j+1, this->test_kernel[j + i*nStr]);
+			}
 		}
 		fprintf(labelfile, "%d\n", this->test_labels[i]);
 		fprintf(kernelfile, "\n");
@@ -691,16 +956,15 @@ void GakcoSVM::write_test_kernel() {
 }
 
 
+
 double GakcoSVM::predict(double *test_K, int* test_labels){
 	int nStr = this->nStr;
 	int num_sv = this->model->nSV[0] + this->model->nSV[1];
 	int nTestStr = this->nTestStr;
 	int totalStr = nStr + nTestStr;
-	// test_K = (double*) malloc(totalStr * totalStr * sizeof(double));
-	// memset(test_K, 0, totalStr * totalStr * sizeof(double));
-	// test_K[0] = 1.0;
 
-	struct svm_node *x = Malloc(struct svm_node, num_sv + 1);
+
+	struct svm_node *x = Malloc(struct svm_node, nStr + 1);
 	int correct = 0;
 	int pagg =0, nagg=0; //aggregators for finding num of pos and neg samples for auc
 	double* neg = Malloc(double, nTestStr);
@@ -711,16 +975,27 @@ double GakcoSVM::predict(double *test_K, int* test_labels){
 		if (this->model->label[i] == 1)
 			labelind = i;
 	}
-	FILE* labelfile;
+	FILE* labelfile, *predictionfile;
 	labelfile = fopen(this->params->labelFilename.c_str(), "w");
+	std::string predfile = "probs."+this->params->testFilename.substr(this->params->testFilename.find("data")+5);
+	predictionfile = fopen(predfile.c_str(), "w");
 
+	int svcount = 0;
 	for(int i = 0; i < nTestStr; i++){
-
-		for (int j=0; j < num_sv; j++){
-			x[j].index = this->model->sv_indices[j];
-			x[j].value = test_K[i * num_sv + j];
+		if(this->params->kernel_type == GAKCO){
+			for (int j=0; j < num_sv; j++){
+				x[j].index = this->model->sv_indices[j];
+				x[j].value = test_K[i * num_sv + j];
+				svcount++;
+			}
+			x[num_sv].index = -1;
+		}else if(this->params->kernel_type == LINEAR){
+			for(int j=0; j < nStr; j++){
+				x[j].index = j+1;
+				x[j].value = test_K[i*nStr +j];
+			}
+			x[nStr].index = -1;
 		}
-		x[num_sv].index = -1;
 
 		double probs[2];
 		double guess = svm_predict_probability(this->model, x, probs);
@@ -739,13 +1014,9 @@ double GakcoSVM::predict(double *test_K, int* test_labels){
 				fp++;
 		} 
 
-		// if(i <= 2 || i > nTestStr - 4){
-		// 	printf("\n%f\n",probs[labelind]);
-		// 	printf("Guess %f \t\t Label %d \n", guess, test_labels[i]);
-		// }
 
-		fprintf(labelfile, "%d ", (int)guess);
-		fprintf(labelfile, "\n");
+		fprintf(labelfile, "%d\n", (int)guess);
+		fprintf(predictionfile, "%d\t%f\n", test_labels[i], probs[labelind]);
 	
 		if ((guess < 0.0 && test_labels[i] < 0) || (guess > 0.0 && test_labels[i] > 0)){
 			correct++;
@@ -763,6 +1034,7 @@ double GakcoSVM::predict(double *test_K, int* test_labels){
 	printf("percent pos: %f\n", ((double)pagg/(nagg+pagg)));
 
 	fclose(labelfile);
+	fclose(predictionfile);
 	free(pos);
 	free(neg);
 

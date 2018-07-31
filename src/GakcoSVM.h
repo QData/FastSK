@@ -40,6 +40,7 @@ public:
 	double* kernel = NULL;
 	double* test_kernel = NULL;
 	Features *kernel_features = NULL; //so that each test feature-set can be appended but keep the original list
+	struct svm_problem* prob = NULL;
 	struct svm_model* model = NULL;
 	int* labels = NULL;
 	int* test_labels = NULL;
@@ -49,9 +50,11 @@ public:
 	GakcoSVM(gakco_param* arg);
 	double* construct_kernel();
 	double* construct_test_kernel();
+	void* construct_linear_kernel();
 	void* train(double* K);
 	double predict(double* test_K, int* test_labels);
 	void write_files();
+	void write_libsvm_kernel();
 	void write_test_kernel();
 	double* load_kernel(std::string kernel_name);
 
