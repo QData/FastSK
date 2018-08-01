@@ -2754,10 +2754,15 @@ int svm_save_model(const char *model_file_name, const svm_model *model)
 
 		const svm_node *p = SV[i];
 
-    // TODO Save the string so we can print it out here
-
-    fprintf(fp,"0:%d ",(int)(p->value));
-		fprintf(fp, "\n");
+    if(param.kernel_type == PRECOMPUTED)
+    	fprintf(fp,"0:%d ",(int)(p->value));
+    else
+    	while(p->index != -1)
+    	{
+    		fprintf(fp,"%d:%.8g ",p->index,p->value);
+    		p++;
+    	}
+    fprintf(fp, "\n");
 	}
 
 	setlocale(LC_ALL, old_locale);

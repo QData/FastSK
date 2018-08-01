@@ -86,7 +86,7 @@ double* GakcoSVM::construct_kernel(){
 	// Read input file
 	
 	printf("Input file : %s\n", filename);
-	S = Readinput_(filename, Dicfilename, label, len, &nStr, &maxlen, &minlen, &na);
+	S = Readinput_(filename, Dicfilename, label, len, &nStr, &maxlen, &minlen, &na, this);
 	
 	
 	if (k <= 0 || g <= k || g>20 || g - k>20 || na <= 0){
@@ -318,7 +318,7 @@ double* GakcoSVM::construct_test_kernel(){
 	int num_sv = this->model->nSV[0] + this->model->nSV[1];
 
 	//reading input from test file
-	int** test_S = Readinput_(&(this->params->testFilename)[0],&(this->params->dictFilename)[0],test_label,test_len, &nTestStr, &test_maxlen, &test_minlen,&test_na);
+	int** test_S = Readinput_(&(this->params->testFilename)[0],&(this->params->dictFilename)[0],test_label,test_len, &nTestStr, &test_maxlen, &test_minlen,&test_na, this);
 	this->nTestStr = nTestStr;
 	this->test_labels = test_label;
 
@@ -338,7 +338,7 @@ double* GakcoSVM::construct_test_kernel(){
 
 
 	//read train data
-	S = Readinput_(&(this->params->filename)[0],&(this->params->dictFilename)[0],label,len, &nStr, &maxlen, &minlen,&na);
+	S = Readinput_(&(this->params->filename)[0],&(this->params->dictFilename)[0],label,len, &nStr, &maxlen, &minlen,&na, this);
 
 	
 	int totalStr = nTestStr + num_sv;
@@ -561,19 +561,24 @@ void* GakcoSVM::construct_linear_kernel(){
 	nStr = MAXNSTR;
 
 
+	//read train data
+	S = Readinput_(&(this->params->filename)[0],&(this->params->dictFilename)[0],label,len, &nStr, &maxlen, &minlen,&na, this);
+	this->nStr = nStr;
+	this->labels = label;
+
 	//reading input from test file
-	int** test_S = Readinput_(&(this->params->testFilename)[0],&(this->params->dictFilename)[0],test_label,test_len, &nTestStr, &test_maxlen, &test_minlen,&test_na);
+	int** test_S = Readinput_(&(this->params->testFilename)[0],&(this->params->dictFilename)[0],test_label,test_len, &nTestStr, &test_maxlen, &test_minlen,&test_na, this);
 	this->nTestStr = nTestStr;
 	this->test_labels = test_label;
 
-	if (k <= 0 || g <= k || g>20 || g - k>20 || test_na <= 0){
+	if (k <= 0 || g <= k || g>20 || g - k>20 || na <= 0){
 		help();
 		exit(1);
 	}
 	if (maxlen != minlen)
-		printf("Read %ld strings of max length = %ld and min length=%ld\n", nTestStr, test_maxlen, test_minlen);
+		printf("Read %ld strings of max length = %ld and min length=%ld\n", nStr+nTestStr, std::max(test_maxlen, maxlen), std::min(test_minlen, minlen));
 	else
-		printf("Read %ld strings of length = %ld\n", nTestStr, test_maxlen);
+		printf("Read %ld strings of length = %ld\n", nStr+nTestStr, std::max(test_maxlen,maxlen));
 
 	if (g > minlen){
 		errorID1();
@@ -581,10 +586,6 @@ void* GakcoSVM::construct_linear_kernel(){
 	}
 
 
-	//read train data
-	S = Readinput_(&(this->params->filename)[0],&(this->params->dictFilename)[0],label,len, &nStr, &maxlen, &minlen,&na);
-	this->nStr = nStr;
-	this->labels = label;
 	
 	int totalStr = nTestStr + nStr;
 	int** finalS = (int**)malloc(totalStr * sizeof(int*));
@@ -898,6 +899,15 @@ void GakcoSVM::write_files() {
 	fclose(labelfile);
 }
 
+void GakcoSVM::write_dictionary(char* dictionary){
+	FILE *dictfile;
+	dictfile = fopen(this->params->dictFilename.c_str(), "w");
+	for(int i= 0; i < strlen(dictionary); i++){
+		fprintf(dictfile, "%c\n", dictionary[i]);
+	}
+	fclose(dictfile);
+}
+
 //outputs a kernel compatible for use with svm-train executable
 void GakcoSVM::write_libsvm_kernel() {
 	FILE *kernelfile;
@@ -1042,7 +1052,7 @@ double GakcoSVM::predict(double *test_K, int* test_labels){
 	free(pos);
 	free(neg);
 
-	return auc;
+	return (double)correct / nTestStr;
 }
 
 double calculate_auc(double* pos, double* neg, int npos, int nneg){
