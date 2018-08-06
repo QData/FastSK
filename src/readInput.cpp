@@ -3,18 +3,21 @@
 //Kamran Kowsari <kk7nc@virginia.edu >
 //Arshdeep Sekhon <as5cu@virginia.edu >
 
+#include "readInput.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <iostream>
 #include <fstream>
 #include <algorithm>
+#include <map>
+
 
 using namespace std;
 
-int * string_replace (const char *s, char *d, int seqLength);
-int help2();
-char * readDict (char *filename, int *na);
+// int * string_replace (const char *s, char *d, int seqLength);
+// int help2();
+// char * readDict (char *filename, int *na);
 int dictsize;
 
 void labelErrorAndExit(string label) {
@@ -36,13 +39,27 @@ static void inline trimLine(std::string &s) {
 }
 
 
-int ** Readinput_(char *filename, char *dictFileName, int *seqLabels, int *seqLengths, long int *nStr, long int *maxlen, long int *minlen, int *dictionarySize) {
+int ** Readinput_(char *filename, char *dictFileName, int *seqLabels, int *seqLengths, long int *nStr, long int *maxlen, long int *minlen, int *dictionarySize, GakcoSVM* object) {
     int **output;
     const char *seq;
     char *d;
     int realls = 0; //keep track of how many times we need to reallocate memory
-    d = readDict(dictFileName, dictionarySize);
-    
+    //if we already have a dictionary, use it
+    //if not, and the dictionary filename supplied exists, read that to use as a dict
+    //if that file doesn't exist, parse a dictionary out of the training set and write it to that filename
+    if(object->dictionary == NULL){
+        if(FILE* file = fopen(dictFileName, 'r'))
+            d = readDict(dictFileName, dictionarySize);
+        else{
+            d = parseDict(filename, dictionarySize);
+            object->write_dictionary(d);
+        }
+        object->dictionary = d;
+    }
+    else
+        d = object->dictionary;
+    printf("\n%s\n", d);
+
     ifstream file;
     file.open(filename);
     if (file.fail()) {
@@ -64,7 +81,7 @@ int ** Readinput_(char *filename, char *dictFileName, int *seqLabels, int *seqLe
                 label = line.substr(pos + 1);
                 if (label.length() > 2) labelErrorAndExit(label);
                 int asNum = (stoi(label) == 0) ? -1 : stoi(label);
-                if (asNum != -1 && asNum != 1) labelErrorAndExit(label);
+                //if (asNum != -1 && asNum != 1) labelErrorAndExit(label);
                 seqLabels[row] = asNum;
                 isLabel = false;
             } else {
@@ -136,13 +153,60 @@ char * readDict (char *dictFileName, int *dictionarySize) {
             i++;
         }
         dictsize = i - 1;
-        printf("Dictionary size = %d (+1 for uknown character)\n", dictsize + 1);
+        printf("Dictionary size = %d (+1 for unknown character)\n", dictsize + 1);
         fclose(inpfile);
         *dictionarySize = dictsize + 2;
     } else {
         perror(dictFileName);
         exit(1);
     }
+    return D;
+}
+
+char* parseDict(char* dataFilename, int* dictionarySize){
+    char* D; //The dictionary
+    ifstream file;
+    file.open(dataFilename);
+    string line;
+    bool isLabel = true;//hope the datafile starts with label as per proper format
+    std::map<char,int> dictmap; //set int equal to 1 when we encounter a unique char
+
+    while (getline(file, line)) {
+        trimLine(line);
+        if (!line.empty()) {
+            if (isLabel) {
+                isLabel = false;
+            } else {
+                int length = line.length();
+                for (int i =0; i<length; i++){
+                    if(dictmap[toupper(line[i])] > 0)
+                        dictmap[toupper(line[i])]++;
+                    else
+                        dictmap[toupper(line[i])] = 1;
+                }
+
+                isLabel = true;
+            }
+        }
+    }
+    file.close();
+
+    int i = 0;
+    D = (char*)malloc(50*sizeof(char));
+    for (std::map<char,int>::iterator it = dictmap.begin(); it != dictmap.end(); it++){
+        D[i] = it->first;
+        printf("%c:%d,",it->first, it->second);
+        i++;
+    }
+    D[i] = '\0';
+    printf("\n");
+    printf("%d\n", i);
+    //i++;
+    //who knows why this dictionary size stuff is the way it is, but it's legacy
+    dictsize = i-1;
+    *dictionarySize = dictsize+2;//i+1;
+    D = (char*)realloc(D, (dictsize+1)*sizeof(char));
+
     return D;
 }
 

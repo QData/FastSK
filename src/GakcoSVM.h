@@ -46,6 +46,8 @@ public:
 	int* test_labels = NULL;
 	long int nStr; //here instead of params because it is not set by user ever.
 	long int nTestStr;
+	int numClasses = -1;
+	char* dictionary = NULL;
 
 	GakcoSVM(gakco_param* arg);
 	double* construct_kernel();
@@ -53,6 +55,7 @@ public:
 	void* construct_linear_kernel();
 	void* train(double* K);
 	double predict(double* test_K, int* test_labels);
+	void write_dictionary();
 	void write_files();
 	void write_libsvm_kernel();
 	void write_test_kernel();
