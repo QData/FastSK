@@ -2,7 +2,7 @@
 
 # Compiler options
 CXX = g++ # use g++ compiler
-CXXFLAGS = -lpthread -pthread -std=c++11 -O0 -g -Wno-write-strings -D_GNU_SOURCE # openmp and pthread, g for debugging
+CXXFLAGS = -lpthread -pthread -std=c++11 -O3 -Wno-write-strings -D_GNU_SOURCE # openmp and pthread, g for debugging
 INCLUDE=-I/usr/include/libsvm-code
 # To get an o file, we use the cpp file
 .SUFFIXES: .o .cpp
