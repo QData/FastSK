@@ -9,7 +9,7 @@ os.environ["CXX"] = "g++"
 
 # the c++ extension module
 extension_mod = Extension("igakco", 
-						sources=["shared.cpp","igakco.c", "Gakco.cpp" ,"GakcoSVM.cpp", "readInput.cpp","libsvm-code/svm.cpp"],
+						sources=["shared.cpp","pywrap/igakco.c", "Gakco.cpp" ,"GakcoSVM.cpp", "readInput.cpp","libsvm-code/svm.cpp"],
 						language= "c++",
 						include_dirs=["/usr/include/libsvm-code","/usr/include/","../src"],
 						extra_compile_args=['-std=c++11','-D_GNU_SOURCE'],
