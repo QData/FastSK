@@ -6,6 +6,7 @@
 //Modified version of originial implementation by Pavel Kuksa (for distance based kernel)
 
 #include "shared.h"
+#include <string>
 #include <stdio.h>
 #include <stdlib.h>
 #include <cstdlib>
@@ -14,13 +15,18 @@
 #include <thread>
 #include <iostream>
 #include <random>
+#define STRMAXLEN 15000
+#define MAXNSTR 15000
 
-char *trimwhitespace(char *s);
+
+
+
+//char *trimwhitespace(char *s);
 
 //extract g-mers from input sequences
 Features *extractFeatures(int **S, int *len, int nStr, int g) {
 	int i, j, j1;
-	int n, sumLen, nfeat, addr;
+	int sumLen, nfeat;
 	int *group;
 	int *features;
 	int *s;
@@ -166,7 +172,7 @@ void countAndUpdate(unsigned int *outK, unsigned int *sx, unsigned int *g, int k
    long int i, j;
    long int cu;
    long int startInd, endInd, j1;
-   int *curfeat = (int *)malloc(k*sizeof(int));
+   unsigned int *curfeat = (unsigned int *)malloc(k*sizeof(unsigned int));
    int *ucnts= (int *)malloc(nStr*sizeof(int));
 
    int *updind = (int *)malloc(nStr*sizeof(int));
@@ -243,7 +249,7 @@ void countAndUpdateTri(unsigned int *outK, unsigned int *sx, unsigned int *g, in
    long int i, j;
    long int cu;
    long int startInd, endInd, j1;
-   int *curfeat = (int *)malloc(k*sizeof(int));
+   unsigned int *curfeat = (unsigned int *)malloc(k*sizeof(unsigned int));
    int *ucnts= (int *)malloc(nStr*sizeof(int));
    int num_str_pairs = nStr * (nStr+1) / 2;
 
@@ -314,25 +320,13 @@ void countAndUpdateTri(unsigned int *outK, unsigned int *sx, unsigned int *g, in
 
 }
 
-void countAndUpdateTest(unsigned int *outK, unsigned int *sx, unsigned int *g, int k, int r, int nStr, int nTestStr){
-   bool same;
-   long int i, j;
-   long int cu;
-   long int startInd, endInd, j1;
-   int *curfeat = (int *)malloc(k*sizeof(int));
-   int *ucnts= (int *)malloc(nStr*sizeof(int));
-
-   int *updind = (int *)malloc(nStr*sizeof(int));
-   memset(updind, 0, sizeof(int) * nStr);
-   memset(outK, 0, sizeof(unsigned int) * nStr * nTestStr);
-}
 
 
 double nchoosek(double n, double k)
 {
 	int i;
 	double *nums, *dens;
-	double prod;
+	double prod = 1;
 	if (k > n / 2) k = n - k;
 	if (k == 0) return 1;
 	if (k == 1) return n;
@@ -356,7 +350,7 @@ double nchoosek(double n, double k)
 	return prod;
 }
 
-void getCombinations( int *elems,unsigned int n, unsigned int k, int *pos, unsigned int depth, unsigned int margin, unsigned int* cnt_comb, unsigned int *out, int num_comb)
+void getCombinations( const int *elems,unsigned int n, unsigned int k, int *pos, unsigned int depth, unsigned int margin, unsigned int* cnt_comb, unsigned int *out, int num_comb)
 {
 
 
@@ -380,7 +374,21 @@ void getCombinations( int *elems,unsigned int n, unsigned int k, int *pos, unsig
 
 }
 
-
+//Shuffles array. used to shuffle work allocations for threads so they collide less when accumulating values into C_m
+void shuffle(WorkItem *array, size_t n)
+{
+    if (n > 1) 
+    {
+        size_t i;
+        for (i = 0; i < n - 1; i++) 
+        {
+          size_t j = i + rand() / (RAND_MAX / (n - i) + 1);
+          WorkItem t = array[j];
+          array[j] = array[i];
+          array[i] = t;
+        }
+    }
+}
 
 
 

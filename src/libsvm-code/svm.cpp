@@ -233,7 +233,7 @@ private:
 	const double gamma;
 	const double coef0;
 
-	static double gakco_dot(const svm_node *px, const svm_node *py);
+	//static double gakco_dot(const svm_node *px, const svm_node *py);
 	static double dot(const svm_node *px, const svm_node *py);
 
 	double kernel_gakco(int i, int j) const
@@ -311,10 +311,6 @@ Kernel::~Kernel()
 	delete[] x_square;
 }
 
-double Kernel::gakco_dot(const svm_node *px, const svm_node *py)
-{
-
-}
 
 double Kernel::dot(const svm_node *px, const svm_node *py)
 {
@@ -3089,7 +3085,7 @@ const char *svm_check_parameter(const svm_problem *prob, const svm_parameter *pa
 	
 	// kernel_type, degree
 	
-	int kernel_type = param->kernel_type;
+	//int kernel_type = param->kernel_type;
 	// if (kernel_type != GAKCO)
 	// 	return "unknown kernel type";
 

@@ -1,8 +1,12 @@
-#pragma once
+#ifndef SHARED_H
+#define SHARED_H 
 
 #define STRMAXLEN 15000
 #define MAXNSTR 15000
 #include <string>
+#include <stdio.h>
+#include <stdlib.h>
+#include <cstdlib>
 typedef struct Feature
 {
 	int *features;
@@ -43,6 +47,8 @@ std::string trim(std::string& s);
 void cntsrtna(unsigned int *out,unsigned int *sx, int k, int r, int na);
 void countAndUpdate(unsigned int *outK, unsigned int *sx, unsigned int *g, int k, int r, int nStr);
 void countAndUpdateTri(unsigned int *outK, unsigned int *sx, unsigned int *g, int k, int r, int nStr);
-void countAndUpdateTest(unsigned int *outK, unsigned int *sx, unsigned int *g, int k, int r, int nStr, int nTestStr);
 double nchoosek(double n, double k);
 void getCombinations(const int *elems, unsigned int n, unsigned int k, int *pos, unsigned int depth, unsigned int margin, unsigned int *cnt_comb, unsigned int *out, int num_comb);
+void shuffle(WorkItem *array, size_t n);
+
+#endif

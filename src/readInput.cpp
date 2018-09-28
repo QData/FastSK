@@ -4,6 +4,7 @@
 //Arshdeep Sekhon <as5cu@virginia.edu >
 
 #include "readInput.h"
+#include "shared.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -48,17 +49,20 @@ int ** Readinput_(char *filename, char *dictFileName, int *seqLabels, int *seqLe
     //if not, and the dictionary filename supplied exists, read that to use as a dict
     //if that file doesn't exist, parse a dictionary out of the training set and write it to that filename
     if(object->dictionary == NULL){
-        if(FILE* file = fopen(dictFileName, 'r'))
+        if(FILE* file = fopen(dictFileName, "r")){
+            fclose(file);
             d = readDict(dictFileName, dictionarySize);
+        }
         else{
             d = parseDict(filename, dictionarySize);
             object->write_dictionary(d);
         }
         object->dictionary = d;
+        printf("Dictionary characters: %s\n", d);
     }
     else
         d = object->dictionary;
-    printf("\n%s\n", d);
+    
 
     ifstream file;
     file.open(filename);
@@ -134,12 +138,12 @@ int ** Readinput_(char *filename, char *dictFileName, int *seqLabels, int *seqLe
 
 char * readDict (char *dictFileName, int *dictionarySize) {
     char *D;
-    char *linetemp1, *line1, *next_elem, *trimline;
-    int i, j;
+    char *linetemp1, *line1, *trimline;
+    int i;
     FILE *inpfile;
 
     inpfile = fopen (dictFileName, "r" );
-    D = (char *) malloc(50 * sizeof(char));
+    D = (char *) malloc(150 * sizeof(char));
 
     if (inpfile) {
         line1 = (char *) malloc(STRMAXLEN * sizeof(char));
@@ -156,6 +160,8 @@ char * readDict (char *dictFileName, int *dictionarySize) {
         printf("Dictionary size = %d (+1 for unknown character)\n", dictsize + 1);
         fclose(inpfile);
         *dictionarySize = dictsize + 2;
+        D[i] = '\0';
+        D = (char*)realloc(D, (i+1) *sizeof(char));
     } else {
         perror(dictFileName);
         exit(1);
@@ -192,15 +198,12 @@ char* parseDict(char* dataFilename, int* dictionarySize){
     file.close();
 
     int i = 0;
-    D = (char*)malloc(50*sizeof(char));
+    D = (char*)malloc(140*sizeof(char));
     for (std::map<char,int>::iterator it = dictmap.begin(); it != dictmap.end(); it++){
         D[i] = it->first;
-        printf("%c:%d,",it->first, it->second);
         i++;
     }
     D[i] = '\0';
-    printf("\n");
-    printf("%d\n", i);
     //i++;
     //who knows why this dictionary size stuff is the way it is, but it's legacy
     dictsize = i-1;

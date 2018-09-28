@@ -44,24 +44,20 @@ double* GakcoSVM::construct_kernel(){
 
 	char filename[100],filename_label[100],Dicfilename[100], opfilename[100];
 	int *label;
-	int k, num_max_mismatches, max_m;
-	int m, g;
+	int k, max_m;
+	int g;
 	int na;
-	unsigned int addr;
-	long int nStr, num_comb, value;
+	long int nStr;
 	
 	int nfeat;
 	double *K;
-	unsigned int *nchoosekmat, *Ks, *Ksfinalmat; //not all freed atm
+	unsigned int *nchoosekmat; //not all freed atm
 	unsigned int **Ksfinal;
 	int *len;
 	int **S;
-	unsigned int *sortIdx;
 	int *feat;
-	unsigned int  *out, *out_temp, *resgroup;
-	int *elems, *cnt_k;
-	unsigned int *cnt_m;
-	long int maxIdx, maxlen, minlen;
+	int *elems;
+	long int maxlen, minlen;
 	char isVerbose;
 	Features *features;
 	int numThreads;
@@ -73,7 +69,6 @@ double* GakcoSVM::construct_kernel(){
 	strcpy(opfilename, this->params->outputFilename.c_str());
 	g = this->params->g;
 	k = this->params->k;
-	m = g - k;
 	numThreads = this->params->threads;
 
 	label = (int *) malloc(MAXNSTR * sizeof(int));
@@ -150,7 +145,6 @@ double* GakcoSVM::construct_kernel(){
 	memset(K, 0, num_str_pairs*sizeof(double));
 
 
-	addr = ((g - k) + 1)*num_str_pairs;
 	
 	Ksfinal = (unsigned int **)malloc((g-k+1) * sizeof(unsigned int*));
 		for(int i =0; i < g-k+1; i++){
@@ -161,7 +155,6 @@ double* GakcoSVM::construct_kernel(){
 	
 	elems = (int *)malloc(g * sizeof(int));
 	
-	cnt_k = (int *)malloc((m+1) * sizeof(int));
 	for (int i = 0; i < g; ++i) {
 		elems[i] = i;
 	}
@@ -200,7 +193,7 @@ double* GakcoSVM::construct_kernel(){
 	std::vector<std::thread> threads;
 	for (int i = 0; i < numThreads; i++) {
 		threads.push_back(std::thread(&build_cumulative_mismatch_profiles_tri, workQueue, queueSize, i, numThreads,
-			elems, features, Ksfinal, cnt_k, feat, g, na, nfeat, nStr, mutexes));
+			elems, features, Ksfinal, feat, g, na, nfeat, nStr, mutexes));
 	}
 	for(auto &t : threads) {
 		t.join();
@@ -222,16 +215,10 @@ double* GakcoSVM::construct_kernel(){
 		}
 	}
 
-	int c1 = 0,
-	c2 = 0;
 
 	for (int i = 1; i <= max_m; ++i) {
-		c1 = cnt_k[i];
 		for (int j = 0; j <= i - 1; ++j) {
-			c2 = cnt_k[j];
 			for (int j1 = 0; j1 < nStr; ++j1) {
-				value = 0;
-				int x = 0;
 				for (int j2 = 0; j2 <= j1; ++j2) {
 					tri_access(Ksfinal[i], j1, j2) -= nchoosekmat[(g - j - 1) + (i - j - 1)*g] * tri_access(Ksfinal[j], j1, j2);
 				}
@@ -239,7 +226,6 @@ double* GakcoSVM::construct_kernel(){
 		}
 	}
 	for (int i = 0; i <= g - k; i++) {
-		c1 = cnt_k[i];
 		for (int j1 = 0; j1 < nStr; ++j1) {
 			for (int j2 = 0; j2 <= j1; ++j2) {
 				tri_access(K, j1, j2) += w[i] * tri_access(Ksfinal[i], j1, j2);
@@ -256,7 +242,7 @@ double* GakcoSVM::construct_kernel(){
 		tri_access(K,i,i) = 1.0;
 	}
 
-	free(cnt_k);
+
 	for(int i=0; i <= max_m; i++){
 		free(Ksfinal[i]);
 	}
@@ -286,12 +272,11 @@ double* GakcoSVM::construct_test_kernel(){
 	int ** S;
 	long int nTestStr;
 	int *label, *len;
-	int k, num_max_mismatches, max_m;
-	int m, g, numThreads;
+	int k, max_m;
+	int g, numThreads;
 	int na;
-	unsigned int addr;
-	long int num_comb, value, maxlen, minlen;
-	int *elems, *cnt_k;
+	long int maxlen, minlen;
+	int *elems;
 	Features *features;
 	double *test_K;
 	unsigned int* nchoosekmat;
@@ -393,7 +378,6 @@ double* GakcoSVM::construct_test_kernel(){
 	}
 
 	
-	addr = ((g - k) + 1)*totalStr*totalStr;
 	int tri_totalStr = totalStr * (totalStr+1) / 2;
 
 	//malloc things we have the size info on already here so there isn't excessive mallocing inside the loop
@@ -417,7 +401,6 @@ double* GakcoSVM::construct_test_kernel(){
 	memset(test_K, 0, sizeof(double) * tri_totalStr);
 	memset(nchoosekmat, 0, sizeof(unsigned int) * g * g);
 
-	cnt_k = (int *)malloc(features->n * sizeof(int));
 
 	max_m = g - k;
 
@@ -453,7 +436,7 @@ double* GakcoSVM::construct_test_kernel(){
 	std::vector<std::thread> threads;
 	for (int i = 0; i < numThreads; i++) {
 		threads.push_back(std::thread(&build_cumulative_mismatch_profiles_tri, workQueue, queueSize, i, numThreads,
-			elems, features, test_Ksfinal, cnt_k, features->features, g, na, features->n, totalStr, mutexes));
+			elems, features, test_Ksfinal, features->features, g, na, features->n, totalStr, mutexes));
 	}
 	for(auto &t : threads) {
 		t.join();
@@ -475,18 +458,12 @@ double* GakcoSVM::construct_test_kernel(){
 		}
 	}
 
-	int c1 = 0,
-	c2 = 0;
-	
+
 	//get exact mismatch profile (remove the overcounting)
 	
 	for (int i = 1; i <= max_m; ++i) {
-		c1 = cnt_k[i];
 		for (int j = 0; j <= i - 1; ++j) {
-			c2 = cnt_k[j];
 			for (int j1 = 0; j1 < totalStr; ++j1) {
-				value = 0;
-				int x = 0;
 				for (int j2 = 0; j2 <= j1; ++j2) {
 					//test_Ksfinal[(c1 + j1) + j2*totalStr] -=  nchoosekmat[(g - j - 1) + (i - j - 1)*g] * test_Ksfinal[(c2 + j1) + j2*totalStr];
 					tri_access(test_Ksfinal[i], j1, j2) -= nchoosekmat[(g - j - 1) + (i - j - 1)*g] * tri_access(test_Ksfinal[j], j1, j2);
@@ -495,7 +472,6 @@ double* GakcoSVM::construct_test_kernel(){
 		}
 	}
 	for (int i = 0; i <= g - k; i++) {
-		c1 = cnt_k[i];
 		for (int j1 = 0; j1 < totalStr; ++j1) {
 			for (int j2 = 0; j2 <= j1; ++j2) {
 				//test_K[j1 + j2*totalStr] += w[i] * test_Ksfinal[(c1 + j1) + j2*totalStr];
@@ -520,7 +496,6 @@ double* GakcoSVM::construct_test_kernel(){
 	}
 
 
-	free(cnt_k);
 	free(test_K);
 
 
@@ -532,12 +507,11 @@ void* GakcoSVM::construct_linear_kernel(){
 	int ** S;
 	long int nTestStr;
 	int *label, *len;
-	int k, num_max_mismatches, max_m;
-	int m, g, numThreads;
+	int k, max_m;
+	int g, numThreads;
 	int na;
-	unsigned int addr;
-	long int num_comb, value, maxlen, minlen;
-	int *elems, *cnt_k;
+	long int maxlen, minlen;
+	int *elems;
 	Features *features;
 	double *total_K;
 	unsigned int* nchoosekmat;
@@ -628,7 +602,6 @@ void* GakcoSVM::construct_linear_kernel(){
 	}
 
 	
-	addr = ((g - k) + 1)*totalStr*totalStr;
 	int tri_totalStr = totalStr * (totalStr+1) / 2;
 
 	//malloc things we have the size info on already here so there isn't excessive mallocing inside the loop
@@ -652,7 +625,6 @@ void* GakcoSVM::construct_linear_kernel(){
 	memset(total_K, 0, sizeof(double) * tri_totalStr);
 	memset(nchoosekmat, 0, sizeof(unsigned int) * g * g);
 
-	cnt_k = (int *)malloc(features->n * sizeof(int));
 
 	max_m = g - k;
 
@@ -688,7 +660,7 @@ void* GakcoSVM::construct_linear_kernel(){
 	std::vector<std::thread> threads;
 	for (int i = 0; i < numThreads; i++) {
 		threads.push_back(std::thread(&build_cumulative_mismatch_profiles_tri, workQueue, queueSize, i, numThreads,
-			elems, features, total_Ksfinal, cnt_k, features->features, g, na, features->n, totalStr, mutexes));
+			elems, features, total_Ksfinal, features->features, g, na, features->n, totalStr, mutexes));
 	}
 	for(auto &t : threads) {
 		t.join();
@@ -710,18 +682,12 @@ void* GakcoSVM::construct_linear_kernel(){
 		}
 	}
 
-	int c1 = 0,
-	c2 = 0;
 	
 	//get exact mismatch profile (remove the overcounting)
 	
 	for (int i = 1; i <= max_m; ++i) {
-		c1 = cnt_k[i];
 		for (int j = 0; j <= i - 1; ++j) {
-			c2 = cnt_k[j];
 			for (int j1 = 0; j1 < totalStr; ++j1) {
-				value = 0;
-				int x = 0;
 				for (int j2 = 0; j2 <= j1; ++j2) {
 					//test_Ksfinal[(c1 + j1) + j2*totalStr] -=  nchoosekmat[(g - j - 1) + (i - j - 1)*g] * test_Ksfinal[(c2 + j1) + j2*totalStr];
 					tri_access(total_Ksfinal[i], j1, j2) -= nchoosekmat[(g - j - 1) + (i - j - 1)*g] * tri_access(total_Ksfinal[j], j1, j2);
@@ -730,7 +696,6 @@ void* GakcoSVM::construct_linear_kernel(){
 		}
 	}
 	for (int i = 0; i <= g - k; i++) {
-		c1 = cnt_k[i];
 		for (int j1 = 0; j1 < totalStr; ++j1) {
 			for (int j2 = 0; j2 <= j1; ++j2) {
 				//test_K[j1 + j2*totalStr] += w[i] * test_Ksfinal[(c1 + j1) + j2*totalStr];
@@ -775,8 +740,6 @@ void* GakcoSVM::construct_linear_kernel(){
 	}
 
 
-	free(cnt_k);
-
 
 	this->test_kernel = test_K;
 
@@ -784,13 +747,12 @@ void* GakcoSVM::construct_linear_kernel(){
 }
 
 
-void* GakcoSVM::train(double* K) {
+void GakcoSVM::train(double* K) {
 	if(K == NULL){
 		K = this->kernel;
 	}
 	struct svm_parameter* svm_param = Malloc(svm_parameter, 1);
 	struct svm_problem* prob = Malloc(svm_problem, 1);
-	struct svm_model *model;
 
 	this->prob = prob;
 	
@@ -845,9 +807,11 @@ void* GakcoSVM::train(double* K) {
 			totalind++;
 			prob->y[i] = this->labels[i];
 		}
+		this->x_space = x_space;
 	}
 
 	prob->x = x;
+
 
 
 
@@ -971,7 +935,6 @@ double GakcoSVM::predict(double *test_K, int* test_labels){
 	int nStr = this->nStr;
 	int num_sv = this->model->nSV[0] + this->model->nSV[1];
 	int nTestStr = this->nTestStr;
-	int totalStr = nStr + nTestStr;
 
 
 	struct svm_node *x = Malloc(struct svm_node, nStr + 1);
@@ -986,10 +949,8 @@ double GakcoSVM::predict(double *test_K, int* test_labels){
 			labelind = i;
 	}
 
-	FILE* labelfile, *predictionfile;
+	FILE* labelfile;
 	labelfile = fopen(this->params->labelFilename.c_str(), "w");
-	std::string predfile = "probs."+this->params->testFilename.substr(this->params->testFilename.find("data")+5);
-	predictionfile = fopen(predfile.c_str(), "w");
 
 	int svcount = 0;
 	for(int i = 0; i < nTestStr; i++){
@@ -1028,7 +989,6 @@ double GakcoSVM::predict(double *test_K, int* test_labels){
 
 
 		fprintf(labelfile, "%d\n", (int)guess);
-		fprintf(predictionfile, "%d\t%f\n", test_labels[i], probs[labelind]);
 	
 		if ((guess < 0.0 && test_labels[i] < 0) || (guess > 0.0 && test_labels[i] > 0)){
 			correct++;
@@ -1048,9 +1008,17 @@ double GakcoSVM::predict(double *test_K, int* test_labels){
 	}
 
 	fclose(labelfile);
-	fclose(predictionfile);
 	free(pos);
 	free(neg);
+	//free(test_K);
+	// if(this->params->kernel_type == GAKCO){
+	// 	for (int i = 0; i < this->prob->l; i++){
+	// 		free(this->prob->x[i]);
+	// 	}
+	// }else{
+	// 	free(this->x_space);
+	// }
+	//free(this->prob->x);
 
 	return (double)correct / nTestStr;
 }
@@ -1073,7 +1041,7 @@ double *GakcoSVM::load_kernel(std::string kernel_name){
 
 	std::string line;
 	std::ifstream inpfile (kernel_name);
-	double* K;
+	double* K = NULL;
 	int lines = 0;
 	if (inpfile.is_open()){
 		while(!inpfile.eof()){
@@ -1095,6 +1063,7 @@ double *GakcoSVM::load_kernel(std::string kernel_name){
 			K[idx] = std::stof(line.substr(line.find(":") + 1)); //get trimmed value without index and colon, convert to double
 			idx++;
 		}
+		inpfile.close();
 	}
 
 

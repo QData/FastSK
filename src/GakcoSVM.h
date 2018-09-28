@@ -3,6 +3,8 @@
 #ifndef GAKCOSVM_H
 #define GAKCOSVM_H 
 #include "libsvm-code/svm.h"
+#include <cstddef>
+#include "shared.h"
 
 //Parameter struct, one struct created for each dataset, allows you to store different sets of parameters
 //and instantiate a GackoSVM with them when you want to run them.
@@ -18,7 +20,7 @@ typedef struct gakco_param {
 	int m;
 	int threads = -1; //Number of threads by default
 	int svm_type = C_SVC;
-	int kernel_type = GAKCO;
+	int kernel_type = LINEAR;
 	double C 		= 1.0; //C param
 	double nu 		= .5; //nu for nu-SVC
 	int cache_size 	= 100; //cache size
@@ -42,6 +44,7 @@ public:
 	Features *kernel_features = NULL; //so that each test feature-set can be appended but keep the original list
 	struct svm_problem* prob = NULL;
 	struct svm_model* model = NULL;
+	struct svm_node* x_space = NULL;
 	int* labels = NULL;
 	int* test_labels = NULL;
 	long int nStr; //here instead of params because it is not set by user ever.
@@ -53,9 +56,9 @@ public:
 	double* construct_kernel();
 	double* construct_test_kernel();
 	void* construct_linear_kernel();
-	void* train(double* K);
+	void train(double* K);
 	double predict(double* test_K, int* test_labels);
-	void write_dictionary();
+	void write_dictionary(char* d);
 	void write_files();
 	void write_libsvm_kernel();
 	void write_test_kernel();
