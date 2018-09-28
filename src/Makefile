@@ -12,13 +12,13 @@ gakco: $(OFILES)
 	$(CXX) $(CXXFLAGS) $(OFILES) -o iGakco
 	@echo Produced iGakco executable 
 
-python: cigakco.pxd igakco.pyx $(OFILES)
-	cython igakco.pyx
-	python setup.py build_ext -i
+python: pywrap/cigakco.pxd pywrap/igakco.pyx $(OFILES)
+	cython pywrap/igakco.pyx 
+	python pywrap/setup.py build_ext -i 
 
-python3: cigakco.pxd igakco.pyx $(OFILES)
-	cython igakco.pyx
-	python3 setup.py build_ext -i
+python3: pywrap/cigakco.pxd pywrap/igakco.pyx $(OFILES)
+	cython pywrap/igakco.pyx
+	python3 pywrap/setup.py build_ext -i
 
 clean:
 	$(RM) *.o *~
