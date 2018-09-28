@@ -13,15 +13,15 @@
 #include <cstdlib>
 #include <string.h>
 #include <math.h>
-#include "shared.h"
-#include "shared.cpp"
+//#include "shared.h"
+//#include "shared.cpp"
 #include <assert.h>
 #include <thread>
 #include <iostream>
 #include <random>
 #include <ctime>
 #include <fstream>
-#include "readInput.cpp"
+#include "readInput.h"
 #include <future>
 #include <mutex>
 #include <pthread.h>
@@ -29,8 +29,10 @@
 #include "GakcoSVM.h"
 #include "Gakco.h"
 
+
+
 int help() {
-	printf("\nUsage: gakco [options] <trainingFile> <testingFile> <dictionaryFile> <labelsFile> <kernelFile>\n");
+	printf("\nUsage: gakco [options] <trainingFile> <testingFile> <dictionaryFile> <labelsFile>\n");
 	printf("FLAGS WITH ARGUMENTS\n");
 	printf("\t g : gmer length; length of substrings (allowing up to m mismatches) used to compare sequences. Constraints: 0 < g < 20\n");
 	printf("\t m : maximum number of mismatches when comparing two gmers. Constraints: 0 <= m < g\n");
@@ -62,13 +64,26 @@ int errorID1() {
 //builder for the train kernel, triangularized to save memory
 //Accepts unsigned int** Ksfinal instead of unsigned int*
 void build_cumulative_mismatch_profiles_tri(WorkItem *workQueue, int queueSize, int threadNum, int numThreads, int *elems, 
-										Features *features, unsigned int **Ksfinal, int *cnt_k, int *feat, int g, int na,
+										Features *features, unsigned int **Ksfinal, int *feat, int g, int na,
 										int nfeat, int nStr, pthread_mutex_t *mutexes) {
 	bool working = true;
 	int itemNum = threadNum;
+	// WorkItem* threadQueue = new WorkItem[(queueSize / numThreads)+1];
+	// int i = 0;
+	// while(itemNum < queueSize){
+	// 	threadQueue[i] = workQueue[itemNum];
+	// 	itemNum += numThreads;
+	// 	i++;
+	// }
+	// //shuffle the workItems for this thread after splitting, so each thread has an equal distribution of different m's 
+	// //but performs them in different order so as to avoid bottlenecking on the sequential accumulation into C_m
+	// shuffle(threadQueue, i);
+	// i--;
+
 	int num_str_pairs = nStr * (nStr+1) / 2;
 	while (working) {
 		//Determine which mismatch profile needs to be computed by this thread
+		//WorkItem workItem = threadQueue[i];
 		WorkItem workItem = workQueue[itemNum];
 		int m = workItem.m;
 		int combo_num = workItem.combo_num; //specifies which mismatch profile for the given value of m is to be computed
@@ -79,7 +94,6 @@ void build_cumulative_mismatch_profiles_tri(WorkItem *workQueue, int queueSize, 
 		(*combinations).n = g;
 		(*combinations).k = k;
 		(*combinations).num_comb = num_comb;
-		unsigned long int c = m * (num_str_pairs);
 		
 		unsigned int *Ks = (unsigned int *) malloc(num_str_pairs * sizeof(unsigned int)); //where this thread will store its work
 		unsigned int *sortIdx = (unsigned int *) malloc(nfeat * sizeof(unsigned int)); //an array of gmer indices associated with group_srt and features_srt
@@ -127,7 +141,6 @@ void build_cumulative_mismatch_profiles_tri(WorkItem *workQueue, int queueSize, 
 
 		free(cnt_m);
 		free(out);
-		cnt_k[m] = c;
 		free(Ks);
 		free(sortIdx);
 		free(features_srt);
@@ -150,7 +163,7 @@ void build_cumulative_mismatch_profiles_tri(WorkItem *workQueue, int queueSize, 
 //builder for the test matrix, not able to be triangularized so need different method.
 //Accepts unsigned int* Ksfinal instead of unsigned int**
 void build_cumulative_mismatch_profiles(WorkItem *workQueue, int queueSize, int threadNum, int numThreads, int *elems, 
-										Features *features, unsigned int *Ksfinal, int *cnt_k, int *feat, int g, int na,
+										Features *features, unsigned int *Ksfinal, int *feat, int g, int na,
 										int nfeat, int nStr, pthread_mutex_t *mutexes) {
 	bool working = true;
 	int itemNum = threadNum;
@@ -217,7 +230,6 @@ void build_cumulative_mismatch_profiles(WorkItem *workQueue, int queueSize, int 
 
 		free(cnt_m);
 		free(out);
-		cnt_k[m] = c;
 		free(Ks);
 		free(sortIdx);
 		free(features_srt);
@@ -235,11 +247,151 @@ void build_cumulative_mismatch_profiles(WorkItem *workQueue, int queueSize, int 
 	}
 }
 
+double igakco_main_wrapper(int argc, char* argv[]){
+	// Get g, k, nStr, and t values from command line
+	struct gakco_param arg;
+	int g = -1;
+	int M = -1;
+	int numThreads = -1;
+	int probability = 0;
+	float C = -1;
+	char c;
+	int onlyprint = 0;
+	int nopredict = 0;
+
+  	optind =0;
+	while ((c = getopt(argc, argv, "g:m:t:C:k:o:h:r:lsp")) != -1) {
+		switch (c) {
+			case 'g':
+				g = atoi(optarg);
+				break;
+			case 'm':
+				M = atoi(optarg);
+				break;
+			case 't':
+				numThreads = atoi(optarg);
+				break;
+			case 'C':
+				C = atof(optarg);
+				break;
+			case 'p':
+				probability = 1;
+				break;
+			case 'k':
+				arg.outputFilename = optarg;
+				break;
+			case 'o':
+				arg.modelName = optarg;
+				break;
+			case 'l':
+				arg.loadkernel = 1;
+				break;
+			case 's':
+				arg.loadkernel = 1;
+				arg.loadmodel = 1;
+				 break;
+			case 'r':
+				if (atoi(optarg) == 1)
+					arg.kernel_type = LINEAR;
+				else
+					arg.kernel_type = GAKCO;
+				break;
+			case 'h':
+				if (atoi(optarg) == 1){
+					onlyprint = 1;
+				}else if (atoi(optarg) == 2){
+					nopredict = 1;
+				}
+				break;
+
+        break;
+		}
+	}
+	if (g == -1) {
+		printf("Must provide a value for the g parameter\n");
+		return help();
+	}
+	if (M == -1) {
+		printf("Must provide a value for the m parameter\n");
+		return help();
+	}
+
+
+	int argNum = optind;
+	// Get names of sequence, dictionary, labels, and kernel files 	
+	char filename[100], testFilename[100], filename_label[100], Dicfilename[100];
+	strcpy(filename, argv[argNum++]);
+	strcpy(testFilename, argv[argNum++]);
+	strcpy(Dicfilename, argv[argNum++]);
+	strcpy(filename_label, argv[argNum++]);
+
+	char isVerbose;
+	isVerbose = 0;
+	
+	// Create a Gakco SVM object to construct kernel, train, and test
+	arg.filename = filename;
+	arg.testFilename = testFilename;
+	arg.dictFilename = Dicfilename;
+	arg.labelFilename = filename_label;
+	arg.g = g;
+	arg.k = g - M;
+	arg.probability = probability;
+	if (numThreads != -1) {
+		arg.threads = numThreads;
+	}
+	if (C != -1) {
+		arg.C = C;
+	}
+	arg.eps = .001;
+	arg.h = 0;
+	
+
+	//Create GakcoSVM object with specified params. Params can be modified in between kernel construction
+	//or training to make changes to how it behaves next time.
+	GakcoSVM gsvm = GakcoSVM(&arg);
+
+	if(arg.loadkernel)
+		gsvm.load_kernel(arg.outputFilename);
+
+	//returns a pointer to the kernel matrix, and also stores it as a member variable
+	//still needed even if we are loading a kernel as it reads labels and dataset info, but won't calculate if it doesn't need to.
+	if(arg.kernel_type == GAKCO)
+		gsvm.construct_kernel();
+	else if(arg.kernel_type == LINEAR)
+		gsvm.construct_linear_kernel();
+
+	if(!arg.loadkernel && !arg.outputFilename.empty()){
+		gsvm.write_files();
+		//gsvm.write_libsvm_kernel();
+	}
+
+	//exit program if only need to print out the kernel
+	if (onlyprint)
+		return 0;
+
+	if(arg.loadmodel){
+		gsvm.model = svm_load_model(arg.modelName.c_str());
+	}else{
+		//trains the SVM on the provided dataset, outputs a model into modelName if provided
+		gsvm.train(gsvm.kernel);
+	}
+	
+	if(nopredict)
+		return 0;
+	if(arg.kernel_type == GAKCO)
+		gsvm.construct_test_kernel();
+
+	gsvm.write_test_kernel();
+
+	double acc = gsvm.predict(gsvm.test_kernel, gsvm.test_labels);
+
+
+	return acc;
+}
 
 //Main function 
-
 int main(int argc, char *argv[]) {
-	// Get g, k, nStr, and t values from command line
+		// Get g, k, nStr, and t values from command line
 	struct gakco_param arg;
 	int g = -1;
 	int M = -1;
@@ -282,9 +434,9 @@ int main(int argc, char *argv[]) {
 				 break;
 			case 'r':
 				if (atoi(optarg) == 1)
-					arg.kernel_type = GAKCO;
-				else
 					arg.kernel_type = LINEAR;
+				else
+					arg.kernel_type = GAKCO;
 				break;
 			case 'h':
 				if (atoi(optarg) == 1){
@@ -309,15 +461,12 @@ int main(int argc, char *argv[]) {
 
 	int argNum = optind;
 	// Get names of sequence, dictionary, labels, and kernel files 	
-	char filename[100], testFilename[100], filename_label[100], Dicfilename[100], opfilename[100];
+	char filename[100], testFilename[100], filename_label[100], Dicfilename[100];
 	strcpy(filename, argv[argNum++]);
 	strcpy(testFilename, argv[argNum++]);
 	strcpy(Dicfilename, argv[argNum++]);
 	strcpy(filename_label, argv[argNum++]);
 
-	int *label;
-	long int nStr;
-	double *K, *test_K;
 	char isVerbose;
 	isVerbose = 0;
 	
@@ -349,7 +498,7 @@ int main(int argc, char *argv[]) {
 	//returns a pointer to the kernel matrix, and also stores it as a member variable
 	//still needed even if we are loading a kernel as it reads labels and dataset info, but won't calculate if it doesn't need to.
 	if(arg.kernel_type == GAKCO)
-		K = gsvm.construct_kernel();
+		gsvm.construct_kernel();
 	else if(arg.kernel_type == LINEAR)
 		gsvm.construct_linear_kernel();
 
@@ -372,12 +521,11 @@ int main(int argc, char *argv[]) {
 	if(nopredict)
 		return 0;
 	if(arg.kernel_type == GAKCO)
-		test_K = gsvm.construct_test_kernel();
+		gsvm.construct_test_kernel();
 
 	gsvm.write_test_kernel();
 
-	double auc = gsvm.predict(gsvm.test_kernel, gsvm.test_labels);
-
+	gsvm.predict(gsvm.test_kernel, gsvm.test_labels);
 
 
 	return 0;
