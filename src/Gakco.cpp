@@ -65,7 +65,7 @@ int errorID1() {
 //Accepts unsigned int** Ksfinal instead of unsigned int*
 void build_cumulative_mismatch_profiles_tri(WorkItem *workQueue, int queueSize, int threadNum, int numThreads, int *elems, 
 										Features *features, unsigned int **Ksfinal, int *feat, int g, int na,
-										int nfeat, int nStr, pthread_mutex_t *mutexes) {
+										int nfeat, int nStr, pthread_mutex_t *mutexes, int quiet) {
 	bool working = true;
 	int itemNum = threadNum;
 	// WorkItem* threadQueue = new WorkItem[(queueSize / numThreads)+1];
@@ -154,7 +154,8 @@ void build_cumulative_mismatch_profiles_tri(WorkItem *workQueue, int queueSize, 
 		itemNum += numThreads;
 		if (itemNum >= queueSize) {
 			working = false;
-			printf("Thread %d finished...\n", threadNum);
+			if(!quiet)
+				printf("Thread %d finished...\n", threadNum);
 		}
 	}
 }
@@ -258,9 +259,10 @@ double igakco_main_wrapper(int argc, char* argv[]){
 	char c;
 	int onlyprint = 0;
 	int nopredict = 0;
+	int quiet= 0;
 
   	optind =0;
-	while ((c = getopt(argc, argv, "g:m:t:C:k:o:h:r:lsp")) != -1) {
+	while ((c = getopt(argc, argv, "g:m:t:C:k:o:h:r:lspq")) != -1) {
 		switch (c) {
 			case 'g':
 				g = atoi(optarg);
@@ -303,6 +305,9 @@ double igakco_main_wrapper(int argc, char* argv[]){
 					nopredict = 1;
 				}
 				break;
+			case 'q':
+				quiet = 1;
+				break;
 
         break;
 		}
@@ -336,6 +341,7 @@ double igakco_main_wrapper(int argc, char* argv[]){
 	arg.g = g;
 	arg.k = g - M;
 	arg.probability = probability;
+	arg.quiet = quiet;
 	if (numThreads != -1) {
 		arg.threads = numThreads;
 	}
@@ -401,8 +407,9 @@ int main(int argc, char *argv[]) {
 	int c;
 	int onlyprint = 0;
 	int nopredict = 0;
+	int quiet= 0;
   
-	while ((c = getopt(argc, argv, "g:m:t:C:k:o:h:r:lsp")) != -1) {
+	while ((c = getopt(argc, argv, "g:m:t:C:k:o:h:r:lspq")) != -1) {
 		switch (c) {
 			case 'g':
 				g = atoi(optarg);
@@ -431,7 +438,7 @@ int main(int argc, char *argv[]) {
 			case 's':
 				arg.loadkernel = 1;
 				arg.loadmodel = 1;
-				 break;
+				break;
 			case 'r':
 				if (atoi(optarg) == 1)
 					arg.kernel_type = LINEAR;
@@ -444,6 +451,9 @@ int main(int argc, char *argv[]) {
 				}else if (atoi(optarg) == 2){
 					nopredict = 1;
 				}
+				break;
+			case 'q':
+				quiet = 1;
 				break;
 
         break;
@@ -478,6 +488,7 @@ int main(int argc, char *argv[]) {
 	arg.g = g;
 	arg.k = g - M;
 	arg.probability = probability;
+	arg.quiet = quiet;
 	if (numThreads != -1) {
 		arg.threads = numThreads;
 	}

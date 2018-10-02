@@ -79,8 +79,8 @@ double* GakcoSVM::construct_kernel(){
 	nStr = MAXNSTR;
 	
 	// Read input file
-	
-	printf("Input file : %s\n", filename);
+	if(!this->params->quiet)
+		printf("Input file : %s\n", filename);
 	S = Readinput_(filename, Dicfilename, label, len, &nStr, &maxlen, &minlen, &na, this);
 	
 	
@@ -88,10 +88,12 @@ double* GakcoSVM::construct_kernel(){
 		help();
 		exit(1);
 	}
-	if (maxlen != minlen)
-		printf("Read %ld strings of max length = %ld and min length=%ld\n", nStr, maxlen, minlen);
-	else
-		printf("Read %ld strings of length = %ld\n", nStr, maxlen);
+	if(!this->params->quiet){
+		if (maxlen != minlen)
+			printf("Read %ld strings of max length = %ld and min length=%ld\n", nStr, maxlen, minlen);
+		else
+			printf("Read %ld strings of length = %ld\n", nStr, maxlen);
+	}
 
 	if (g > minlen){
 		errorID1();
@@ -113,7 +115,8 @@ double* GakcoSVM::construct_kernel(){
 	
 	nfeat = (*features).n;
 	feat = (*features).features;
-	printf("(%d,%d): %d features\n", g, k, nfeat); 
+	if(!this->params->quiet)
+		printf("(%d,%d): %d features\n", g, k, nfeat); 
 
 	//number of 
 	int num_str_pairs = nStr * (nStr+1) / 2;
@@ -122,13 +125,16 @@ double* GakcoSVM::construct_kernel(){
 	/* Precompute weights hm.*/
 
 	int w[g - k];
-	printf("Weights (hm):");
+	if(!this->params->quiet)
+		printf("Weights (hm):");
 	for (int i = 0; i <= g - k; i++) {
 			w[i] = nchoosek(g - i, k);
-			printf("%d ", w[i]);
+			if(!this->params->quiet)
+				printf("%d ", w[i]);
 		}
+	if(!this->params->quiet)
+		printf("\n");
 	
-	printf("\n");
 
 	//if this gakco is loading a kernel we don't need to calculate it
 	if(this->params->loadkernel || this->params->loadmodel){
@@ -189,16 +195,18 @@ double* GakcoSVM::construct_kernel(){
 		pthread_mutex_init(&mutexes[i], NULL);
 	}
 	//Create the threads and compute cumulative mismatch profiles
-	printf("Computing mismatch profiles using %d threads...\n", numThreads);
+	if(!this->params->quiet)
+		printf("Computing mismatch profiles using %d threads...\n", numThreads);
 	std::vector<std::thread> threads;
 	for (int i = 0; i < numThreads; i++) {
 		threads.push_back(std::thread(&build_cumulative_mismatch_profiles_tri, workQueue, queueSize, i, numThreads,
-			elems, features, Ksfinal, feat, g, na, nfeat, nStr, mutexes));
+			elems, features, Ksfinal, feat, g, na, nfeat, nStr, mutexes, this->params->quiet));
 	}
 	for(auto &t : threads) {
 		t.join();
 	}
-	printf("\n");
+	if(!this->params->quiet)
+		printf("\n");
 
 	//no longer need the features list so can free it here
 	free(features->features);
@@ -311,10 +319,12 @@ double* GakcoSVM::construct_test_kernel(){
 		help();
 		exit(1);
 	}
-	if (maxlen != minlen)
-		printf("Read %ld strings of max length = %ld and min length=%ld\n", nTestStr, test_maxlen, test_minlen);
-	else
-		printf("Read %ld strings of length = %ld\n", nTestStr, test_maxlen);
+	if(!this->params->quiet){
+		if (maxlen != minlen)
+			printf("Read %ld strings of max length = %ld and min length=%ld\n", nTestStr, test_maxlen, test_minlen);
+		else
+			printf("Read %ld strings of length = %ld\n", nTestStr, test_maxlen);
+	}
 
 	if (g > minlen){
 		errorID1();
@@ -330,6 +340,7 @@ double* GakcoSVM::construct_test_kernel(){
 	int** finalS = (int**)malloc(totalStr * sizeof(int*));
 	//create a unified length array
 	int* finalLen = (int*)malloc(totalStr * sizeof(int));
+	memset(finalLen, 0, totalStr*sizeof(int));
 	
 	//copy in the references to the test strings
 	memcpy(finalS, test_S, nTestStr * sizeof(int*));
@@ -371,11 +382,14 @@ double* GakcoSVM::construct_test_kernel(){
 	/* Precompute weights hm.*/
 
 	int w[g - k];
-	printf("Weights (hm):");
+	if(!this->params->quiet)
+		printf("Weights (hm):");
 	for (int i = 0; i <= g - k; i++){
 		w[i] = nchoosek(g - i, k);
-		printf("%d ", w[i]);
+		if(!this->params->quiet)
+			printf("%d ", w[i]);
 	}
+	
 
 	
 	int tri_totalStr = totalStr * (totalStr+1) / 2;
@@ -432,16 +446,18 @@ double* GakcoSVM::construct_test_kernel(){
 		pthread_mutex_init(&mutexes[i], NULL);
 	}
 	//Create the threads and compute cumulative mismatch profiles
-	printf("Computing mismatch profiles using %d threads...\n", numThreads);
+	if(!this->params->quiet)
+		printf("Computing mismatch profiles using %d threads...\n", numThreads);
 	std::vector<std::thread> threads;
 	for (int i = 0; i < numThreads; i++) {
 		threads.push_back(std::thread(&build_cumulative_mismatch_profiles_tri, workQueue, queueSize, i, numThreads,
-			elems, features, test_Ksfinal, features->features, g, na, features->n, totalStr, mutexes));
+			elems, features, test_Ksfinal, features->features, g, na, features->n, totalStr, mutexes, this->params->quiet));
 	}
 	for(auto &t : threads) {
 		t.join();
 	}
-	printf("\n");
+	if(!this->params->quiet)
+		printf("\n");
 
 	//no longer need the features list so can free it here
 	free(features->features);
@@ -549,11 +565,12 @@ void* GakcoSVM::construct_linear_kernel(){
 		help();
 		exit(1);
 	}
-	if (maxlen != minlen)
-		printf("Read %ld strings of max length = %ld and min length=%ld\n", nStr+nTestStr, std::max(test_maxlen, maxlen), std::min(test_minlen, minlen));
-	else
-		printf("Read %ld strings of length = %ld\n", nStr+nTestStr, std::max(test_maxlen,maxlen));
-
+	if(!this->params->quiet){
+		if (maxlen != minlen)
+			printf("Read %ld strings of max length = %ld and min length=%ld\n", nStr+nTestStr, std::max(test_maxlen, maxlen), std::min(test_minlen, minlen));
+		else
+			printf("Read %ld strings of length = %ld\n", nStr+nTestStr, std::max(test_maxlen,maxlen));
+	}
 	if (g > minlen){
 		errorID1();
 		exit(1);
@@ -573,6 +590,7 @@ void* GakcoSVM::construct_linear_kernel(){
 	//copy in the references to the test strings
 	memcpy(&finalS[nStr], test_S, nTestStr * sizeof(int*));
 	memcpy(&finalLen[nStr], test_len, nTestStr*sizeof(int));
+
 
 
 	features = extractFeatures(finalS, finalLen, totalStr, g);
@@ -595,13 +613,15 @@ void* GakcoSVM::construct_linear_kernel(){
 	/* Precompute weights hm.*/
 
 	int w[g - k];
-	printf("Weights (hm):");
+	if(!this->params->quiet)
+		printf("Weights (hm):");
 	for (int i = 0; i <= g - k; i++){
 		w[i] = nchoosek(g - i, k);
-		printf("%d ", w[i]);
+		if(!this->params->quiet)
+			printf("%d ", w[i]);
 	}
-
 	
+		
 	int tri_totalStr = totalStr * (totalStr+1) / 2;
 
 	//malloc things we have the size info on already here so there isn't excessive mallocing inside the loop
@@ -656,16 +676,18 @@ void* GakcoSVM::construct_linear_kernel(){
 		pthread_mutex_init(&mutexes[i], NULL);
 	}
 	//Create the threads and compute cumulative mismatch profiles
-	printf("Computing mismatch profiles using %d threads...\n", numThreads);
+	if(!this->params->quiet)
+		printf("Computing mismatch profiles using %d threads...\n", numThreads);
 	std::vector<std::thread> threads;
 	for (int i = 0; i < numThreads; i++) {
 		threads.push_back(std::thread(&build_cumulative_mismatch_profiles_tri, workQueue, queueSize, i, numThreads,
-			elems, features, total_Ksfinal, features->features, g, na, features->n, totalStr, mutexes));
+			elems, features, total_Ksfinal, features->features, g, na, features->n, totalStr, mutexes, this->params->quiet));
 	}
 	for(auto &t : threads) {
 		t.join();
 	}
-	printf("\n");
+	if(!this->params->quiet)
+		printf("\n");
 
 	//no longer need the features list so can free it here
 	free(features->features);
@@ -792,6 +814,7 @@ void GakcoSVM::train(double* K) {
 			prob->y[i] = this->labels[i];
 
 		}
+		this->x_space = x_space;
 	}else if(this->params->kernel_type == LINEAR){
 
 		x_space = Malloc(struct svm_node, (nStr+1)*nStr);
@@ -812,8 +835,9 @@ void GakcoSVM::train(double* K) {
 
 	prob->x = x;
 
-
-
+	//if in quiet mode, set libsvm's print function to null
+	if(this->params->quiet)
+		svm_set_print_string_function(&print_null);
 
 	error_msg = svm_check_parameter(prob, svm_param);
 
@@ -832,7 +856,7 @@ void GakcoSVM::train(double* K) {
 	free(svm_param);
 	//free(x_space);
 	//free(x);
-	free(prob);
+	//free(prob);
 	free(this->kernel);
 
 }
@@ -847,7 +871,8 @@ void GakcoSVM::write_files() {
 	if(kernelfileName.empty()){
 		kernelfileName = "kernel.txt";
 	}
-	printf("Writing kernel to %s\n", kernelfileName.c_str());
+	if(!this->params->quiet)
+		printf("Writing kernel to %s\n", kernelfileName.c_str());
 	kernelfile = fopen(kernelfileName.c_str(), "w");
 	labelfile = fopen("train_labels.txt", "w");
 	int nStr = this->nStr;
@@ -880,7 +905,8 @@ void GakcoSVM::write_libsvm_kernel() {
 	if(kernelfileName.empty()){
 		kernelfileName = "kernel.txt";
 	}
-	printf("Writing kernel to %s\n", kernelfileName.c_str());
+	if(!this->params->quiet)
+		printf("Writing kernel to %s\n", kernelfileName.c_str());
 	kernelfile = fopen(kernelfileName.c_str(), "w");
 	labelfile = fopen("train_labels.txt", "w");
 	int nStr = this->nStr;
@@ -906,7 +932,8 @@ void GakcoSVM::write_test_kernel() {
 	int nTestStr = this->nTestStr;
 	int num_sv = this->model->nSV[0] + this->model->nSV[1];
 
-	printf("Writing test kernel %d", nTestStr);
+	if(!this->params->quiet)
+		printf("Writing test kernel %d", nTestStr);
 	for (int i = 0; i < nTestStr; ++i)
 	{	
 		//fprintf(kernelfile, "%d ", this->test_labels[i]);
@@ -1001,24 +1028,42 @@ double GakcoSVM::predict(double *test_K, int* test_labels){
 	if(this->params->probability && this->numClasses){
 		double auc = calculate_auc(pos, neg, pagg, nagg);
 		printf("auc: %f\n", auc);
-
-		printf("fp: %d\tfn: %d\n", fp, fn);
-		printf("num pos: %d\n", pagg);
-		printf("percent pos: %f\n", ((double)pagg/(nagg+pagg)));
+		if(!this->params->quiet){
+			printf("fp: %d\tfn: %d\n", fp, fn);
+			printf("num pos: %d\n", pagg);
+			printf("percent pos: %f\n", ((double)pagg/(nagg+pagg)));
+		}
 	}
 
 	fclose(labelfile);
 	free(pos);
 	free(neg);
-	//free(test_K);
+	free(test_K);
+	free(x);
 	// if(this->params->kernel_type == GAKCO){
 	// 	for (int i = 0; i < this->prob->l; i++){
 	// 		free(this->prob->x[i]);
 	// 	}
-	// }else{
+	// }
+	// else{
 	// 	free(this->x_space);
 	// }
-	//free(this->prob->x);
+	free(this->x_space);
+	free(this->prob->x);
+	free(this->prob->y);
+	free(this->prob);
+
+	free(this->labels);
+	free(this->test_labels);
+
+	//model freeing
+	free(this->model);
+	free(this->model->SV);
+	for(int i=0;i<this->model->nr_class-1;i++)
+		free(model->sv_coef[i]);
+	free(model->sv_coef);
+	free(model->sv_indices);
+
 
 	return (double)correct / nTestStr;
 }

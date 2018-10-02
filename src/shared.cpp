@@ -38,7 +38,8 @@ Features *extractFeatures(int **S, int *len, int nStr, int g) {
 		sumLen += len[i];
 		nfeat += (len[i] >= g) ? (len[i] - g + 1) : 0;
 	}
-	printf("numF=%d, sumLen=%d\n", nfeat, sumLen); 
+
+	//printf("numF=%d, sumLen=%d\n", nfeat, sumLen); 
 	group = (int *)malloc(nfeat * sizeof(int));
 	features = (int *)malloc(nfeat*g * sizeof(int));
 	c = 0;\
@@ -391,4 +392,6 @@ void shuffle(WorkItem *array, size_t n)
 }
 
 
-
+//null function to allow setting LIBSVM's printing to nothing on quiet mode
+void print_null(const char *s) {
+}

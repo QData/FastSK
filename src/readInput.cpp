@@ -58,10 +58,15 @@ int ** Readinput_(char *filename, char *dictFileName, int *seqLabels, int *seqLe
             object->write_dictionary(d);
         }
         object->dictionary = d;
-        printf("Dictionary characters: %s\n", d);
+        if(!object->params->quiet)
+            printf("Dictionary characters: %s\n", d);
     }
-    else
+    else{
         d = object->dictionary;
+        *dictionarySize = strlen(object->dictionary);
+    }
+    if(!object->params->quiet)
+        printf("Dictionary size = %d (+1 for unknown character)\n", *dictionarySize - 1);
     
 
     ifstream file;
@@ -70,7 +75,8 @@ int ** Readinput_(char *filename, char *dictFileName, int *seqLabels, int *seqLe
         printf("Error opening %s. Check that the file exists.\n", filename);
         exit(1);
     }
-    printf("Reading %s\n", filename);
+    if(!object->params->quiet)
+        printf("Reading %s\n", filename);
 
     output = (int **) malloc(MAXNSTR * sizeof(int *));
     string line, label;
@@ -157,8 +163,8 @@ char * readDict (char *dictFileName, int *dictionarySize) {
             i++;
         }
         dictsize = i - 1;
-        printf("Dictionary size = %d (+1 for unknown character)\n", dictsize + 1);
         fclose(inpfile);
+        free(line1);
         *dictionarySize = dictsize + 2;
         D[i] = '\0';
         D = (char*)realloc(D, (i+1) *sizeof(char));

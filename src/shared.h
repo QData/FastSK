@@ -50,5 +50,6 @@ void countAndUpdateTri(unsigned int *outK, unsigned int *sx, unsigned int *g, in
 double nchoosek(double n, double k);
 void getCombinations(const int *elems, unsigned int n, unsigned int k, int *pos, unsigned int depth, unsigned int margin, unsigned int *cnt_comb, unsigned int *out, int num_comb);
 void shuffle(WorkItem *array, size_t n);
+void print_null(const char *s);
 
 #endif

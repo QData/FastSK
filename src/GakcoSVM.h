@@ -31,7 +31,7 @@ typedef struct gakco_param {
 	double* weight 	= NULL;		/* for C_SVC */
 	int probability = 1;
 	int crossfold	= 0; //cross-fold validation mode, v-fold, 0 is no cv.
-	int q 			= 0; //quiet mode
+	int quiet 			= 0; //quiet mode
 	int loadkernel = 0; //1 if this instance needs to load a precomputed kernel
 	int loadmodel = 0; //1 if this instance needs to load a model
 } gakco_param;
