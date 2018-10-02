@@ -17,7 +17,7 @@ iGakco-SVM takes several parameters:
         Usage: ./iGakco [options] <trainingFile> <testingFile> <dictionaryFile> <labelsFile>
           g : gmer length; length of substrings (with up to m mismatches) used to compare sequences. Constraints: 0 < g < 20
           m : maximum number of mismatches to permit when comparing gmers. Constraints: 0 <= m < g
-          t : (optional) number of threads to use. Set to 1 to not parallelize kernel computation. 
+          t : (default 4) number of threads to use. Set to 1 to not parallelize kernel computation. 
           C : (optional) SVM C parameter. Default: 1.0
           k : (optional) Specify a kernel filename to print to. If -l is also set, this will instead be used as the filename to load the kernel from
           o : (optional) Specify a model filename to print to. If -s is also set, this will instead be used as the filename to load the model from
@@ -45,6 +45,10 @@ Examples:
 Generates a kernel and prints it to kernel.txt, continues to train and predict as normal.
 ```
   $ ./iGakco -g 7 -m 2 -p -t 4 -C .01 -k kernel.txt trainingSet.fasta testSet.fasta protein.dictionary.txt labelsFile.txt
+```
+Or, the same operation in python:
+```
+  igakco(7, 2, "trainingSet.fasta", "testSet.fasta", "protein.dictionary.txt", "labelsFile.txt", C=.01, probability=True, kernelfile="kernel.txt")
 ```
 Loads the kernel from kernel.txt and trains a model with a new C value, outputting that model to model.txt, then predicts as normal
 ```
