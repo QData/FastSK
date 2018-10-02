@@ -60,13 +60,13 @@ int ** Readinput_(char *filename, char *dictFileName, int *seqLabels, int *seqLe
         object->dictionary = d;
         if(!object->params->quiet)
             printf("Dictionary characters: %s\n", d);
+            printf("Dictionary size = %d (+1 for unknown character)\n", *dictionarySize - 1);
     }
     else{
         d = object->dictionary;
         *dictionarySize = strlen(object->dictionary);
     }
-    if(!object->params->quiet)
-        printf("Dictionary size = %d (+1 for unknown character)\n", *dictionarySize - 1);
+    
     
 
     ifstream file;
@@ -214,7 +214,7 @@ char* parseDict(char* dataFilename, int* dictionarySize){
     //who knows why this dictionary size stuff is the way it is, but it's legacy
     dictsize = i-1;
     *dictionarySize = dictsize+2;//i+1;
-    D = (char*)realloc(D, (dictsize+1)*sizeof(char));
+    D = (char*)realloc(D, (dictsize+2)*sizeof(char));
 
     return D;
 }
