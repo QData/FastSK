@@ -8,7 +8,7 @@ import struct
 def Init_iGakco():
 	return None
 
-def igakco(g, m, trainfile, testfile, dictionary, labels, kernel_type=1, halt=None, kernelfile=None, modelfile=None, C=1, probability=False, threads=4, loadkernel=False, loadmodel=False):
+def igakco(g, m, trainfile, testfile, dictionary, labels, kernel_type=1, halt=None, quiet=False, kernelfile=None, modelfile=None, C=1, probability=False, threads=4, loadkernel=False, loadmodel=False):
 	cdef int numArgs = 15
 	cdef char* argv[35]
 	trainfile = trainfile.encode()
@@ -64,7 +64,9 @@ def igakco(g, m, trainfile, testfile, dictionary, labels, kernel_type=1, halt=No
 		numArgs+=1
 		argv[numArgs] = "1"
 		numArgs +=1
-
+	if quiet:
+		argv[numArgs] = "-q"
+		numArgs+=1
 
 
 	return cigakco.igakco_main_wrapper(numArgs, argv)
