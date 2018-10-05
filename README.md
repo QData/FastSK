@@ -6,10 +6,6 @@ Download and extract this repository, then enter:
   $ make
 ```
 An executable file named `iGakco` will now be located in the `iGakco-SVM/src` directory.
-Or, for using the python wrapper, make sure you are using python3 and then run:
-```
-pip install igakco
-```
 
 ## Tutorial
 iGakco-SVM takes several parameters:
@@ -34,22 +30,13 @@ iGakco-SVM takes several parameters:
           labelsFile : name of the file where the predicted labels for the test set will be placed (text file)
           kernelFile : where to write kernel matrix computed by iGakco (text file)
 
-For the python wrapper, the flags and options correspond one-to-one with the options of the original C++ package above. 
-Usage and method signature:
-```
-from igakco import igakco
 
-igakco(g, m, trainfile, testfile, dictionary, labels, C=1, kernel_type=1, halt=None, kernelfile=None, modelfile=None, probability=False, threads=4, loadkernel=False, loadmodel=False)
-```
 Examples:
 Generates a kernel and prints it to kernel.txt, continues to train and predict as normal.
 ```
   $ ./iGakco -g 7 -m 2 -p -t 4 -C .01 -k kernel.txt trainingSet.fasta testSet.fasta protein.dictionary.txt labelsFile.txt
 ```
-Or, the same operation in python:
-```
-  igakco(7, 2, "trainingSet.fasta", "testSet.fasta", "protein.dictionary.txt", "labelsFile.txt", C=.01, probability=True, kernelfile="kernel.txt")
-```
+
 Loads the kernel from kernel.txt and trains a model with a new C value, outputting that model to model.txt, then predicts as normal
 ```
   $ ./iGakco -g 7 -m 2 -p -t 4 -C .1 -k kernel.txt -o model.txt -s trainingSet.fasta testSet.fasta protein.dictionary.txt labelsFile.txt
