@@ -14,7 +14,8 @@ iGakco-SVM takes several parameters:
           g : gmer length; length of substrings (with up to m mismatches) used to compare sequences. Constraints: 0 < g < 20
           m : maximum number of mismatches to permit when comparing gmers. Constraints: 0 <= m < g
           t : (default 4) number of threads to use. Set to 1 to not parallelize kernel computation. 
-          C : (optional) SVM C parameter. Default: 1.0
+          C : (default 1.0) SVM C parameter.
+          r : (default 1) Kernel type of the SVM. 1 for linear kernel, 2 for using the string kernel as distance measures.
           k : (optional) Specify a kernel filename to print to. If -l is also set, this will instead be used as the filename to load the kernel from
           o : (optional) Specify a model filename to print to. If -s is also set, this will instead be used as the filename to load the model from
           h : (optional) set to 1 or 2. If 1, will halt the program after constructing and printing out the kernel. If 2, will halt after training and printing out the model
