@@ -133,7 +133,7 @@ def test_igakco():
 				outfile.write(infile.read())
 		# cs= [.01, .1, 1, 10]
 		# for c in cs:
-		command = ["./iGakco", "-h", "1", "-g", repr(data['g']), "-m", repr(data['m']), "-t", repr(20), '-C', repr(data['c']), "-p", "-k", os.path.join(outputpath, "kernel.txt"), '-o', os.path.join(outputpath, "model.txt"), 'sequences.fasta', 'sequences.fasta', dictfile, os.path.join(outputpath, "labels.txt")]
+		command = ["./iGakco", "-h", "1", "-g", repr(data['g']), "-m", repr(data['m']), "-t", repr(20), '-C', repr(data['c']), "-p", "-k", os.path.join(outputpath, "kernel.txt"), '-o', os.path.join(outputpath, "model.txt"), trainfile, testfile, dictfile, os.path.join(outputpath, "labels.txt")]
 		#command = "valgrind --tool=massif --massif-out-file="+data['name']+".massif.out ./iGakco -h 1 -g "+ repr(data['g']) + " -m " + repr(data['m']) + " -t "+ repr(2*data['g']) + ' -C ' + repr(data['c']) + " -p " + "-k "+ os.path.join(outputpath, "kernel.txt") + ' -o ' + os.path.join(outputpath, "model.txt") +" "+ os.path.join(datapath, data['name']+".train.fasta")+ " "+os.path.join(datapath, data['name']+".test.fasta") +" "+ "outdict.txt" + " "+ os.path.join(outputpath, "labels.txt")
 		#Execute the command and time it
 		print(command)

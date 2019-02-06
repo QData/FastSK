@@ -652,12 +652,12 @@ void* GakcoSVM::construct_linear_kernel(){
 
 	//Create the work queue used for distributing tasks among threads
 	int queueSize = 0;
-	for (int m = 0; m <= max_m; m++) {
+	for (int m = max_m; m <= max_m; m++) {
 		queueSize += nchoosek(g, m);
 	}
 	WorkItem *workQueue = new WorkItem[queueSize];
 	int itemNum = 0;
-	for (int m = 0; m <= max_m; m++) {
+	for (int m = max_m; m <= max_m; m++) {
 		int numCombinations = nchoosek(g, m);
 		for (int combNum = 0; combNum < numCombinations; combNum++) {
 			workQueue[itemNum].m = m;
@@ -700,30 +700,30 @@ void* GakcoSVM::construct_linear_kernel(){
 	nchoosekmat = (unsigned int *) malloc(g * g * sizeof(unsigned int));
 	memset(nchoosekmat, 0, sizeof(unsigned int) * g * g);
 	
-	for ( int i = g; i >= 0; --i) {
-		for ( int j = 1; j <= i; ++j) {
-			nchoosekmat[(i - 1) + (j - 1)*g] = nchoosek(i, j);
-		}
-	}
+	// for ( int i = g; i >= 0; --i) {
+	// 	for ( int j = 1; j <= i; ++j) {
+	// 		nchoosekmat[(i - 1) + (j - 1)*g] = nchoosek(i, j);
+	// 	}
+	// }
 
 	
-	//get exact mismatch profile (remove the overcounting)
+	// //get exact mismatch profile (remove the overcounting)
 	
-	for (int i = 1; i <= max_m; ++i) {
-		for (int j = 0; j <= i - 1; ++j) {
-			for (int j1 = 0; j1 < totalStr; ++j1) {
-				for (int j2 = 0; j2 <= j1; ++j2) {
-					//test_Ksfinal[(c1 + j1) + j2*totalStr] -=  nchoosekmat[(g - j - 1) + (i - j - 1)*g] * test_Ksfinal[(c2 + j1) + j2*totalStr];
-					tri_access(total_Ksfinal[i], j1, j2) -= nchoosekmat[(g - j - 1) + (i - j - 1)*g] * tri_access(total_Ksfinal[j], j1, j2);
-				}
-			}
-		}
-	}
-	for (int i = 0; i <= g - k; i++) {
+	// for (int i = 1; i <= max_m; ++i) {
+	// 	for (int j = 0; j <= i - 1; ++j) {
+	// 		for (int j1 = 0; j1 < totalStr; ++j1) {
+	// 			for (int j2 = 0; j2 <= j1; ++j2) {
+	// 				//test_Ksfinal[(c1 + j1) + j2*totalStr] -=  nchoosekmat[(g - j - 1) + (i - j - 1)*g] * test_Ksfinal[(c2 + j1) + j2*totalStr];
+	// 				tri_access(total_Ksfinal[i], j1, j2) -= nchoosekmat[(g - j - 1) + (i - j - 1)*g] * tri_access(total_Ksfinal[j], j1, j2);
+	// 			}
+	// 		}
+	// 	}
+	// }
+	for (int i = g-k; i <= g - k; i++) {
 		for (int j1 = 0; j1 < totalStr; ++j1) {
 			for (int j2 = 0; j2 <= j1; ++j2) {
 				//test_K[j1 + j2*totalStr] += w[i] * test_Ksfinal[(c1 + j1) + j2*totalStr];
-				tri_access(total_K, j1, j2) += w[i] * tri_access(total_Ksfinal[i], j1, j2);
+				tri_access(total_K, j1, j2) += tri_access(total_Ksfinal[i], j1, j2);
 			}
 		}
 	}
