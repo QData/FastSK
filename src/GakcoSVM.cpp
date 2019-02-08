@@ -612,14 +612,6 @@ void* GakcoSVM::construct_linear_kernel(){
 		
 	int tri_totalStr = totalStr * (totalStr+1) / 2;
 
-	//malloc things we have the size info on already here so there isn't excessive mallocing inside the loop
-	//test kernel is a non-triangular matrix of dim nTestStr x nSV
-	total_K = (double *)malloc(tri_totalStr * sizeof(double));
-	//malloc test_Ksfinal here, memset it each time we use it tho
-	//total_Ksfinal = (unsigned int **)malloc((g - k + 1) * sizeof(unsigned int*));
-
-	// total_Ksfinal = (unsigned int*)malloc(tri_totalStr * sizeof(unsigned int));
-	// memset(total_Ksfinal, 0, tri_totalStr * sizeof(unsigned int));
 	
 	elems = (int *)malloc(g * sizeof(int));
 	for (int i = 0; i < g; ++i){
@@ -628,7 +620,9 @@ void* GakcoSVM::construct_linear_kernel(){
 	nchoosekmat = (unsigned int *)malloc(g*g * sizeof(unsigned int));
 
 	
-
+	//malloc things we have the size info on already here so there isn't excessive mallocing inside the loop
+	//test kernel is a non-triangular matrix of dim nTestStr x nSV
+	total_K = (double *)malloc(tri_totalStr * sizeof(double));
 	//memset K before we use it
 	memset(total_K, 0, sizeof(double) * tri_totalStr);
 	memset(nchoosekmat, 0, sizeof(unsigned int) * g * g);
