@@ -645,9 +645,9 @@ void* GakcoSVM::construct_linear_kernel(){
 	if (numThreads == -1) {
 		int numCores = std::thread::hardware_concurrency();
 		numThreads = (numCores > 20) ? 20 : numCores;
-	} else {
-		numThreads = (numThreads > queueSize) ? queueSize : numThreads;
 	}
+	numThreads = (numThreads > queueSize) ? queueSize : numThreads;
+	
 	//Create an array of mutex locks (one for each value of m)
 	pthread_mutex_t *mutex = (pthread_mutex_t *) malloc(sizeof(pthread_mutex_t));
 	pthread_mutex_init(&mutex[0], NULL);
@@ -706,14 +706,16 @@ void* GakcoSVM::construct_linear_kernel(){
 		double* K = (double*)realloc(total_K, nStr*(nStr+1) / 2 * sizeof(double));
 
 		for(int i = 0; i < nStr; i++){
-			for(int j = 0; j < i; j++){
-				tri_access(K, i, j) = tri_access(total_K, i, j) / sqrt(tri_access(total_K, i, i) * tri_access(total_K, j, j));
-			}
+			printf("%f \n",tri_access(total_K,i,i));
 		}
 
-		for(int i = 0; i < nStr; i++){
-			tri_access(K,i,i) = 1.0;
-		}
+		// for(int i = 0; i < nStr; i++){
+		// 	for(int j = 0; j < i; j++){
+		// 		tri_access(K, i, j) = tri_access(total_K, i, j) / sqrt(tri_access(total_K, i, i) * tri_access(total_K, j, j));
+		// 	}
+		// }
+
+
 
 		this->kernel = K;
 	}else{
