@@ -705,15 +705,15 @@ void* GakcoSVM::construct_linear_kernel(){
 		//reallocate to a smaller size to encapsulate only the train set v train set
 		double* K = (double*)realloc(total_K, nStr*(nStr+1) / 2 * sizeof(double));
 
-		for(int i = 0; i < nStr; i++){
-			printf("%f \n",tri_access(total_K,i,i));
-		}
-
 		// for(int i = 0; i < nStr; i++){
-		// 	for(int j = 0; j < i; j++){
-		// 		tri_access(K, i, j) = tri_access(total_K, i, j) / sqrt(tri_access(total_K, i, i) * tri_access(total_K, j, j));
-		// 	}
+		// 	printf("%f \n",tri_access(total_K,i,i));
 		// }
+
+		for(int i = 0; i < nStr; i++){
+			for(int j = 0; j < i; j++){
+				tri_access(K, i, j) = tri_access(total_K, i, j) / sqrt(tri_access(total_K, i, i) * tri_access(total_K, j, j));
+			}
+		}
 
 
 
