@@ -693,6 +693,8 @@ void* GakcoSVM::construct_linear_kernel(){
 
 
 	double* test_K = (double*)malloc(nTestStr * nStr * sizeof(double));
+
+
 	
 	for(int i = nStr; i < totalStr; i++){
 		for(int j = 0; j < nStr; j++){
@@ -713,6 +715,10 @@ void* GakcoSVM::construct_linear_kernel(){
 			for(int j = 0; j < i; j++){
 				tri_access(K, i, j) = tri_access(total_K, i, j) / sqrt(tri_access(total_K, i, i) * tri_access(total_K, j, j));
 			}
+		}
+
+		for (int i = 0; i < nStr; i++){
+			tri_access(K,i,i) = 1.0;
 		}
 
 
