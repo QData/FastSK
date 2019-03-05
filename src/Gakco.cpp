@@ -132,10 +132,10 @@ void build_cumulative_mismatch_profiles_tri(WorkItem *workQueue, int queueSize, 
 		countAndUpdateTri(Ks, features_srt, group_srt, k, nfeat, nStr);
 
 		//set up the mutexes to lock as you go through the matrix
-		num_mutex = (int)(numThreads/6)
-		cusps = int[num_mutex];
+		int num_mutex = (int)(numThreads/6);
+		int cusps[num_mutex];
 		for (int i = 0; i < num_mutex; i++){
-			cusps[i] = (int)((i)*((double)nStr)/num_mutex)
+			cusps[i] = (int)((i)*((double)nStr)/num_mutex);
 		}
 
 		
