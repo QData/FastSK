@@ -649,8 +649,11 @@ void* GakcoSVM::construct_linear_kernel(){
 	numThreads = (numThreads > queueSize) ? queueSize : numThreads;
 	
 	//Create an array of mutex locks (one for each value of m)
-	pthread_mutex_t *mutex = (pthread_mutex_t *) malloc(sizeof(pthread_mutex_t));
-	pthread_mutex_init(&mutex[0], NULL);
+	num_mutex = (int)(numThreads/6)
+	pthread_mutex_t *mutex = (pthread_mutex_t *) malloc(num_mutex*sizeof(pthread_mutex_t));
+	for (int i = 0; i < num_mutex; i++){
+		pthread_mutex_init(&mutex[i], NULL);
+	}
 
 	//Create the threads and compute cumulative mismatch profiles
 	if(!this->params->quiet)
