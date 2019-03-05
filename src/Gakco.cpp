@@ -64,8 +64,8 @@ int errorID1() {
 //builder for the train kernel, triangularized to save memory
 //Accepts unsigned int** Ksfinal instead of unsigned int*
 void build_cumulative_mismatch_profiles_tri(WorkItem *workQueue, int queueSize, int threadNum, int numThreads, int *elems, 
-										Features *features, unsigned int **Ksfinal, int *feat, int g, int na,
-										int nfeat, int nStr, pthread_mutex_t *mutexes, int quiet) {
+										Features *features, double *Ksfinal, int *feat, int g, int na,
+										int nfeat, int nStr, pthread_mutex_t *mutex, int quiet) {
 	bool working = true;
 	int itemNum = threadNum;
 	// WorkItem* threadQueue = new WorkItem[(queueSize / numThreads)+1];
@@ -131,13 +131,13 @@ void build_cumulative_mismatch_profiles_tri(WorkItem *workQueue, int queueSize, 
 		//update cumulative mismatch profile (slow)
 		countAndUpdateTri(Ks, features_srt, group_srt, k, nfeat, nStr);
 
-		pthread_mutex_lock(&mutexes[m]);
+		pthread_mutex_lock(&mutex[0]);
 		for (int j1 = 0; j1 < nStr; ++j1) {
 			for (int j2 = j1; j2 < nStr; ++j2) {
-				tri_access(Ksfinal[m], j1, j2) += tri_access(Ks, j1, j2);
+				tri_access(Ksfinal, j1, j2) += tri_access(Ks, j1, j2);
 			}
 		}
-		pthread_mutex_unlock(&mutexes[m]);
+		pthread_mutex_unlock(&mutex[0]);
 
 		free(cnt_m);
 		free(out);
@@ -160,93 +160,6 @@ void build_cumulative_mismatch_profiles_tri(WorkItem *workQueue, int queueSize, 
 	}
 }
 
-
-//builder for the test matrix, not able to be triangularized so need different method.
-//Accepts unsigned int* Ksfinal instead of unsigned int**
-void build_cumulative_mismatch_profiles(WorkItem *workQueue, int queueSize, int threadNum, int numThreads, int *elems, 
-										Features *features, unsigned int *Ksfinal, int *feat, int g, int na,
-										int nfeat, int nStr, pthread_mutex_t *mutexes) {
-	bool working = true;
-	int itemNum = threadNum;
-	while (working) {
-		//Determine which mismatch profile needs to be computed by this thread
-		WorkItem workItem = workQueue[itemNum];
-		int m = workItem.m;
-		int combo_num = workItem.combo_num; //specifies which mismatch profile for the given value of m is to be computed
-
-		int k = g - m;
-		int num_comb = nchoosek(g, k); //Number of possible mismatch positions
-		Combinations * combinations = (Combinations *) malloc(sizeof(Combinations));
-		(*combinations).n = g;
-		(*combinations).k = k;
-		(*combinations).num_comb = num_comb;
-		unsigned long int c = m * (nStr * nStr);
-		
-		unsigned int *Ks = (unsigned int *) malloc(nStr*nStr * sizeof(unsigned int)); //where this thread will store its work
-		unsigned int *sortIdx = (unsigned int *) malloc(nfeat * sizeof(unsigned int)); //an array of gmer indices associated with group_srt and features_srt
-		unsigned int *features_srt = (unsigned int *) malloc(nfeat * g * sizeof(unsigned int *)); //sorted features
-		unsigned int *group_srt = (unsigned int *) malloc(nfeat * sizeof(unsigned int)); //the gmer numbers; associated with features_srt and sortIdx
-		unsigned int *cnt_comb = (unsigned int *) malloc(2 * sizeof(unsigned int)); //
-		unsigned int *feat1 = (unsigned int *) malloc(nfeat * g * sizeof(unsigned int)); //the sorted features once mismatch positions are removed
-		
-		int *pos = (int *) malloc(k * sizeof(int));
-		memset(pos, 0, sizeof(int) * k);
-
-		unsigned int *out = (unsigned int *) malloc(k * num_comb * sizeof(unsigned int));
-		unsigned int *cnt_m = (unsigned int *) malloc(g * sizeof(unsigned int));
-		cnt_comb[0] = 0;
-		getCombinations(elems, (*combinations).n, (*combinations).k, pos, 0, 0, cnt_comb, out, num_comb);
-		cnt_m[m] = cnt_comb[0];
-		cnt_comb[0] += ((*combinations).k * num_comb);
-		
-		//remove i positions
-		for (int j1 = 0; j1 < nfeat; ++j1) {
-			for (int j2 = 0; j2 < k; ++j2) {
-				feat1[j1 + j2 * nfeat] = feat[j1 + (out[(cnt_m[m] - num_comb + combo_num) + j2 * num_comb]) * nfeat];
-			}
-		}
-
-		//sort the g-mers (this is relatively fast)
-		cntsrtna(sortIdx, feat1, k, nfeat, na);    
-
-		for (int j1 = 0; j1 < nfeat; ++j1) {
-			for (int j2 = 0; j2 <  k; ++j2) {
-				features_srt[j1 + j2*nfeat] = feat1[(sortIdx[j1]) + j2*nfeat];
-			}
-			group_srt[j1] = (*features).group[sortIdx[j1]];
-		}
-		//update cumulative mismatch profile (slow)
-		countAndUpdate(Ks, features_srt, group_srt, k, nfeat, nStr);
-
-		pthread_mutex_lock(&mutexes[m]);
-		for (int j1 = 0; j1 < nStr; ++j1) {
-			for (int j2 = j1; j2 < nStr; ++j2) {
-				if(j1 != j2) {
-					Ksfinal[(c + j1) + j2 * nStr] += Ks[j1 + j2*nStr]; 
-				}
-				Ksfinal[c + j1 * nStr + j2] += Ks[j1 + j2*nStr];
-			}
-		}
-		pthread_mutex_unlock(&mutexes[m]);
-
-		free(cnt_m);
-		free(out);
-		free(Ks);
-		free(sortIdx);
-		free(features_srt);
-		free(group_srt);
-		free(feat1);
-		free(cnt_comb);
-		free(pos);
-
-		//Check if the thread needs to handle more mismatch profiles
-		itemNum += numThreads;
-		if (itemNum >= queueSize) {
-			working = false;
-			printf("Thread %d finished...\n", threadNum);
-		}
-	}
-}
 
 double igakco_main_wrapper(int argc, char* argv[]){
 	// Get g, k, nStr, and t values from command line

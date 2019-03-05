@@ -5,14 +5,14 @@ import datetime
 import sys
 
 
-igakco = False
+igakco = True
 gakco = False
-gkm = True
+gkm = False
 
 datapath = '../data'
 resultspath = '/localtmp/ec3bd/testresults'
-resultspath = '/home/ec3bd/uva/testresults'
-datapath = '../igakco/data'
+# resultspath = '/home/ec3bd/uva/testresults'
+# datapath = '../igakco/data'
 
 datasets = [
 			{'name':'1.1', 'g':7, 'm':2, 'c': .01},
@@ -133,23 +133,23 @@ def test_igakco():
 				outfile.write(infile.read())
 		# cs= [.01, .1, 1, 10]
 		# for c in cs:
-		#command = ["./iGakco", "-g", repr(data['g']), "-m", repr(data['m']), "-t", repr(20), '-C', repr(data['c']), "-p", "-k", os.path.join(outputpath, "kernel.txt"), '-o', os.path.join(outputpath, "model.txt"), 'sequences.fasta', 'sequences.fasta', dictfile, os.path.join(outputpath, "labels.txt")]
-		command = "valgrind --tool=massif --massif-out-file="+data['name']+".massif.out ./iGakco -h 1 -g "+ repr(data['g']) + " -m " + repr(data['m']) + " -t "+ repr(2*data['g']) + ' -C ' + repr(data['c']) + " -p " + "-k "+ os.path.join(outputpath, "kernel.txt") + ' -o ' + os.path.join(outputpath, "model.txt") +" "+ os.path.join(datapath, data['name']+".train.fasta")+ " "+os.path.join(datapath, data['name']+".test.fasta") +" "+ "outdict.txt" + " "+ os.path.join(outputpath, "labels.txt")
+		command = ["./iGakco", "-h", "1", "-g", repr(data['g']), "-m", repr(data['m']), "-t", repr(20), '-C', repr(data['c']), "-p", "-k", os.path.join(outputpath, "kernel.txt"), '-o', os.path.join(outputpath, "model.txt"), trainfile, testfile, dictfile, os.path.join(outputpath, "labels.txt")]
+		#command = "valgrind --tool=massif --massif-out-file="+data['name']+".massif.out ./iGakco -h 1 -g "+ repr(data['g']) + " -m " + repr(data['m']) + " -t "+ repr(2*data['g']) + ' -C ' + repr(data['c']) + " -p " + "-k "+ os.path.join(outputpath, "kernel.txt") + ' -o ' + os.path.join(outputpath, "model.txt") +" "+ os.path.join(datapath, data['name']+".train.fasta")+ " "+os.path.join(datapath, data['name']+".test.fasta") +" "+ "outdict.txt" + " "+ os.path.join(outputpath, "labels.txt")
 		#Execute the command and time it
 		print(command)
 		start_time = time.time()
-		output = subprocess.call(command, shell=True)
+		output = subprocess.call(command)
 		exec_time = time.time() - start_time
 
-		os.remove("outdict.txt")
+		#os.remove("outdict.txt")
 
-		testkernel = os.path.join(outputpath, "test_kernel.txt")
-		subprocess.call(["cp", "test_Kernel.txt", testkernel])
+		# testkernel = os.path.join(outputpath, "test_kernel.txt")
+		# subprocess.call(["cp", "test_Kernel.txt", testkernel])
 		#move massif file over to output path for analysis
 		#subprocess.call("mv massif.out.* "+ os.path.join(outputpath, "massif.out"), shell=True)
 
 
-		print(data['name'] + "\t" + repr(exec_time))
+		print(data['name'] + "\ttime:\t" + repr(exec_time))
 		sys.stdout.flush()
 		recordTime(os.path.join(outputpath, "times.txt"), exec_time)
 
