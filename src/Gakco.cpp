@@ -41,6 +41,7 @@ int help() {
 	printf("\t k : (optional) Specify a kernel filename to print to. If -l is also set, this will instead be used as the filename to load the kernel from\n");
 	printf("\t o : (optional) Specify a model filename to print to. If -s is also set, this will instead be used as the filename to load the model from\n");
 	printf("\t r : (optional) 1 for GAKCO (default), 2 for LINEAR");
+	printf("\t S : (optional) Specifies number of mutexes to use during kernel update. Default: 1");
 	printf("NO ARGUMENT FLAGS\n");
 	printf("\t l : (optional) If set, will load the train kernel from the file specified by -k\n");
     printf("\t s : (optional) If set, will load the train kernel from the file specified by -k and will load the model from the file specified by -o\n");
@@ -65,7 +66,7 @@ int errorID1() {
 //Accepts unsigned int** Ksfinal instead of unsigned int*
 void build_cumulative_mismatch_profiles_tri(WorkItem *workQueue, int queueSize, int threadNum, int numThreads, int *elems, 
 										Features *features, double *Ksfinal, int *feat, int g, int na,
-										int nfeat, int nStr, pthread_mutex_t *mutex, int quiet) {
+										int nfeat, int nStr, pthread_mutex_t *mutex, int num_mutex, int quiet) {
 	bool working = true;
 	int itemNum = threadNum;
 	// WorkItem* threadQueue = new WorkItem[(queueSize / numThreads)+1];
@@ -132,26 +133,44 @@ void build_cumulative_mismatch_profiles_tri(WorkItem *workQueue, int queueSize, 
 		countAndUpdateTri(Ks, features_srt, group_srt, k, nfeat, nStr);
 
 		//set up the mutexes to lock as you go through the matrix
-		int num_mutex = (int)(numThreads/6);
 		int cusps[num_mutex];
 		for (int i = 0; i < num_mutex; i++){
 			cusps[i] = (int)((i)*((double)nStr)/num_mutex);
 		}
 
-		
-		int count = 0;
-		for (int j1 = 0; j1 < nStr; ++j1) {
-			if (j1 ==cusps[count]){
-				if (count != 0)
-					pthread_mutex_unlock(&mutex[count-1]);
-				pthread_mutex_lock(&mutex[count]);
-				count++;
+		//the feared kernel update step, locking is necessary to keep it thread-safe
+		//current locking strategy involves splitting the array rows into groups and locking per group
+		//also go top->bottom or bottom->top dependent on work order to split contention among the locks
+		if(combo_num % 2 ==0){
+			int count = 0;
+			for (int j1 = 0; j1 < nStr; ++j1) {
+				if (j1 ==cusps[count]){
+					if (count != 0)
+						pthread_mutex_unlock(&mutex[count-1]);
+					pthread_mutex_lock(&mutex[count]);
+					count++;
+				}
+				for (int j2 = j1; j2 < nStr; ++j2) {
+					tri_access(Ksfinal, j1, j2) += tri_access(Ks, j1, j2);
+				}
 			}
-			for (int j2 = j1; j2 < nStr; ++j2) {
-				tri_access(Ksfinal, j1, j2) += tri_access(Ks, j1, j2);
+			pthread_mutex_unlock(&mutex[num_mutex-1]);
+		} else {
+			int count = num_mutex-1;
+			pthread_mutex_lock(&mutex[count]);
+			for (int j1 = nStr-1; j1 >=0; --j1) {
+				if (j1 ==cusps[count] && j1 != 0){
+					count--;
+					pthread_mutex_unlock(&mutex[count+1]);
+					pthread_mutex_lock(&mutex[count]);
+					
+				}
+				for (int j2 = j1; j2 < nStr; ++j2) {
+					tri_access(Ksfinal, j1, j2) += tri_access(Ks, j1, j2);
+				}
 			}
+			pthread_mutex_unlock(&mutex[0]);
 		}
-		pthread_mutex_unlock(&mutex[num_mutex-1]);
 
 		free(cnt_m);
 		free(out);
@@ -336,7 +355,7 @@ int main(int argc, char *argv[]) {
 	int nopredict = 0;
 	int quiet= 0;
   
-	while ((c = getopt(argc, argv, "g:m:t:C:k:o:h:r:lspq")) != -1) {
+	while ((c = getopt(argc, argv, "g:m:t:C:k:o:h:r:S:lspq")) != -1) {
 		switch (c) {
 			case 'g':
 				g = atoi(optarg);
@@ -365,6 +384,9 @@ int main(int argc, char *argv[]) {
 			case 's':
 				arg.loadkernel = 1;
 				arg.loadmodel = 1;
+				break;
+			case 'S':
+				arg.num_mutexes = atoi(optarg);
 				break;
 			case 'r':
 				if (atoi(optarg) == 1)

@@ -34,6 +34,7 @@ typedef struct gakco_param {
 	int quiet 			= 0; //quiet mode
 	int loadkernel = 0; //1 if this instance needs to load a precomputed kernel
 	int loadmodel = 0; //1 if this instance needs to load a model
+	int num_mutexes = 1; //number of mutexes to use during kernel update, helps synchronization on higher thread counts.
 } gakco_param;
 
 class GakcoSVM {
