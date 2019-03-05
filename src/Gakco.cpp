@@ -131,13 +131,27 @@ void build_cumulative_mismatch_profiles_tri(WorkItem *workQueue, int queueSize, 
 		//update cumulative mismatch profile (slow)
 		countAndUpdateTri(Ks, features_srt, group_srt, k, nfeat, nStr);
 
-		pthread_mutex_lock(&mutex[0]);
+		//set up the mutexes to lock as you go through the matrix
+		num_mutex = (int)(numThreads/6)
+		cusps = int[num_mutex];
+		for (int i = 0; i < num_mutex; i++){
+			cusps[i] = (int)((i)*((double)nStr)/num_mutex)
+		}
+
+		
+		int count = 0;
 		for (int j1 = 0; j1 < nStr; ++j1) {
+			if (j1 ==cusps[count]){
+				if (count != 0)
+					pthread_mutex_unlock(&mutex[count-1]);
+				pthread_mutex_lock(&mutex[count]);
+				count++;
+			}
 			for (int j2 = j1; j2 < nStr; ++j2) {
 				tri_access(Ksfinal, j1, j2) += tri_access(Ks, j1, j2);
 			}
 		}
-		pthread_mutex_unlock(&mutex[0]);
+		pthread_mutex_unlock(&mutex[num_mutex-1]);
 
 		free(cnt_m);
 		free(out);
