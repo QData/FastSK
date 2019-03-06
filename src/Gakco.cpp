@@ -140,37 +140,21 @@ void build_cumulative_mismatch_profiles_tri(WorkItem *workQueue, int queueSize, 
 
 		//the feared kernel update step, locking is necessary to keep it thread-safe
 		//current locking strategy involves splitting the array rows into groups and locking per group
-		//also go top->bottom or bottom->top dependent on work order to split contention among the locks
-		if(combo_num % 2 ==0){
-			int count = 0;
-			for (int j1 = 0; j1 < nStr; ++j1) {
-				if (j1 ==cusps[count]){
-					if (count != 0)
-						pthread_mutex_unlock(&mutex[count-1]);
-					pthread_mutex_lock(&mutex[count]);
-					count++;
-				}
-				for (int j2 = j1; j2 < nStr; ++j2) {
-					tri_access(Ksfinal, j1, j2) += tri_access(Ks, j1, j2);
-				}
+		//also tried going top->bottom or bottom->top dependent on work order to split contention among the locks, seemed to split up contention but made it slightly slower?
+		int count = 0;
+		for (int j1 = 0; j1 < nStr; ++j1) {
+			if (j1 ==cusps[count]){
+				if (count != 0)
+					pthread_mutex_unlock(&mutex[count-1]);
+				pthread_mutex_lock(&mutex[count]);
+				count++;
 			}
-			pthread_mutex_unlock(&mutex[num_mutex-1]);
-		} else {
-			int count = num_mutex-1;
-			pthread_mutex_lock(&mutex[count]);
-			for (int j1 = nStr-1; j1 >=0; --j1) {
-				if (j1 ==cusps[count] && j1 != 0){
-					count--;
-					pthread_mutex_unlock(&mutex[count+1]);
-					pthread_mutex_lock(&mutex[count]);
-					
-				}
-				for (int j2 = j1; j2 < nStr; ++j2) {
-					tri_access(Ksfinal, j1, j2) += tri_access(Ks, j1, j2);
-				}
+			for (int j2 = j1; j2 < nStr; ++j2) {
+				tri_access(Ksfinal, j1, j2) += tri_access(Ks, j1, j2);
 			}
-			pthread_mutex_unlock(&mutex[0]);
 		}
+		pthread_mutex_unlock(&mutex[num_mutex-1]);
+		
 
 		free(cnt_m);
 		free(out);
