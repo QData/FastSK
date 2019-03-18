@@ -6,8 +6,8 @@ import sys
 from sklearn.metrics import f1_score
 
 #These flags will perform the specified tests with all the tools set to True
-igakco = True
-gkm = False
+igakco = False
+gkm = True
 gakco = False
 
 #only have one of these active at a time, each will influence the other.
@@ -25,7 +25,8 @@ results = '/localtmp/ec3bd/testresults'
 
 train_percent = .9 #no longer effective to modify, however this is still the percent of data used for training in the new dna sets.
 
-
+#one line command to read massif.out's peak mem consumption
+"cat | grep mem_heap_B massif.out | sed -e 's/mem_heap_B=\(.*\)/\1/' | sort -g | tail -n 1"
 
 
 profs = {
@@ -296,7 +297,7 @@ def test_gkm(test_set):
 
 			gkmify(testfile, "testseq.fa", "bunkparam", True)
 
-			command = ["./gkmsvm_classify", "-l", repr(data['g']), "-k",repr(data['g']-data['m']), "-d",repr(data['m']), "-R", "-A", dictfile, "testseq.fa", os.path.join(outputpath, "svmtrain_svseq.fa"), os.path.join(outputpath, "svmtrain_svalpha.out"), os.path.join(outputpath, "probs.txt")]
+			command = ["./gkmsvm_classify", "-l", repr(profs[data]['g']), "-k",repr(profs[data]['g']-profs[data]['m']), "-d",repr(profs[data]['g']), "-R", "-A", dictfile, "testseq.fa", os.path.join(outputpath, "svmtrain_svseq.fa"), os.path.join(outputpath, "svmtrain_svalpha.out"), os.path.join(outputpath, "probs.txt")]
 			classifyoutput = subprocess.check_output(command)
 
 
@@ -329,7 +330,7 @@ def test_gakco(test_set):
 		if MEM_FLAG:
 			command = ['valgrind', '--tool=massif', './GaKCo', trainfile, dictfile, os.path.join(outputpath, "labels.txt"), repr(profs[data]['g']), repr(profs[data]['g'] - profs[data]['m']), os.path.join(outputpath, "kernel.txt"), '1']
 		elif AUC_FLAG or TIME_FLAG:
-
+			command = ['./GaKCo', trainfile, dictfile, os.path.join(outputpath, "labels.txt"), repr(profs[data]['g']), repr(profs[data]['g'] - profs[data]['m']), os.path.join(outputpath, "kernel.txt"), '1']
 		#Execute the command and time it
 		start_time = time.time()
 		output = subprocess.check_output(command)
