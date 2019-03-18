@@ -297,7 +297,7 @@ def test_gkm(test_set):
 
 			gkmify(testfile, "testseq.fa", "bunkparam", True)
 
-			command = ["./gkmsvm_classify", "-l", repr(profs[data]['g']), "-k",repr(profs[data]['g']-profs[data]['m']), "-d",repr(profs[data]['g']), "-R", "-A", dictfile, "testseq.fa", os.path.join(outputpath, "svmtrain_svseq.fa"), os.path.join(outputpath, "svmtrain_svalpha.out"), os.path.join(outputpath, "probs.txt")]
+			command = ["./gkmsvm_classify", "-l", repr(profs[data]['g']), "-k",repr(profs[data]['g']-profs[data]['m']), "-d",repr(profs[data]['g']), "-R", "-A", dictfile, "testseq.fa", os.path.join(resultspath,data, "svmtrain_svseq.fa"), os.path.join(resultspath,data, "svmtrain_svalpha.out"), os.path.join(resultspath,data, "probs.txt")]
 			classifyoutput = subprocess.check_output(command)
 
 
