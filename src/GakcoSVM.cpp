@@ -648,7 +648,7 @@ void* GakcoSVM::construct_linear_kernel(){
 	}
 	numThreads = (numThreads > queueSize) ? queueSize : numThreads;
 	
-	//Create an array of mutex locks (one for each value of m)
+	//Create an array of mutex locks (parameterized by S)
 	int num_mutex = this->params->num_mutexes;
 	pthread_mutex_t *mutex = (pthread_mutex_t *) malloc(num_mutex*sizeof(pthread_mutex_t));
 	for (int i = 0; i < num_mutex; i++){
