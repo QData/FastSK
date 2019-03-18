@@ -200,7 +200,7 @@ double* GakcoSVM::construct_kernel(){
 	std::vector<std::thread> threads;
 	for (int i = 0; i < numThreads; i++) {
 		threads.push_back(std::thread(&build_cumulative_mismatch_profiles_tri, workQueue, queueSize, i, numThreads,
-			elems, features, K, feat, g, na, nfeat, nStr, mutexes, this->params->quiet));
+			elems, features, K, feat, g, na, nfeat, nStr, mutexes, this->params->num_mutexes, this->params->quiet));
 	}
 	for(auto &t : threads) {
 		t.join();
@@ -453,7 +453,7 @@ double* GakcoSVM::construct_test_kernel(){
 	std::vector<std::thread> threads;
 	for (int i = 0; i < numThreads; i++) {
 		threads.push_back(std::thread(&build_cumulative_mismatch_profiles_tri, workQueue, queueSize, i, numThreads,
-			elems, features, test_K, features->features, g, na, features->n, totalStr, mutexes, this->params->quiet));
+			elems, features, test_K, features->features, g, na, features->n, totalStr, mutexes, this->params->num_mutexes, this->params->quiet));
 	}
 	for(auto &t : threads) {
 		t.join();
@@ -648,9 +648,12 @@ void* GakcoSVM::construct_linear_kernel(){
 	}
 	numThreads = (numThreads > queueSize) ? queueSize : numThreads;
 	
-	//Create an array of mutex locks (one for each value of m)
-	pthread_mutex_t *mutex = (pthread_mutex_t *) malloc(sizeof(pthread_mutex_t));
-	pthread_mutex_init(&mutex[0], NULL);
+	//Create an array of mutex locks (parameterized by S)
+	int num_mutex = this->params->num_mutexes;
+	pthread_mutex_t *mutex = (pthread_mutex_t *) malloc(num_mutex*sizeof(pthread_mutex_t));
+	for (int i = 0; i < num_mutex; i++){
+		pthread_mutex_init(&mutex[i], NULL);
+	}
 
 	//Create the threads and compute cumulative mismatch profiles
 	if(!this->params->quiet)
@@ -658,7 +661,7 @@ void* GakcoSVM::construct_linear_kernel(){
 	std::vector<std::thread> threads;
 	for (int i = 0; i < numThreads; i++) {
 		threads.push_back(std::thread(&build_cumulative_mismatch_profiles_tri, workQueue, queueSize, i, numThreads,
-			elems, features, total_K, features->features, g, na, features->n, totalStr, mutex, this->params->quiet));
+			elems, features, total_K, features->features, g, na, features->n, totalStr, mutex, num_mutex, this->params->quiet));
 	}
 	for(auto &t : threads) {
 		t.join();
