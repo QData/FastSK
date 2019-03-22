@@ -140,7 +140,6 @@ void build_cumulative_mismatch_profiles_tri(WorkItem *workQueue, int queueSize, 
 
 		free(cnt_m);
 		free(out);
-		//free(Ks);
 		free(sortIdx);
 		free(features_srt);
 		free(group_srt);
@@ -165,10 +164,6 @@ void build_cumulative_mismatch_profiles_tri(WorkItem *workQueue, int queueSize, 
 		cusps[i] = (int)((i)*((double)num_str_pairs)/num_mutex);
 	}
 
-
-	for (int i = 0; i < num_mutex; i++){
-		printf("%d  ", cusps[i]);
-	}
 
 	//the feared kernel update step, locking is necessary to keep it thread-safe
 	//current locking strategy involves splitting the array rows into groups and locking per group
