@@ -82,6 +82,10 @@ void build_cumulative_mismatch_profiles_tri(WorkItem *workQueue, int queueSize, 
 	// i--;
 
 	int num_str_pairs = nStr * (nStr+1) / 2;
+	//allocate here so all the profiles this thread is responsible for are aggregated to the same matrix
+	unsigned int *Ks = (unsigned int *) malloc(num_str_pairs * sizeof(unsigned int)); //where this thread will store its work
+
+	
 	while (working) {
 		//Determine which mismatch profile needs to be computed by this thread
 		//WorkItem workItem = threadQueue[i];
@@ -96,7 +100,7 @@ void build_cumulative_mismatch_profiles_tri(WorkItem *workQueue, int queueSize, 
 		(*combinations).k = k;
 		(*combinations).num_comb = num_comb;
 		
-		unsigned int *Ks = (unsigned int *) malloc(num_str_pairs * sizeof(unsigned int)); //where this thread will store its work
+		
 		unsigned int *sortIdx = (unsigned int *) malloc(nfeat * sizeof(unsigned int)); //an array of gmer indices associated with group_srt and features_srt
 		unsigned int *features_srt = (unsigned int *) malloc(nfeat * g * sizeof(unsigned int)); //sorted features
 		unsigned int *group_srt = (unsigned int *) malloc(nfeat * sizeof(unsigned int)); //the gmer numbers; associated with features_srt and sortIdx
@@ -132,33 +136,11 @@ void build_cumulative_mismatch_profiles_tri(WorkItem *workQueue, int queueSize, 
 		//update cumulative mismatch profile (slow)
 		countAndUpdateTri(Ks, features_srt, group_srt, k, nfeat, nStr);
 
-		//set up the mutexes to lock as you go through the matrix
-		int cusps[num_mutex];
-		for (int i = 0; i < num_mutex; i++){
-			cusps[i] = (int)((i)*((double)nStr)/num_mutex);
-		}
-
-		//the feared kernel update step, locking is necessary to keep it thread-safe
-		//current locking strategy involves splitting the array rows into groups and locking per group
-		//also tried going top->bottom or bottom->top dependent on work order to split contention among the locks, seemed to split up contention but made it slightly slower?
-		int count = 0;
-		for (int j1 = 0; j1 < nStr; ++j1) {
-			if (j1 ==cusps[count]){
-				if (count != 0)
-					pthread_mutex_unlock(&mutex[count-1]);
-				pthread_mutex_lock(&mutex[count]);
-				count++;
-			}
-			for (int j2 = j1; j2 < nStr; ++j2) {
-				tri_access(Ksfinal, j1, j2) += tri_access(Ks, j1, j2);
-			}
-		}
-		pthread_mutex_unlock(&mutex[num_mutex-1]);
 		
 
 		free(cnt_m);
 		free(out);
-		free(Ks);
+		//free(Ks);
 		free(sortIdx);
 		free(features_srt);
 		free(group_srt);
@@ -175,6 +157,37 @@ void build_cumulative_mismatch_profiles_tri(WorkItem *workQueue, int queueSize, 
 				printf("Thread %d finished...\n", threadNum);
 		}
 	}
+
+
+	//set up the mutexes to lock as you go through the matrix
+	int cusps[num_mutex];
+	for (int i = 0; i < num_mutex; i++){
+		cusps[i] = (int)((i)*((double)num_str_pairs)/num_mutex);
+	}
+
+
+	for (int i = 0; i < num_mutex; i++){
+		printf("%d  ", cusps[i]);
+	}
+
+	//the feared kernel update step, locking is necessary to keep it thread-safe
+	//current locking strategy involves splitting the array rows into groups and locking per group
+	//also tried going top->bottom or bottom->top dependent on work order to split contention among the locks, seemed to split up contention but made it slightly slower?
+	int count = 0;
+	for (int j1 = 0; j1 < num_str_pairs; ++j1) {
+		if (j1 ==cusps[count]){
+			if (count != 0)
+				pthread_mutex_unlock(&mutex[count-1]);
+			pthread_mutex_lock(&mutex[count]);
+			count++;
+		}
+		unsigned int val = Ks[j1];
+		if (val != 0)
+			Ksfinal[j1] += val;
+	}
+	pthread_mutex_unlock(&mutex[num_mutex-1]);
+
+	free(Ks);
 }
 
 
