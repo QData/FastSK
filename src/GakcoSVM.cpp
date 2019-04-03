@@ -764,7 +764,7 @@ void GakcoSVM::train(double* K) {
 	svm_param->shrinking = this->params->h;
 	svm_param->probability = this->params->probability;
 	svm_param->eps = this->params->eps;
-	svm_param->degree = 0;
+	svm_param->degree = this->params->degree;
 
 
 	struct svm_node** x;
@@ -785,7 +785,7 @@ void GakcoSVM::train(double* K) {
 
 		}
 		this->x_space = x_space;
-	}else if(this->params->kernel_type == LINEAR){
+	}else if(this->params->kernel_type == LINEAR || this->params->kernel_type == RBF){
 
 		x_space = Malloc(struct svm_node, (nStr+1)*nStr);
 		int totalind = 0;
@@ -912,7 +912,7 @@ void GakcoSVM::write_test_kernel() {
 			{
 				fprintf(kernelfile, "%d:%.12f ", this->model->sv_indices[j], this->test_kernel[j + i*num_sv]);
 			}
-		}else if (this->params->kernel_type == LINEAR){
+		}else if (this->params->kernel_type == LINEAR || this->params->kernel_type == RBF){
 			for (int j = 0; j < nStr; j++)
 			{
 				fprintf(kernelfile, "%d:%.12f ", j+1, this->test_kernel[j + i*nStr]);
@@ -958,7 +958,7 @@ double GakcoSVM::predict(double *test_K, int* test_labels){
 				svcount++;
 			}
 			x[num_sv].index = -1;
-		}else if(this->params->kernel_type == LINEAR){
+		}else if(this->params->kernel_type == LINEAR || this->params->kernel_type == RBF){
 			for(int j=0; j < nStr; j++){
 				x[j].index = j+1;
 				x[j].value = test_K[i*nStr +j];

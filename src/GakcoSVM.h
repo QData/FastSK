@@ -23,6 +23,7 @@ typedef struct gakco_param {
 	int kernel_type = LINEAR;
 	double C 		= 1.0; //C param
 	double nu 		= .5; //nu for nu-SVC
+	int degree		= 3;
 	int cache_size 	= 100; //cache size
 	double eps 		= .001; //epsilon, tolerance of termination criterion
 	int h 			= 1; //0 or 1, whether to use the shrinking heuristics

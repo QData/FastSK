@@ -40,7 +40,7 @@ int help() {
 	printf("\t C : (optional) SVM C parameter. Default is 1.0\n");
 	printf("\t k : (optional) Specify a kernel filename to print to. If -l is also set, this will instead be used as the filename to load the kernel from\n");
 	printf("\t o : (optional) Specify a model filename to print to. If -s is also set, this will instead be used as the filename to load the model from\n");
-	printf("\t r : (optional) 1 for GAKCO (default), 2 for LINEAR");
+	printf("\t r : (optional) 1 for LINEAR (default), 2 for GAKCO");
 	printf("\t S : (optional) Specifies number of mutexes to use during kernel update. Default: 1");
 	printf("NO ARGUMENT FLAGS\n");
 	printf("\t l : (optional) If set, will load the train kernel from the file specified by -k\n");
@@ -383,8 +383,10 @@ int main(int argc, char *argv[]) {
 			case 'r':
 				if (atoi(optarg) == 1)
 					arg.kernel_type = LINEAR;
-				else
+				else if (atoi(optarg) == 2)
 					arg.kernel_type = GAKCO;
+				else if (atoi(optarg) == 3)
+					arg.kernel_type = RBF;
 				break;
 			case 'h':
 				if (atoi(optarg) == 1){
@@ -451,7 +453,7 @@ int main(int argc, char *argv[]) {
 	//still needed even if we are loading a kernel as it reads labels and dataset info, but won't calculate if it doesn't need to.
 	if(arg.kernel_type == GAKCO)
 		gsvm.construct_kernel();
-	else if(arg.kernel_type == LINEAR)
+	else if(arg.kernel_type == LINEAR || arg.kernel_type == RBF)
 		gsvm.construct_linear_kernel();
 
 	if(!arg.loadkernel && !arg.outputFilename.empty()){

@@ -13,9 +13,9 @@ gakco = False
 #only have one of these active at a time, each will influence the other.
 #timing and memory usage only look at kernel generation and massif (memory profiler) slows down execution massively
 #auc of course needs train/test time, and actually they do a cross-validation to produce it so it will take a long time as well and the time will be included in the time.
-AUC_FLAG = True
+AUC_FLAG = False
 MEM_FLAG = False
-TIME_FLAG = False
+TIME_FLAG = True
 
 #will ignore and use 'm' threads for comparability in memory tests.
 THREAD_COUNT = 20
@@ -30,12 +30,12 @@ train_percent = .9 #no longer effective to modify, however this is still the per
 
 
 profs = {
-		'EP300_47878':{'name':'EP300_47878', 'g':10, 'm':5, 'c':1, 'type':'dna'},
-		'KAT2B_45635':{'name':'KAT2B_45635', 'g':10, 'm':5, 'c':0.1, 'type':'dna'},
-		'NR2C2_670':{'name':'NR2C2_670', 'g':10, 'm':5, 'c':1, 'type':'dna'},
-		'TP53_41502':{'name':'TP53_41502', 'g':10, 'm':5, 'c':0.1, 'type':'dna'},
-		'ZBTB33_48276':{'name':'ZBTB33_48276', 'g':10, 'm':5, 'c':1, 'type':'dna'},
-		'ZZZ3_45648':{'name':'ZZZ3_45648', 'g':10, 'm':5, 'c':0.1, 'type':'dna'},
+		# 'EP300_47878':{'name':'EP300_47878', 'g':10, 'm':5, 'c':1, 'type':'dna'},
+		# 'KAT2B_45635':{'name':'KAT2B_45635', 'g':10, 'm':5, 'c':0.1, 'type':'dna'},
+		# 'NR2C2_670':{'name':'NR2C2_670', 'g':10, 'm':5, 'c':1, 'type':'dna'},
+		# 'TP53_41502':{'name':'TP53_41502', 'g':10, 'm':5, 'c':0.1, 'type':'dna'},
+		# 'ZBTB33_48276':{'name':'ZBTB33_48276', 'g':10, 'm':5, 'c':1, 'type':'dna'},
+		# 'ZZZ3_45648':{'name':'ZZZ3_45648', 'g':10, 'm':5, 'c':0.1, 'type':'dna'},
 		'1.1':{'name':'1.1', 'g':7, 'm':2, 'c': .01, 'type': 'protein'},
 		'1.34':{'name':'1.34', 'g':10, 'm':9, 'c': .1, 'type': 'protein'},
 		'2.19':{'name':'2.19', 'g':7, 'm':6, 'c': 100, 'type': 'protein'},
@@ -48,12 +48,12 @@ profs = {
 		'3.25':{'name':'3.25', 'g':10, 'm':2, 'c': 1, 'type': 'protein'},
 		'3.33':{'name':'3.33', 'g':10, 'm':5, 'c': .01, 'type': 'protein'},
 		'3.50':{'name':'3.50', 'g':10, 'm':3, 'c': .01, 'type': 'protein'},
-		'CTCF':{'name':'CTCF', 'g':10, 'm':5, 'c': 1, 'type':'dna'},
-		'EP300':{'name':'EP300', 'g':10, 'm':5, 'c': 1, 'type':'dna'},
-		'JUND':{'name':'JUND', 'g':10, 'm':3, 'c': 1, 'type':'dna'},  
-		'RAD21':{'name':'RAD21', 'g':10, 'm':5, 'c': 1, 'type':'dna'},
-		'SIN3A':{'name':'SIN3A', 'g':10, 'm':3, 'c': 1, 'type':'dna'},
-		'sentiment':{'name':'sentiment', 'g':8, 'm': 4, 'c':1, 'type':'text'}
+		# 'CTCF':{'name':'CTCF', 'g':10, 'm':5, 'c': 1, 'type':'dna'},
+		# 'EP300':{'name':'EP300', 'g':10, 'm':5, 'c': 1, 'type':'dna'},
+		# 'JUND':{'name':'JUND', 'g':10, 'm':3, 'c': 1, 'type':'dna'},  
+		# 'RAD21':{'name':'RAD21', 'g':10, 'm':5, 'c': 1, 'type':'dna'},
+		# 'SIN3A':{'name':'SIN3A', 'g':10, 'm':3, 'c': 1, 'type':'dna'},
+		# 'sentiment':{'name':'sentiment', 'g':8, 'm': 4, 'c':1, 'type':'text'}
 		}
 
 def main():
@@ -194,37 +194,39 @@ def test_igakco(test_set):
 		#outputfile.write(repr(data)+"\n")
 		# print(repr(data))
 		# for g in [10,9,8,7]:
-		# 	for m in range(5,g):
+		# 	
 		# 		for c in [.01,.1,1,10]:
-		s=int(THREAD_COUNT/10)
-		if TIME_FLAG:
-			command = ['./iGakco','-S', repr(s), '-h','1','-p', '-g',repr(profs[data]['g']),'-m',repr(profs[data]['m']),'-C', repr(profs[data]['c']), 
-					'-t',repr(THREAD_COUNT),'-k',os.path.join(resultspath,data,'out_kernel.txt'), 
-					trainfile, testfile, dictfile,os.path.join(resultspath,data,'labelout.txt')]
-		elif AUC_FLAG:
-			command = ['./iGakco','-S', repr(s),'-p', '-g',repr(profs[data]['g']),'-m',repr(profs[data]['m']),'-C', repr(profs[data]['c']), 
-					'-t',repr(THREAD_COUNT),'-k',os.path.join(resultspath,data,'out_kernel.txt'), 
-					trainfile, testfile, dictfile,os.path.join(resultspath,data,'labelout.txt')]
-		elif MEM_FLAG:
-			command = ['valgrind', '--tool=massif','--massif-out-file='+massiffile, './iGakco', '-S', repr(s),
-				'-h','1','-p', '-g',repr(profs[data]['g']),'-m',repr(profs[data]['m']),'-C', repr(profs[data]['c']), 
-				'-t',repr(THREAD_COUNT),'-k',os.path.join(resultspath,data,'out_kernel.txt'), trainfile, testfile, dictfile,os.path.join(resultspath,data,'labelout.txt')]
+		#for t in [profs[data]['m'], 2*profs[data]['g'], 5*profs[data]['g']]:
+		for m in range(1,g):
+			s=int(THREAD_COUNT/10)+1
+			if TIME_FLAG:
+				command = ['./iGakco','-S', repr(s), '-h','1','-p', '-g',repr(profs[data]['g']),'-m',repr(m),'-C', repr(profs[data]['c']), 
+						'-t',repr(20),'-k',os.path.join(resultspath,data,'out_kernel.txt'), 
+						trainfile, testfile, dictfile,os.path.join(resultspath,data,'labelout.txt')]
+			elif AUC_FLAG:
+				command = ['./iGakco','-S', repr(s),'-p', '-g',repr(profs[data]['g']),'-m',repr(profs[data]['m']),'-C', repr(profs[data]['c']), 
+						'-t',repr(THREAD_COUNT),'-k',os.path.join(resultspath,data,'out_kernel.txt'), 
+						trainfile, testfile, dictfile,os.path.join(resultspath,data,'labelout.txt')]
+			elif MEM_FLAG:
+				command = ['valgrind', '--tool=massif','--massif-out-file='+massiffile, './iGakco', '-S', repr(s),
+					'-h','1','-p', '-g',repr(profs[data]['g']),'-m',repr(profs[data]['m']),'-C', repr(profs[data]['c']), 
+					'-t',repr(THREAD_COUNT),'-k',os.path.join(resultspath,data,'out_kernel.txt'), trainfile, testfile, dictfile,os.path.join(resultspath,data,'labelout.txt')]
 
 
-		#Execute the command and time it
-		start_time = time.time()
-		output = subprocess.check_output(command)
-		exec_time = time.time() - start_time
-		os.remove(dictfile)
+			#Execute the command and time it
+			start_time = time.time()
+			output = subprocess.check_output(command)
+			exec_time = time.time() - start_time
+			os.remove(dictfile)
 
-		outputfile = open(outputfilepath, 'a')
-		outputfile.write(output)
-		res = data + "\t"+ "time: "+repr(exec_time)  #+" \t"+' '.join([str(g),str(m),str(c)])
-		print(res)
-		outputfile.write('\n'+res+'\n')
-		outputfile.close()
+			outputfile = open(outputfilepath, 'a')
+			outputfile.write(output)
+			res = data + "\t"+ "time: "+repr(exec_time)  #+" \t"+' '.join([str(g),str(m),str(c)])
+			print(res)
+			outputfile.write('\n'+res+'\n')
+			outputfile.close()
 
-		print("\n")
+			print("\n")
 
 
 		# os.remove(dictfile)
@@ -276,29 +278,31 @@ def test_gkm(test_set):
 		
 		print(repr(data))
 
-		if AUC_FLAG or TIME_FLAG:
-			command = ["./gkmsvm_kernel","-a","2", "-l",repr(profs[data]['g']), "-k",repr(profs[data]['m']), "-d",repr(profs[data]['m']), "-R", "-T", str(THREAD_COUNT), "pos.fa", "neg.fa", os.path.join(resultspath,data,"kernel.txt")]
-		if MEM_FLAG:
-			command = ["valgrind", "--tool=massif","--massif-out-file="+massiffile,"./gkmsvm_kernel","-a","2", "-l",repr(profs[data]['g']), "-k",repr(profs[data]['m']), "-d",repr(profs[data]['m']), "-R", "-T", str(THREAD_COUNT), "pos.fa", "neg.fa", os.path.join(resultspath,data,"kernel.txt")]
-	
-		#Execute the command and time it
-		start_time = time.time()
-		output = subprocess.check_output(command)
-		exec_time = time.time() - start_time
+		for t in range(profs[data]['m'], 2*profs[data]['g'], 5*profs[data]['g']):
 
-		outputfile = open(outputfilepath, 'a')
-		outputfile.write("time: "+repr(exec_time) +"\n")
-		print("\t" + repr(exec_time))
+			if AUC_FLAG or TIME_FLAG:
+				command = ["./gkmsvm_kernel","-a","2", "-l",repr(profs[data]['g']), "-k",repr(profs[data]['m']), "-d",repr(profs[data]['m']), "-R", "-T", str(t),"-A",dictfile, "pos.fa", "neg.fa", os.path.join(resultspath,data,"kernel.txt")]
+			if MEM_FLAG:
+				command = ["valgrind", "--tool=massif","--massif-out-file="+massiffile,"./gkmsvm_kernel","-a","2", "-l",repr(profs[data]['g']), "-k",repr(profs[data]['m']), "-d",repr(profs[data]['m']), "-R","-A",dictfile, "-T", str(profs[data]['m']), "pos.fa", "neg.fa", os.path.join(resultspath,data,"kernel.txt")]
+		
+			#Execute the command and time it
+			start_time = time.time()
+			output = subprocess.check_output(command)
+			exec_time = time.time() - start_time
 
-		if AUC_FLAG:
-			command = ["./gkmsvm_train", os.path.join(resultspath,data,"kernel.txt"), "pos.fa", "neg.fa", os.path.join(resultspath,data,"svmtrain")]
-			trainoutput = subprocess.check_output(command)
-			
+			outputfile = open(outputfilepath, 'a')
+			outputfile.write("time: "+repr(exec_time) +"\n")
+			print("\t" + repr(exec_time))
 
-			gkmify(testfile, "testseq.fa", "bunkparam", True)
+			if AUC_FLAG:
+				command = ["./gkmsvm_train", os.path.join(resultspath,data,"kernel.txt"), "pos.fa", "neg.fa", os.path.join(resultspath,data,"svmtrain")]
+				trainoutput = subprocess.check_output(command)
+				
 
-			command = ["./gkmsvm_classify", "-l", repr(profs[data]['g']), "-k",repr(profs[data]['g']-profs[data]['m']), "-d",repr(profs[data]['g']), "-R", "-A", dictfile, "testseq.fa", os.path.join(resultspath,data, "svmtrain_svseq.fa"), os.path.join(resultspath,data, "svmtrain_svalpha.out"), os.path.join(resultspath,data, "probs.txt")]
-			classifyoutput = subprocess.check_output(command)
+				gkmify(testfile, "testseq.fa", "bunkparam", True)
+
+				command = ["./gkmsvm_classify", "-l", repr(profs[data]['g']), "-k",repr(profs[data]['g']-profs[data]['m']), "-d",repr(profs[data]['g']), "-R", "-A", dictfile, "testseq.fa", os.path.join(resultspath,data, "svmtrain_svseq.fa"), os.path.join(resultspath,data, "svmtrain_svalpha.out"), os.path.join(resultspath,data, "probs.txt")]
+				classifyoutput = subprocess.check_output(command)
 
 
 	if AUC_FLAG:
