@@ -256,7 +256,7 @@ void countAndUpdateTri(unsigned int *outK, unsigned int *sx, unsigned int *g, in
 
    int *updind = (int *)malloc(nStr*sizeof(int));
    memset(updind, 0, sizeof(int) * nStr);
-   memset(outK, 0, sizeof(unsigned int) * num_str_pairs);
+   
    
    i = 0;
    while (i<r)
