@@ -3,6 +3,7 @@
 #include <pybind11/stl.h>
 #include <pybind11/numpy.h>
 #include "svm.hpp"
+#include "kernel.hpp"
 
 #include <iostream>
 #include <assert.h>
@@ -79,6 +80,16 @@ PYBIND11_MODULE(igakco, m) {
         .def("score", 
             &SVM::score, 
             py::arg("metric")="accuracy");
+
+    py::class_<Kernel>(m, "Kernel")
+        .def(py::init<int, int>(), 
+            py::arg("g"), 
+            py::arg("m"))
+        .def("compute", &Kernel::compute,
+            py::arg("Xtrain"),
+            py::arg("Xtest"))
+        .def("train_kernel", &Kernel::train_kernel)
+        .def("test_kernel", &Kernel::test_kernel);
 
 #ifdef VERSION_INFO
     m.attr("__version__") = VERSION_INFO;
