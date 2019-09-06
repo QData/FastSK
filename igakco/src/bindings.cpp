@@ -89,7 +89,8 @@ PYBIND11_MODULE(igakco, m) {
             py::arg("Xtrain"),
             py::arg("Xtest"))
         .def("train_kernel", &Kernel::train_kernel)
-        .def("test_kernel", &Kernel::test_kernel);
+        .def("test_kernel", &Kernel::test_kernel)
+        .def("save_kernel", &Kernel::save_kernel);
 
 #ifdef VERSION_INFO
     m.attr("__version__") = VERSION_INFO;

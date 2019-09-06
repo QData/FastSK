@@ -76,20 +76,6 @@ void Kernel::compute(std::vector<std::vector<int> > Xtrain,
 
     /* Compute the kernel matrix */
     double *K = construct_kernel(&params);
-
-    std::string kernel_file = "kernel.out";
-    if (!kernel_file.empty()) {
-        printf("Writing kernel to %s...\n", kernel_file.c_str());
-        FILE *kernelfile = fopen(kernel_file.c_str(), "w");
-        for (int i = 0; i < total_str; ++i) {
-            for (int j = 0; j < total_str; ++j) {
-                fprintf(kernelfile, "%d:%e ", j + 1, tri_access(K,i,j));
-            }
-            fprintf(kernelfile, "\n");
-        }
-        fclose(kernelfile);
-    }
-
     this->kernel = K;
 }
 
@@ -120,4 +106,20 @@ std::vector<std::vector<double> > Kernel::test_kernel() {
     }
 
     return test_K;
+}
+
+void Kernel::save_kernel(std::string kernel_file) {
+    double *K = this->kernel;
+    int total_str = this->n_str_train + this->n_str_test;
+    if (!kernel_file.empty()) {
+        printf("Writing kernel to %s...\n", kernel_file.c_str());
+        FILE *kernelfile = fopen(kernel_file.c_str(), "w");
+        for (int i = 0; i < total_str; ++i) {
+            for (int j = 0; j < total_str; ++j) {
+                fprintf(kernelfile, "%d:%e ", j + 1, tri_access(K,i,j));
+            }
+            fprintf(kernelfile, "\n");
+        }
+        fclose(kernelfile);
+    }
 }

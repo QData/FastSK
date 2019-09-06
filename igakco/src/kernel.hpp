@@ -20,6 +20,7 @@ public:
 		std::vector<std::vector<int> >);
 	std::vector<std::vector<double> > train_kernel();
 	std::vector<std::vector<double> > test_kernel();
+	void save_kernel(std::string);
 };
 
 #endif
