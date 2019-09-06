@@ -2,6 +2,7 @@
 #define KERNEL_H
 
 #include <vector>
+#include <string>
 
 class Kernel {
 public:

@@ -6,6 +6,7 @@
 #include <string>
 #include <set>
 #include <math.h>
+#include <cstring>
 
 Kernel::Kernel(int g, int m) {
     this->g = g;
@@ -36,7 +37,7 @@ void Kernel::compute(std::vector<std::vector<int> > Xtrain,
     int *labels = (int *) malloc(total_str * sizeof(int));
     int *test_labels = (int *) malloc(n_str_test * sizeof(int));
 
-    memcpy(seq_lengths, lengths.data(), lengths.size() * sizeof(int));
+    std::memcpy(seq_lengths, lengths.data(), lengths.size() * sizeof(int));
 
     std::set<int> dict;
     dict.insert(0);
