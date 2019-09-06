@@ -8,7 +8,7 @@ class Vocabulary(object):
     """
     def __init__(self):
         self._token2idx = {}
-        self._idx2token = {}
+        self._token2idx[0] = 0
         self._size = len(self._token2idx)
 
     def add(self, token):
@@ -23,7 +23,6 @@ class Vocabulary(object):
         """
         if token not in self._token2idx:
             self._token2idx[token] = self._size
-            self._token2idx[self._size] = token
             self._size += 1
         return self._token2idx.get(token)
 
@@ -31,6 +30,9 @@ class Vocabulary(object):
         """Return the number tokens in the vocabulary.
         """
         return self._size
+
+    def __str__(self):
+        return str(self._token2idx)
 
 class FastaUtility():
     def __init__(self, vocab=None):

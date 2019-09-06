@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <cstdlib>
+#include <vector>
 
 typedef struct Feature {
 	int *features;
@@ -35,7 +36,8 @@ typedef struct WorkItem {
 	int combo_num;
 } WorkItem;
 
-Features* extractFeatures(int **S, int *seqLengths, int nStr, int g);
+Features* extractFeatures(int **S, std::vector<int> seqLengths, int nStr, int g);
+Features* extractFeatures(int **S, int* seqLengths, int nStr, int g);
 double& tri_access(double* array, int i, int j);
 unsigned int& tri_access(unsigned int* array, int i, int j, int N);
 unsigned int& tri_access(unsigned int* array, int i, int j);
@@ -50,6 +52,8 @@ void shuffle(WorkItem *array, size_t n);
 void print_null(const char *s);
 void validate_args(int g, int m);
 void g_greater_than_shortest_err(int g, int len, std::string filename);
+void g_greater_than_shortest_train(int g, int len);
+void g_greater_than_shortest_test(int g, int len);
 double calculate_auc(double* pos, double* neg, int npos, int nneg);
 
 #endif

@@ -18,11 +18,27 @@ void Kernel::compute(std::vector<std::vector<int> > Xtrain,
     std::vector<std::vector<int> > Xtest) {
 
     std::vector<int> lengths;
+    int shortest_train = Xtrain[0].size();
     for (int i = 0; i < Xtrain.size(); i++) {
-        lengths.push_back(Xtrain[i].size());
+        int len = Xtrain[i].size();
+        if (len < shortest_train) {
+            shortest_train = len;
+        }
+        lengths.push_back(len);
     }
+    int shortest_test = Xtest[0].size();
     for (int i = 0; i < Xtest.size(); i++) {
-        lengths.push_back(Xtest[i].size());
+        int len = Xtest[i].size();
+        if (len < shortest_test) {
+            shortest_test = len;
+        }
+        lengths.push_back(len);
+    }
+    if (this->g > shortest_train) {
+        g_greater_than_shortest_train(this->g, shortest_train);
+    }
+    if (this->g > shortest_test) {
+        g_greater_than_shortest_test(this->g, shortest_test);
     }
     
     long int n_str_train = Xtrain.size();
@@ -33,28 +49,30 @@ void Kernel::compute(std::vector<std::vector<int> > Xtrain,
     this->n_str_test = n_str_test;
 
     int **S = (int **) malloc(total_str * sizeof(int*));
-    int *seq_lengths = (int *) malloc(total_str * sizeof(int));
-    int *labels = (int *) malloc(total_str * sizeof(int));
-    int *test_labels = (int *) malloc(n_str_test * sizeof(int));
-
-    std::memcpy(seq_lengths, lengths.data(), lengths.size() * sizeof(int));
 
     std::set<int> dict;
     dict.insert(0);
     for (int i = 0; i < n_str_train; i++) {
         S[i] = Xtrain[i].data();
-        for (int j = 0; j < seq_lengths[i]; j++) {
+        for (int j = 0; j < lengths[i]; j++) {
             dict.insert(Xtrain[i][j]);
         }
     }
-    int dictionarySize = dict.size();
-    printf("dictionarySize = %d\n", dictionarySize);
     for (int i = 0; i < n_str_test; i++) {
         S[n_str_train + i] = Xtest[i].data();
+        for (int j = 0; j < lengths[n_str_train + i]; j++) {
+            dict.insert(Xtest[i][j]);
+        }
     }
+    int dictionarySize = dict.size();
+    for (int d : dict) {
+        printf("%d,", d);
+    }
+    printf("\n");
+    printf("dictionarySize = %d\n", dictionarySize);
     
     /*Extract g-mers*/
-    Features* features = extractFeatures(S, seq_lengths, total_str, g);
+    Features* features = extractFeatures(S, lengths, total_str, g);
     int nfeat = (*features).n;
     int *feat = (*features).features;
     if (!this->quiet) {
