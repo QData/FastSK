@@ -331,28 +331,16 @@ void countAndUpdateTri(unsigned int *outK, unsigned int *sx, unsigned int *g, in
 
 }
 
-double nchoosek(double n, double k) {
-    int i;
-    double *nums, *dens;
-    double prod = 1;
-    if (k > n / 2) k = n - k;
+unsigned nchoosek(unsigned n, unsigned k) {
+    if (k > n) return 0;
+    if (k * 2 > n) k = n-k;
     if (k == 0) return 1;
-    if (k == 1) return n;
-    if (k > 1) {
-        nums = (double*)malloc(k*sizeof(double));
-        dens = (double*)malloc(k*sizeof(double));
-        for (i = 0; i < k; ++i) {
-            nums[i] = n - k + 1 + i;
-            dens[i] = i + 1;
-        }
-        prod = 1;
-        for (i = 0; i < k; ++i) {
-            nums[i] /=  dens[i];
-            prod = prod * nums[i];
-        }
-        free(nums); free(dens);
+    int result = n;
+    for(int i = 2; i <= k; ++i ) {
+        result *= (n-i+1);
+        result /= i;
     }
-    return prod;
+    return result;
 }
 
 void getCombinations(unsigned int n, unsigned int k, int *pos, unsigned int depth, unsigned int margin, unsigned int* cnt_comb, unsigned int *out, int num_comb) {

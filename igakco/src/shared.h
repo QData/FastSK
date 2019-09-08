@@ -46,7 +46,7 @@ std::string trim(std::string& s);
 void cntsrtna(unsigned int *out,unsigned int *sx, int k, int r, int na);
 void countAndUpdate(unsigned int *outK, unsigned int *sx, unsigned int *g, int k, int r, int nStr);
 void countAndUpdateTri(unsigned int *outK, unsigned int *sx, unsigned int *g, int k, int r, int nStr);
-double nchoosek(double n, double k);
+unsigned nchoosek(unsigned n, unsigned k);
 void getCombinations(unsigned int n, unsigned int k, int *pos, unsigned int depth, unsigned int margin, unsigned int *cnt_comb, unsigned int *out, int num_comb);
 void shuffle(WorkItem *array, size_t n);
 void print_null(const char *s);
