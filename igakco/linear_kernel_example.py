@@ -25,12 +25,12 @@ def evaluate_clf(clf, Xtest, Ytest):
 
 ### Read the data
 reader = FastaUtility()
-Xtrain, Ytrain = reader.read_data('./data/1.1.train.fasta')
-Xtest, Ytest = reader.read_data('./data/1.1.test.fasta')
+Xtrain, Ytrain = reader.read_data('./data/2.19.train.fasta')
+Xtest, Ytest = reader.read_data('./data/2.19.test.fasta')
 Ytest = np.array(Ytest).reshape(-1, 1)
 
 ### Compute the igakco kernel
-kernel = Kernel(g=6, m=1)
+kernel = Kernel(g=6, m=2)
 kernel.compute(Xtrain, Xtest)
 Xtrain = kernel.train_kernel()
 Xtest = kernel.test_kernel()

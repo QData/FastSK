@@ -57,8 +57,8 @@ def evaluate_clf(clf, Xtest, Ytest):
 ### Run gridsearch
 def grid_search():
     best_auc, best_params = 0, {}
-    min_g, max_g = 6, 7
-    g_vals = list(range(min_g, max_g))
+    min_g, max_g = 5, 15
+    g_vals = list(range(min_g, max_g + 1))
     C_vals = [10 ** i for i in range(-3, 3)]
     for C in C_vals:
         for g in g_vals:

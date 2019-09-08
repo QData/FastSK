@@ -101,7 +101,6 @@ void kernel_build_parallel(int tid, WorkItem *workQueue, int queueSize,
         itemNum += num_threads;
         if (itemNum >= queueSize) {
             working = false;
-            if(!quiet) printf("Thread %d finished...\n", tid);
         }
     }
 
@@ -117,19 +116,25 @@ void kernel_build_parallel(int tid, WorkItem *workQueue, int queueSize,
     contention among the locks, seemed to split up contention but made it slightly slower?
     */
     int count = 0;
-    for (int j1 = 0; j1 < n_str_pairs; ++j1) {
-        if (j1 == cusps[count]){
-            if (count != 0) {
-                pthread_mutex_unlock(&mutexes[count-1]);
+    if (num_threads > 1) {
+        for (int j1 = 0; j1 < n_str_pairs; ++j1) {
+            if (j1 == cusps[count]) {
+                if (count != 0) {
+                    pthread_mutex_unlock(&mutexes[count - 1]);
+                }
+                pthread_mutex_lock(&mutexes[count]);
+                if (count + 1 < num_mutex) count++;
             }
-            pthread_mutex_lock(&mutexes[count]);
-            count++;
+            unsigned int val = Ks[j1];
+            if (val != 0) Ksfinal[j1] += val;
         }
-        unsigned int val = Ks[j1];
-        if (val != 0)
-            Ksfinal[j1] += val;
+        pthread_mutex_unlock(&mutexes[num_mutex - 1]);
+    } else {
+        for (int i = 0; i < n_str_pairs; i++) {
+            unsigned int val = Ks[i];
+            if (val != 0) Ksfinal[i] += val;
+        }
     }
-    pthread_mutex_unlock(&mutexes[num_mutex - 1]);
     free(Ks);
 }
 
