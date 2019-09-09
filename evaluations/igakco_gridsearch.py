@@ -71,7 +71,7 @@ def grid_search():
                 Xtest = kernel.test_kernel()
 
                 ### Use linear SVM
-                svm = LinearSVC()
+                svm = LinearSVC(C=C)
                 clf = CalibratedClassifierCV(svm, cv=5).fit(Xtrain, Ytrain)
                 acc, auc = evaluate_clf(clf, Xtest, Ytest)
 
