@@ -8,6 +8,7 @@ import os.path as osp
 import sys
 sys.path.append('./igakco')
 import argparse
+import json
 
 import numpy as np
 from igakco import Kernel
@@ -76,13 +77,13 @@ def grid_search():
 
                 ### Save Results
                 log = {
-                    'train': train_file,
-                    'test': test_file,
-                    'C': C,
-                    'g': g,
-                    'm': m,
-                    'acc': acc,
-                    'auc': auc
+                    "train": train_file,
+                    "test": test_file,
+                    "C": C,
+                    "g": g,
+                    "m": m,
+                    "acc": acc,
+                    "auc": auc
                 }
                 print(log)
                 if auc > best_auc:
