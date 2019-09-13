@@ -3,7 +3,8 @@ project(igakco)
 
 add_subdirectory(pybind11)
 pybind11_add_module(igakco
-	src/bindings.cpp 
+	src/bindings.cpp
+	src/kernel.cpp
 	src/svm.cpp
 	src/shared.cpp
 	src/gakco_core.cpp

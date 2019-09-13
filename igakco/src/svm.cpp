@@ -46,6 +46,7 @@ SVM::SVM(int g, int m, double C, double nu, double eps,
 void SVM::fit_numerical(std::vector<std::vector<int> > Xtrain, 
 		std::vector<int> Ytrain, std::vector<std::vector<int> > Xtest,
 		std::vector<int> Ytest, std::string kernel_file) {
+	
 	std::vector<int> lengths;
 
 	for (int i = 0; i < Xtrain.size(); i++) {
@@ -67,32 +68,30 @@ void SVM::fit_numerical(std::vector<std::vector<int> > Xtrain,
 	int *labels = (int *) malloc(total_str * sizeof(int));
 	int *test_labels = (int *) malloc(n_str_test * sizeof(int));
 
-	// copy references to train strings
-	//memcpy(S, Xtrain.data(), n_str_train * sizeof(int*));
+	// copy references
 	memcpy(labels, Ytrain.data(), n_str_train * sizeof(int));
-
-	// copy the references to the test strings
-	//memcpy(&S[n_str_train], Xtest.data(), n_str_test * sizeof(int*));
 	memcpy(&labels[n_str_train], Ytest.data(), n_str_test * sizeof(int));
 	memcpy(test_labels, Ytest.data(), n_str_test * sizeof(int));
+	memcpy(seq_lengths, lengths.data(), lengths.size() * sizeof(int));
 
 	this->test_labels = test_labels;
 
-	memcpy(seq_lengths, lengths.data(), lengths.size() * sizeof(int));
-
-	std::set<int> dict;
-	dict.insert(0);
-	for (int i = 0; i < n_str_train; i++) {
-		S[i] = Xtrain[i].data();
-		for (int j = 0; j < seq_lengths[i]; j++) {
-			dict.insert(Xtrain[i][j]);
-		}
-	}
-	int dictionarySize = dict.size();
-	printf("dictionarySize = %d\n", dictionarySize);
-	for (int i = 0; i < n_str_test; i++) {
-		S[n_str_train + i] = Xtest[i].data();
-	}
+    std::set<int> dict;
+    dict.insert(0);
+    for (int i = 0; i < n_str_train; i++) {
+        S[i] = Xtrain[i].data();
+        for (int j = 0; j < seq_lengths[i]; j++) {
+            dict.insert(Xtrain[i][j]);
+        }
+    }
+    for (int i = 0; i < n_str_test; i++) {
+        S[n_str_train + i] = Xtest[i].data();
+        for (int j = 0; j < seq_lengths[n_str_train + i]; j++) {
+            dict.insert(Xtrain[i][j]);
+        }
+    }
+    int dictionarySize = dict.size();
+    printf("dictionarySize = %d\n", dictionarySize);
 	
 	/*Extract g-mers*/
 	Features* features = extractFeatures(S, seq_lengths, total_str, g);
@@ -132,26 +131,26 @@ void SVM::fit_numerical(std::vector<std::vector<int> > Xtrain,
 		fclose(kernelfile);
 	}
 	
-	struct svm_parameter* svm_param = Malloc(svm_parameter, 1);
-	svm_param->svm_type = this->svm_type;
-	svm_param->kernel_type = this->kernel_type;
-	svm_param->nu = this->nu;
-	svm_param->gamma = 1 /(double) nfeat;
-	svm_param->cache_size = this->cache_size;
-	svm_param->C = this->C;
-	svm_param->nr_weight = this->nr_weight;
-	svm_param->weight_label = this->weight_label;
-	svm_param->weight = this->weight;
-	svm_param->shrinking = this->h;
-	svm_param->probability = this->probability;
-	svm_param->eps = this->eps;
-	svm_param->degree = 0;
+	// struct svm_parameter* svm_param = Malloc(svm_parameter, 1);
+	// svm_param->svm_type = this->svm_type;
+	// svm_param->kernel_type = this->kernel_type;
+	// svm_param->nu = this->nu;
+	// svm_param->gamma = 1 /(double) nfeat;
+	// svm_param->cache_size = this->cache_size;
+	// svm_param->C = this->C;
+	// svm_param->nr_weight = this->nr_weight;
+	// svm_param->weight_label = this->weight_label;
+	// svm_param->weight = this->weight;
+	// svm_param->shrinking = this->h;
+	// svm_param->probability = this->probability;
+	// svm_param->eps = this->eps;
+	// svm_param->degree = 0;
 
-	svm_problem *prob = create_svm_problem(K, labels, &params, svm_param);
+	// svm_problem *prob = create_svm_problem(K, labels, &params, svm_param);
 
-	struct svm_model* model;
-	model = svm_train(prob, svm_param);
-	this->model = model;
+	// struct svm_model* model;
+	// model = svm_train(prob, svm_param);
+	// this->model = model;
 
 }
 
@@ -341,26 +340,26 @@ void SVM::fit(std::string train_file, std::string test_file,
 		fclose(kernelfile);
 	}
 
-	struct svm_parameter* svm_param = Malloc(svm_parameter, 1);
-	svm_param->svm_type = this->svm_type;
-	svm_param->kernel_type = this->kernel_type;
-	svm_param->nu = this->nu;
-	svm_param->gamma = 1 /(double) nfeat;
-	svm_param->cache_size = this->cache_size;
-	svm_param->C = this->C;
-	svm_param->nr_weight = this->nr_weight;
-	svm_param->weight_label = this->weight_label;
-	svm_param->weight = this->weight;
-	svm_param->shrinking = this->h;
-	svm_param->probability = this->probability;
-	svm_param->eps = this->eps;
-	svm_param->degree = 0;
+	// struct svm_parameter* svm_param = Malloc(svm_parameter, 1);
+	// svm_param->svm_type = this->svm_type;
+	// svm_param->kernel_type = this->kernel_type;
+	// svm_param->nu = this->nu;
+	// svm_param->gamma = 1 /(double) nfeat;
+	// svm_param->cache_size = this->cache_size;
+	// svm_param->C = this->C;
+	// svm_param->nr_weight = this->nr_weight;
+	// svm_param->weight_label = this->weight_label;
+	// svm_param->weight = this->weight;
+	// svm_param->shrinking = this->h;
+	// svm_param->probability = this->probability;
+	// svm_param->eps = this->eps;
+	// svm_param->degree = 0;
 
-	svm_problem *prob = create_svm_problem(K, labels, &params, svm_param);
+	// svm_problem *prob = create_svm_problem(K, labels, &params, svm_param);
 
-	struct svm_model *model;
-	model = train_model(K, labels, &params, svm_param);
-	this->model = model;
+	// struct svm_model *model;
+	// model = train_model(K, labels, &params, svm_param);
+	// this->model = model;
 }
 
 void SVM::fit_from_arrays(std::vector<std::string> Xtrain, 
