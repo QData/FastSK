@@ -17,6 +17,8 @@ def get_args():
         help='Directory to store intermediate and output files')
     parser.add_argument('-g', type=int, required=True)
     parser.add_argument('-m', type=int, required=True)
+    parser.add_argument('--results', type=str, required=False,
+        help='File to log accuracy and auc')
 
     return parser.parse_args()
 
@@ -71,23 +73,27 @@ neg_pred_file = osp.join(outdir, prefix + '.preds.neg.out')
 print("Computing kernel...")
 command = ["./gkmsvm_kernel", '-l', str(g), '-k', str(k), '-d', str(m),
     train_pos_file, train_neg_file, kernel_file]
+print(' '.join(command))
 output = subprocess.check_output(command)
 
 ### train SVM ###
 print("Training model...")
 command = ["./gkmsvm_train", kernel_file, train_pos_file, 
     train_neg_file, svm_file_prefix]
+print(' '.join(command))
 output = subprocess.check_output(command)
 
 ### test ###
 print("Getting predictions...")
 # get pos preds
-command = ["./gkmsvm_classify", "-l", str(g), "-k", str(k), "-d", str("m"), 
+command = ["./gkmsvm_classify", "-l", str(g), "-k", str(k), "-d", str(m), 
     test_pos_file, svseq, svmalpha, pos_pred_file]
+print(' '.join(command))
 subprocess.check_output(command)
 # get neg preds
-command = ["./gkmsvm_classify", "-l", str(g), "-k", str(k), "-d", str("m"), 
+command = ["./gkmsvm_classify", "-l", str(g), "-k", str(k), "-d", str(m), 
     test_neg_file, svseq, svmalpha, neg_pred_file]
+print(' '.join(command))
 subprocess.check_output(command)
 
 ### evaluate ###
@@ -97,3 +103,15 @@ neg_preds = read_preds(neg_pred_file)
 accuracy = get_accuracy(pos_preds, neg_preds)
 auc = get_auc(pos_preds, neg_preds)
 print("Accuracy = {}, AUC = {}".format(accuracy, auc))
+
+if (args.results is not None):
+    log = {
+        "dataset": prefix,
+        "g": g,
+        "k": k,
+        "m": m,
+        "acc": accuracy,
+        "auc": auc
+    }
+    with open(args.results, 'a+') as f:
+        f.write(str(log) + '\n')
