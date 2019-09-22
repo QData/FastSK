@@ -164,6 +164,8 @@ void Kernel::compute_train(std::vector<std::vector<int> > Xtrain) {
     params.num_threads = this->num_threads;
     params.num_mutex = this->num_mutex;
     params.quiet = this->quiet;
+    params.approx = this->approx;
+    params.epsilon = this->epsilon;
 
     /* Compute the kernel matrix */
     double *K = construct_kernel(&params);
