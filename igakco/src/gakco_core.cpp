@@ -158,8 +158,10 @@ double* construct_kernel(kernel_params *params) {
     /* Determine how many threads to use */
     int num_threads = params->num_threads;
     if (num_threads == -1) {
-        int numCores = std::thread::hardware_concurrency();
-        num_threads = (numCores > 20) ? 20 : numCores;
+        // returns number of processors
+        // int numCores = std::thread::hardware_concurrency();
+        // num_threads = (numCores > 20) ? 20 : numCores;
+        num_threads = 20;
     }
     num_threads = (num_threads > queueSize) ? queueSize : num_threads;
 

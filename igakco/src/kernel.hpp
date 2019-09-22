@@ -19,6 +19,7 @@ public:
 	Kernel(int, int);
 	void compute(std::vector<std::vector<int> >, 
 		std::vector<std::vector<int> >);
+	void compute_train(std::vector<std::vector<int> > Xtrain);
 	std::vector<std::vector<double> > train_kernel();
 	std::vector<std::vector<double> > test_kernel();
 	void save_kernel(std::string);
