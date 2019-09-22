@@ -98,6 +98,74 @@ void Kernel::compute(std::vector<std::vector<int> > Xtrain,
     this->kernel = K;
 }
 
+void Kernel::compute_train(std::vector<std::vector<int> > Xtrain) {
+
+    std::vector<int> lengths;
+    int shortest_train = Xtrain[0].size();
+    for (int i = 0; i < Xtrain.size(); i++) {
+        int len = Xtrain[i].size();
+        if (len < shortest_train) {
+            shortest_train = len;
+        }
+        lengths.push_back(len);
+    }
+
+    if (this->g > shortest_train) {
+        g_greater_than_shortest_train(this->g, shortest_train);
+    }
+    
+    long int n_str_train = Xtrain.size();
+    long int n_str_test = 0;
+    long int total_str = n_str_train + n_str_test;
+
+    this->n_str_train = n_str_train;
+    this->n_str_test = n_str_test;
+
+    int **S = (int **) malloc(total_str * sizeof(int*));
+
+    std::set<int> dict;
+    dict.insert(0);
+    for (int i = 0; i < n_str_train; i++) {
+        S[i] = Xtrain[i].data();
+        for (int j = 0; j < lengths[i]; j++) {
+            dict.insert(Xtrain[i][j]);
+        }
+    }
+
+    int dictionarySize = dict.size();
+    for (int d : dict) {
+        printf("%d,", d);
+    }
+    printf("\n");
+    printf("dictionarySize = %d\n", dictionarySize);
+    
+    /*Extract g-mers*/
+    Features* features = extractFeatures(S, lengths, total_str, g);
+    int nfeat = (*features).n;
+    int *feat = (*features).features;
+    if (!this->quiet) {
+        printf("g = %d, k = %d, %d features\n", this->g, this->k, nfeat);
+    }
+
+    kernel_params params;
+    params.g = g;
+    params.k = k;
+    params.m = m;
+    params.n_str_train = n_str_train;
+    params.n_str_test = n_str_test;
+    params.total_str = total_str;
+    params.n_str_pairs = (total_str / (double) 2) * (total_str + 1);
+    params.features = features;
+    params.dict_size = dictionarySize;
+    params.num_threads = this->num_threads;
+    params.num_mutex = this->num_mutex;
+    params.quiet = this->quiet;
+
+    /* Compute the kernel matrix */
+    double *K = construct_kernel(&params);
+    this->kernel = K;
+}
+
 std::vector<std::vector<double> > Kernel::train_kernel() {
     double *K = this->kernel;
     int n_str_rain = this->n_str_train;

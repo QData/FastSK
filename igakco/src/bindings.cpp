@@ -88,6 +88,8 @@ PYBIND11_MODULE(igakco, m) {
         .def("compute", &Kernel::compute,
             py::arg("Xtrain"),
             py::arg("Xtest"))
+        .def("compute_train", &Kernel::compute_train,
+            py::arg("Xtrain"))
         .def("train_kernel", &Kernel::train_kernel)
         .def("test_kernel", &Kernel::test_kernel)
         .def("save_kernel", &Kernel::save_kernel);
