@@ -1,40 +1,49 @@
-'''
-Derrick Blakely - September 2019
-
-This script covers experiments on our
-DNA datasets.
-
-Note that gkm-SVM2.0 must be recompiled
-with a larger alphabet size if running
-on a dataset besides DNA.
-'''
-
+import os
+import os.path as osp
+import sys
+import argparse
+import json
+import numpy as np
+import pandas as pd
+import time
 import subprocess
 
-experiments = [
-    {"dataset": "CTCF", "g": 13, "m": 7, "k": 6},
-    {"dataset": "EP300", "g": 10, "m": 4, "k": 6},
-    {"dataset": "JUND", "g": 10, "m": 3, "k": 7},
-    {"dataset": "RAD21", "g": 14, "m": 8, "k": 6},
-    {"dataset": "SIN3A", "g": 8, "m": 2, "k": 6},
-    {"dataset": "Pbde", "g": 5, "m": 1, "k": 4},
-    # {"dataset": "Hek29", "g": 5, "m": 0, "k": 5},
-    # {"dataset": "Mcf7", "g": 5, "m": 0, "k": 5},
-    {"dataset": "EP300_47848", "g": 11, "m": 5, "k": 6},
-    {"dataset": "KAT2B", "g": 13, "m": 7, "k": 6},
-    {"dataset": "NR2C2", "g": 10, "m": 4, "k": 6},
-    {"dataset": "TP53", "g": 7, "m": 2, "k": 5},
-    {"dataset": "ZBTB33", "g": 7, "m": 1, "k": 6},
-    {"dataset": "ZZZ3", "g": 10, "m": 4, "k": 6},
-]
+RESULTS_DIR = './results'
+if not osp.exists(RESULTS_DIR):
+    os.makedirs(RESULTS_DIR)
+
+def get_args():
+    parser = argparse.ArgumentParser(description='gkm Protein Experiments')
+    parser.add_argument('--datasets', type=str, required=True,
+        help="Where to find the datasets")
+    parser.add_argument('--params', type=str, required=True,
+        help="The paramters file")
+    parser.add_argument('--out', type=str, required=True, 
+        help='Name of log file to save results')
+
+    return parser.parse_args()
+
+args = get_args()
+file = args.out
+datasets = args.datasets
+parameters = args.params
+results_file = osp.join(RESULTS_DIR, file)
+
+df = pd.read_csv(parameters)
+experiments = df.to_dict('records')
 
 for e in experiments:
+    train_file = str(e['Dataset']) + '.train.fasta'
+    test_file = str(e['Dataset']) + '.test.fasta'
+    train_file = osp.join(datasets, train_file)
+    test_file = osp.join(datasets, test_file)
+
     command = ["python", "run_gkm.py", 
-        "--dir", "our_data/", 
-        "--prefix", e["dataset"],
+        "--dir", datasets, 
+        "--prefix", str(e["Dataset"]),
         "--outdir", "temp",
         "-g", str(e["g"]),
         "-m", str(e["m"]),
-        "--results", "dna_results.out"]
+        "--results", args.out]
     print(' '.join(command))
     output = subprocess.check_output(command)

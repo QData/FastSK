@@ -6,6 +6,7 @@ import sys
 import argparse
 import numpy as np
 from sklearn.metrics import roc_auc_score
+import time
 
 def get_args():
     parser = argparse.ArgumentParser(description='Analyze gkm results data')
@@ -113,9 +114,12 @@ command = ["./gkmsvm_classify",
     '-R']
 if args.dict is not None:
     command += ['-A', args.dict]
+
 command += [test_neg_file, svseq, svmalpha, neg_pred_file]
 print(' '.join(command))
+start_time = time.time()
 subprocess.check_output(command)
+exec_time = time.time() - start_time
 
 ### evaluate ###
 pos_preds = read_preds(pos_pred_file)
@@ -134,7 +138,8 @@ if (args.results is not None):
         "k": k,
         "m": m,
         "acc": accuracy,
-        "auc": auc
+        "auc": auc,
+        "time": exec_time
     }
     with open(args.results, 'a+') as f:
         f.write(str(log) + '\n')
