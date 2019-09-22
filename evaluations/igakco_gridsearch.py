@@ -6,16 +6,9 @@ the iGakco kernel
 import os
 import os.path as osp
 import sys
-sys.path.append('./igakco')
 import argparse
 import json
-
 import numpy as np
-from igakco import Kernel
-from utils import FastaUtility
-from sklearn.svm import LinearSVC
-from sklearn.linear_model import LogisticRegression
-from sklearn.calibration import CalibratedClassifierCV
 from sklearn import metrics
 
 '''For a linear kernel, we need the training and
@@ -63,7 +56,7 @@ def grid_search():
     C_vals = [10 ** i for i in range(-3, 3)]
     for C in C_vals:
         for g in g_vals:
-            for m in range(g):
+            for m in range(1, g):
                 ### Compute the igakco kernel
                 kernel = Kernel(g=g, m=m)
                 kernel.compute(Xtrain_raw, Xtest_raw)

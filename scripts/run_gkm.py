@@ -17,6 +17,8 @@ def get_args():
         help='Directory to store intermediate and output files')
     parser.add_argument('-g', type=int, required=True)
     parser.add_argument('-m', type=int, required=True)
+    parser.add_argument('--dict', type=str, required=False, 
+        help='Dictionary file name (not needed for DNA datasets)')
     parser.add_argument('--results', type=str, required=False,
         help='File to log accuracy and auc')
 
@@ -71,8 +73,15 @@ neg_pred_file = osp.join(outdir, prefix + '.preds.neg.out')
 
 ### compute kernel ###
 print("Computing kernel...")
-command = ["./gkmsvm_kernel", '-l', str(g), '-k', str(k), '-d', str(m),
-    train_pos_file, train_neg_file, kernel_file]
+command = ["./gkmsvm_kernel",
+    '-a', str(2),
+    '-l', str(g), 
+    '-k', str(k), 
+    '-d', str(m),
+    '-R']
+if args.dict is not None:
+    command += ['-A', args.dict]
+command += [train_pos_file, train_neg_file, kernel_file]
 print(' '.join(command))
 output = subprocess.check_output(command)
 
@@ -86,13 +95,25 @@ output = subprocess.check_output(command)
 ### test ###
 print("Getting predictions...")
 # get pos preds
-command = ["./gkmsvm_classify", "-l", str(g), "-k", str(k), "-d", str(m), 
-    test_pos_file, svseq, svmalpha, pos_pred_file]
+command = ["./gkmsvm_classify",
+    "-l", str(g), 
+    "-k", str(k), 
+    "-d", str(m),
+    '-R']
+if args.dict is not None:
+    command += ['-A', args.dict]
+command += [test_pos_file, svseq, svmalpha, pos_pred_file]
 print(' '.join(command))
 subprocess.check_output(command)
 # get neg preds
-command = ["./gkmsvm_classify", "-l", str(g), "-k", str(k), "-d", str(m), 
-    test_neg_file, svseq, svmalpha, neg_pred_file]
+command = ["./gkmsvm_classify",
+    "-l", str(g), 
+    "-k", str(k), 
+    "-d", str(m),
+    '-R']
+if args.dict is not None:
+    command += ['-A', args.dict]
+command += [test_neg_file, svseq, svmalpha, neg_pred_file]
 print(' '.join(command))
 subprocess.check_output(command)
 
@@ -100,7 +121,9 @@ subprocess.check_output(command)
 pos_preds = read_preds(pos_pred_file)
 neg_preds = read_preds(neg_pred_file)
 
+print("Computing accuracy...")
 accuracy = get_accuracy(pos_preds, neg_preds)
+print("Computing AUC...")
 auc = get_auc(pos_preds, neg_preds)
 print("Accuracy = {}, AUC = {}".format(accuracy, auc))
 
