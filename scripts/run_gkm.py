@@ -84,7 +84,9 @@ if args.dict is not None:
     command += ['-A', args.dict]
 command += [train_pos_file, train_neg_file, kernel_file]
 print(' '.join(command))
+start_time = time.time()
 output = subprocess.check_output(command)
+exec_time = time.time() - start_time
 
 ### train SVM ###
 print("Training model...")
@@ -117,9 +119,7 @@ if args.dict is not None:
 
 command += [test_neg_file, svseq, svmalpha, neg_pred_file]
 print(' '.join(command))
-start_time = time.time()
 subprocess.check_output(command)
-exec_time = time.time() - start_time
 
 ### evaluate ###
 pos_preds = read_preds(pos_pred_file)
