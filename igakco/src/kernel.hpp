@@ -18,7 +18,7 @@ public:
     bool approx = false;
     double epsilon = 0;
 
-    Kernel(int, int, bool, double);
+    Kernel(int, int, int, bool, double);
     void compute(std::vector<std::vector<int> >, 
         std::vector<std::vector<int> >);
     void compute_train(std::vector<std::vector<int> > Xtrain);

@@ -8,10 +8,11 @@
 #include <math.h>
 #include <cstring>
 
-Kernel::Kernel(int g, int m, bool approx, double epsilon) {
+Kernel::Kernel(int g, int m, int t, bool approx, double epsilon) {
     this->g = g;
     this->m = m;
     this->k = g - m;
+    this->num_threads = t;
     this->approx = approx;
     this->epsilon = epsilon;
 }
