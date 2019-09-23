@@ -82,9 +82,10 @@ PYBIND11_MODULE(igakco, m) {
             py::arg("metric")="accuracy");
 
     py::class_<Kernel>(m, "Kernel")
-        .def(py::init<int, int>(), 
+        .def(py::init<int, int, int>(), 
             py::arg("g"), 
-            py::arg("m"))
+            py::arg("m"),
+            py::arg("t")=-1)
         .def("compute", &Kernel::compute,
             py::arg("Xtrain"),
             py::arg("Xtest"))

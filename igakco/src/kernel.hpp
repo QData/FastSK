@@ -16,7 +16,7 @@ public:
 	double* kernel = NULL;
 	bool quiet = false;
 
-	Kernel(int, int);
+	Kernel(int, int, int);
 	void compute(std::vector<std::vector<int> >, 
 		std::vector<std::vector<int> >);
 	void compute_train(std::vector<std::vector<int> > Xtrain);

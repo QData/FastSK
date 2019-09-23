@@ -14,7 +14,8 @@ def get_args():
         help='Dataset directory', metavar='./data')
     parser.add_argument('--prefix', type=str, required=True, 
         help='Dataset prefix', metavar='EP300')
-    parser.add_argument('--outdir', type=str, required=False, metavar='./temp',
+    parser.add_argument('--outdir', type=str, required=False, 
+        default="./temp", metavar='./temp',
         help='Directory to store intermediate and output files')
     parser.add_argument('-g', type=int, required=True)
     parser.add_argument('-m', type=int, required=True)
@@ -87,49 +88,54 @@ print(' '.join(command))
 start_time = time.time()
 output = subprocess.check_output(command)
 exec_time = time.time() - start_time
+print(exec_time)
 
-### train SVM ###
-print("Training model...")
-command = ["./gkmsvm/gkmsvm_train", kernel_file, train_pos_file, 
-    train_neg_file, svm_file_prefix]
-print(' '.join(command))
-output = subprocess.check_output(command)
+accuracy = 0
+auc = 0
 
-### test ###
-print("Getting predictions...")
-# get pos preds
-command = ["./gkmsvm/gkmsvm_classify",
-    "-l", str(g), 
-    "-k", str(k), 
-    "-d", str(m),
-    '-R']
-if args.dict is not None:
-    command += ['-A', args.dict]
-command += [test_pos_file, svseq, svmalpha, pos_pred_file]
-print(' '.join(command))
-subprocess.check_output(command)
-# get neg preds
-command = ["./gkmsvm/gkmsvm_classify",
-    "-l", str(g), 
-    "-k", str(k), 
-    "-d", str(m),
-    '-R']
-if args.dict is not None:
-    command += ['-A', args.dict]
+if False:
+    ### train SVM ###
+    print("Training model...")
+    command = ["./gkmsvm/gkmsvm_train", kernel_file, train_pos_file, 
+        train_neg_file, svm_file_prefix]
+    print(' '.join(command))
+    output = subprocess.check_output(command)
 
-command += [test_neg_file, svseq, svmalpha, neg_pred_file]
-print(' '.join(command))
-subprocess.check_output(command)
+    ### test ###
+    print("Getting predictions...")
+    # get pos preds
+    command = ["./gkmsvm/gkmsvm_classify",
+        "-l", str(g), 
+        "-k", str(k), 
+        "-d", str(m),
+        '-R']
+    if args.dict is not None:
+        command += ['-A', args.dict]
+    command += [test_pos_file, svseq, svmalpha, pos_pred_file]
+    print(' '.join(command))
+    subprocess.check_output(command)
+    # get neg preds
+    command = ["./gkmsvm/gkmsvm_classify",
+        "-l", str(g), 
+        "-k", str(k), 
+        "-d", str(m),
+        '-R']
+    if args.dict is not None:
+        command += ['-A', args.dict]
 
-### evaluate ###
-pos_preds = read_preds(pos_pred_file)
-neg_preds = read_preds(neg_pred_file)
+    command += [test_neg_file, svseq, svmalpha, neg_pred_file]
+    print(' '.join(command))
+    subprocess.check_output(command)
 
-print("Computing accuracy...")
-accuracy = get_accuracy(pos_preds, neg_preds)
-print("Computing AUC...")
-auc = get_auc(pos_preds, neg_preds)
-print("Accuracy = {}, AUC = {}".format(accuracy, auc))
+    ### evaluate ###
+    pos_preds = read_preds(pos_pred_file)
+    neg_preds = read_preds(neg_pred_file)
+
+    print("Computing accuracy...")
+    accuracy = get_accuracy(pos_preds, neg_preds)
+    print("Computing AUC...")
+    auc = get_auc(pos_preds, neg_preds)
+    print("Accuracy = {}, AUC = {}".format(accuracy, auc))
 
 if (args.results is not None):
     log = {

@@ -8,10 +8,11 @@
 #include <math.h>
 #include <cstring>
 
-Kernel::Kernel(int g, int m) {
+Kernel::Kernel(int g, int m, int t) {
     this->g = g;
     this->m = m;
     this->k = g - m;
+    this->num_threads = t;
 }
 
 void Kernel::compute(std::vector<std::vector<int> > Xtrain, 
