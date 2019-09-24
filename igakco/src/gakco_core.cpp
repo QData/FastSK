@@ -153,11 +153,12 @@ double* construct_kernel(kernel_params *params) {
         indexes[i] = i;
     }
 
-    numCombinations = params->approx ? int((1 - params->epsilon) * numCombinations) : numCombinations;
-
-    auto rng = std::default_random_engine {};
-    rng.seed(std::time(0));
-    std::shuffle(std::begin(indexes), std::end(indexes), rng);
+    if (numCombinations > 20 & params->m != 0) {
+        numCombinations = params->approx ? int((1 - params->epsilon) * numCombinations) : numCombinations;
+        auto rng = std::default_random_engine {};
+        rng.seed(std::time(0));
+        std::shuffle(std::begin(indexes), std::end(indexes), rng);
+    }
 
     int queueSize = numCombinations;
     WorkItem *workQueue = new WorkItem[queueSize];
