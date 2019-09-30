@@ -8,6 +8,10 @@
 #include <cstdlib>
 #include <math.h>
 #include <cstring>
+#include <algorithm>
+#include <random>
+#include <ctime>
+
 
 #define Malloc(type,n) (type *)malloc((n)*sizeof(type))
 
@@ -143,13 +147,32 @@ double* construct_kernel(kernel_params *params) {
     /* Build work queue - represents the partial kernel computations
     that need to be completed by the threads */
     int numCombinations = nchoosek(params->g, params->m);
+    
+    std::vector<int> indexes(numCombinations);
+    for (int i = 0; i < numCombinations; i++) {
+        indexes[i] = i;
+    }
+
+    if (numCombinations > 50 & params->m != 0) {
+        numCombinations = params->approx ? int((1 - params->epsilon) * numCombinations) : numCombinations;
+        auto rng = std::default_random_engine {};
+        rng.seed(std::time(0));
+        std::shuffle(std::begin(indexes), std::end(indexes), rng);
+    }
+
     int queueSize = numCombinations;
     WorkItem *workQueue = new WorkItem[queueSize];
     int itemNum = 0;
-    for (int combo_num = 0; combo_num < numCombinations; combo_num++) {
-        workQueue[combo_num].m = params->m;
-        workQueue[combo_num].combo_num = combo_num;
+
+    for (int i = 0; i < numCombinations; i++) {
+        workQueue[i].m = params->m;
+        workQueue[i].combo_num = indexes[i];
     }
+
+    // for (int combo_num = 0; combo_num < numCombinations; combo_num++) {
+    //     workQueue[combo_num].m = params->m;
+    //     workQueue[combo_num].combo_num = combo_num;
+    // }
 
     /* Allocate gapped k-mer kernel */
     double *K = (double *) malloc(params->n_str_pairs * sizeof(double));
@@ -177,7 +200,7 @@ double* construct_kernel(kernel_params *params) {
     params->num_mutex = num_mutex;
 
     /* Multithreaded kernel construction */
-    if (!params->quiet) printf("Computing kernel matrix using %d threads...\n", num_threads);
+    if (!params->quiet) printf("Computing %d mismatch profiles using %d threads...\n", numCombinations, num_threads);
     std::vector<std::thread> threads;
     for (int tid = 0; tid < num_threads; tid++) {
         threads.push_back(std::thread(kernel_build_parallel, tid, workQueue, queueSize, mutexes, params, K));

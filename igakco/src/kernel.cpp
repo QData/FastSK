@@ -8,11 +8,13 @@
 #include <math.h>
 #include <cstring>
 
-Kernel::Kernel(int g, int m, int t) {
+Kernel::Kernel(int g, int m, int t, bool approx, double epsilon) {
     this->g = g;
     this->m = m;
     this->k = g - m;
     this->num_threads = t;
+    this->approx = approx;
+    this->epsilon = epsilon;
 }
 
 void Kernel::compute(std::vector<std::vector<int> > Xtrain, 
@@ -93,6 +95,8 @@ void Kernel::compute(std::vector<std::vector<int> > Xtrain,
     params.num_threads = this->num_threads;
     params.num_mutex = this->num_mutex;
     params.quiet = this->quiet;
+    params.approx = this->approx;
+    params.epsilon = this->epsilon;
 
     /* Compute the kernel matrix */
     double *K = construct_kernel(&params);
@@ -161,6 +165,8 @@ void Kernel::compute_train(std::vector<std::vector<int> > Xtrain) {
     params.num_threads = this->num_threads;
     params.num_mutex = this->num_mutex;
     params.quiet = this->quiet;
+    params.approx = this->approx;
+    params.epsilon = this->epsilon;
 
     /* Compute the kernel matrix */
     double *K = construct_kernel(&params);
