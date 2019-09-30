@@ -153,7 +153,7 @@ double* construct_kernel(kernel_params *params) {
         indexes[i] = i;
     }
 
-    if (numCombinations > 20 & params->m != 0) {
+    if (numCombinations > 50 & params->m != 0) {
         numCombinations = params->approx ? int((1 - params->epsilon) * numCombinations) : numCombinations;
         auto rng = std::default_random_engine {};
         rng.seed(std::time(0));
