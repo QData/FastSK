@@ -1,9 +1,9 @@
-# iGakco: Fast and Accurate Sequence Classification using Support Vector Machines
+# FastSK: Fast and Accurate Sequence Classification using Support Vector Machines
 
 [![Build Status](https://travis-ci.org/pybind/igakco.svg?branch=master)](https://travis-ci.org/pybind/igakco)
 [![Build status](https://ci.appveyor.com/api/projects/status/57nnxfm4subeug43/branch/master?svg=true)](https://ci.appveyor.com/project/dean0x7d/cmake-example/branch/master)
 
-A Python package and string kernel algorithm for training SVM classifiers for sequence analysis. Built with the iGakco gapped k-mer algorithm, [pybind11](https://github.com/pybind/pybind11), and [LIBSVM](https://github.com/cjlin1/libsvm).
+A Python package and string kernel algorithm for training SVM classifiers for sequence analysis. Built with the FastSK gapped k-mer algorithm, [pybind11](https://github.com/pybind/pybind11), and [LIBSVM](https://github.com/cjlin1/libsvm).
 
 
 ## Prerequisites
@@ -29,12 +29,12 @@ pip install -i https://test.pypi.org/simple/ igakco-test
 
 Clone this repository:
 ```
-git clone --recursive https://github.com/QData/iGakco-SVM.git
+git clone --recursive https://github.com/QData/FastSK.git
 ```
 The `--recursive` flag is to make sure the Pybind11 library is cloned as well. Then run:
 
 ```
-cd iGakco-SVM
+cd FastSK
 pip install ./igakco
 ```
 
