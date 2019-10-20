@@ -1,6 +1,6 @@
 # FastSK: Fast and Accurate Sequence Classification using Support Vector Machines
 
-[![Build Status](https://travis-ci.org/pybind/igakco.svg?branch=master)](https://travis-ci.org/pybind/igakco)
+[![Build Status](https://travis-ci.org/pybind/fastsk.svg?branch=master)](https://travis-ci.org/pybind/fastsk)
 [![Build status](https://ci.appveyor.com/api/projects/status/57nnxfm4subeug43/branch/master?svg=true)](https://ci.appveyor.com/project/dean0x7d/cmake-example/branch/master)
 
 A Python package and string kernel algorithm for training SVM classifiers for sequence analysis. Built with the FastSK gapped k-mer algorithm, [pybind11](https://github.com/pybind/pybind11), and [LIBSVM](https://github.com/cjlin1/libsvm).
@@ -22,7 +22,7 @@ A Python package and string kernel algorithm for training SVM classifiers for se
 ## Installation (Linux and MacOS)
 **With pip**
 ```
-pip install -i https://test.pypi.org/simple/ igakco-test
+pip install -i https://test.pypi.org/simple/ fastsk-test
 ```
 
 **From source**
@@ -35,17 +35,19 @@ The `--recursive` flag is to make sure the Pybind11 library is cloned as well. T
 
 ```
 cd FastSK
-pip install ./igakco
+pip install ./fastsk
 ```
 
 or
 
-`pip3 install ./igakco`
+```
+pip3 install ./fast
+```
 
 ## Tutorial
 Example usage:
 ```
-from igakco import SVM
+from fastsk import SVM
 svm = SVM(g=7, m=2, C=0.7)
 svm.fit(train_file="1.1.train.fasta", test_file="1.1.test.fasta", quiet=False, kernel_file="output.txt")
 svm.predict("predictions.txt")
@@ -54,7 +56,7 @@ This will use the provided parameters to build train and test kernel matrices an
 
 Alternatively, we can train by feeding in arrays of sequences and labels:
 ```
-from igakco import SVM
+from fastsk import SVM
 
 xtrain = ["ACACA", "AAACA"]
 ytrain = [1, 0]
