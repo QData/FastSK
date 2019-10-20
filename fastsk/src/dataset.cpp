@@ -1,5 +1,5 @@
 #include "dataset.hpp"
-#include "gakco_core.hpp"
+#include "shared.h"
 #include <map>
 #include <iostream>
 #include <fstream>
@@ -53,7 +53,7 @@ int * string_replace (const char *s, char *d, int seqLength) {
 }
 
 Dataset::Dataset(std::string filename, bool is_test_set, char *dict, std::string dictFileName) { 
-	this->filename = filename;
+    this->filename = filename;
     this->is_test_set = is_test_set;
 
     /*
@@ -89,23 +89,23 @@ Dataset::Dataset(std::string filename, bool is_test_set, char *dict, std::string
 }
 
 void Dataset::collect_data(bool quiet) {
-	std::string filename = this->filename;
-	// matrix of numerical sequences
-	const char *seq;
-	// the dictionary
-	//keep track of how many times we need to reallocate memory
-	int realls = 0;
+    std::string filename = this->filename;
+    // matrix of numerical sequences
+    const char *seq;
+    // the dictionary
+    //keep track of how many times we need to reallocate memory
+    int realls = 0;
 
-	printf("Collecting data from: %s\n", filename.c_str());
+    printf("Collecting data from: %s\n", filename.c_str());
 
-	std::ifstream file;
-	file.open(filename.c_str());
-	if (file.fail()) {
-		perror(filename.c_str());
-		exit(1);
-	}
+    std::ifstream file;
+    file.open(filename.c_str());
+    if (file.fail()) {
+        perror(filename.c_str());
+        exit(1);
+    }
 
-	this->S = (int **) malloc(MAXNSTR * sizeof(int *));
+    this->S = (int **) malloc(MAXNSTR * sizeof(int *));
     std::string line, label;
     int row = 0;
     bool isLabel = true;
@@ -175,8 +175,8 @@ void Dataset::parseDict(){
     std::ifstream file;
     file.open(this->filename);
     if (file.fail()) {
-    	perror(filename.c_str());
-    	exit(1);
+        perror(filename.c_str());
+        exit(1);
     }
     std::string line;
     //hope the datafile starts with label as per proper format

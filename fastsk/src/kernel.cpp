@@ -1,5 +1,6 @@
 #include "kernel.hpp"
 #include "gakco_core.hpp"
+#include "shared.h"
 #include <vector>
 #include <array>
 #include <string>
@@ -7,13 +8,14 @@
 #include <math.h>
 #include <cstring>
 
-Kernel::Kernel(int g, int m, int t, bool approx, double epsilon) {
+Kernel::Kernel(int g, int m, int t, bool approx, double epsilon, int max_iters) {
     this->g = g;
     this->m = m;
     this->k = g - m;
     this->num_threads = t;
     this->approx = approx;
     this->epsilon = epsilon;
+    this->max_iters = max_iters;
 }
 
 void Kernel::compute(std::vector<std::vector<int> > Xtrain, 
@@ -36,6 +38,7 @@ void Kernel::compute(std::vector<std::vector<int> > Xtrain,
         }
         lengths.push_back(len);
     }
+    printf("shortest train sequence: %d, shortest test sequence: %d\n", shortest_train, shortest_test);
     if (this->g > shortest_train) {
         g_greater_than_shortest_train(this->g, shortest_train);
     }
@@ -96,6 +99,7 @@ void Kernel::compute(std::vector<std::vector<int> > Xtrain,
     params.quiet = this->quiet;
     params.approx = this->approx;
     params.epsilon = this->epsilon;
+    params.max_iters = this->max_iters;
 
     /* Compute the kernel matrix */
     double *K = construct_kernel(&params);
@@ -166,6 +170,7 @@ void Kernel::compute_train(std::vector<std::vector<int> > Xtrain) {
     params.quiet = this->quiet;
     params.approx = this->approx;
     params.epsilon = this->epsilon;
+    params.max_iters = this->max_iters;
 
     /* Compute the kernel matrix */
     double *K = construct_kernel(&params);

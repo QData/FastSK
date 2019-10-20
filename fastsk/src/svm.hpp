@@ -1,6 +1,7 @@
 #ifndef GAKCOSVM_H
 #define GAKCOSVM_H
 
+#include "shared.h"
 #include "libsvm-code/libsvm.h"
 #include <string>
 #include <cstdlib>

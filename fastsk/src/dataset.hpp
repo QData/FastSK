@@ -1,7 +1,8 @@
 #ifndef DATASET_H
 #define DATASET_H
 
-#include "gakco_core.hpp"
+#include "shared.h"
+
 #include <string>
 #include <vector>
 

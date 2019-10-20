@@ -17,8 +17,9 @@ public:
     bool quiet = false;
     bool approx = false;
     double epsilon = 0;
+    int max_iters = 100;
 
-    Kernel(int, int, int, bool, double);
+    Kernel(int, int, int, bool, double, int);
     void compute(std::vector<std::vector<int> >, 
         std::vector<std::vector<int> >);
     void compute_train(std::vector<std::vector<int> > Xtrain);

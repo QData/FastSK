@@ -6,6 +6,7 @@ pybind11_add_module(fastsk
 	src/bindings.cpp
 	src/kernel.cpp
 	src/svm.cpp
+	src/shared.cpp
 	src/gakco_core.cpp
 	src/dataset.cpp
 	src/libsvm-code/libsvm.cpp

@@ -26,6 +26,12 @@ def get_args():
     parser.add_argument('-g', type=int, required=True)
     parser.add_argument('-m', type=int, required=True)
     parser.add_argument('-C', type=float, required=False, default=1)
+    parser.add_argument('-t', type=int, required=False, default=20,
+        help="Numbner of threads to use for kernel computation")
+    parser.add_argument('-a', '--approx', action='store_true', default=False,
+        help="Flag to enable the approximation algorithm")
+    parser.add_argument('-I', type=int, required=False, default=50,
+        help='Maximum number of iterations to use if running the approximation algorithm')
 
     return parser.parse_args()
 
@@ -37,7 +43,7 @@ def evaluate_clf(clf, Xtest, Ytest):
 
 args = get_args()
 train_file, test_file = args.trn, args.tst
-g, m, C = args.g, args.m, args.C
+g, m, C, t, approx, I = args.g, args.m, args.C, args.t, args.approx, args.I
 
 ### Read the data
 reader = FastaUtility()
@@ -46,7 +52,7 @@ Xtest, Ytest = reader.read_data(test_file)
 Ytest = np.array(Ytest).reshape(-1, 1)
 
 ### Compute the fastsk kernel
-kernel = Kernel(g=g, m=m)
+kernel = Kernel(g=g, m=m, t=t, approx=approx, max_iters=I)
 kernel.compute(Xtrain, Xtest)
 Xtrain = kernel.train_kernel()
 Xtest = kernel.test_kernel()

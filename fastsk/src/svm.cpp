@@ -1,6 +1,7 @@
 #include "svm.hpp"
 #include "gakco_core.hpp"
 #include "dataset.hpp"
+#include "shared.h"
 #include "libsvm-code/libsvm.h"
 #include "libsvm-code/eval.h"
 #include <stdio.h>

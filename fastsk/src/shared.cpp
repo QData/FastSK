@@ -399,14 +399,14 @@ void g_greater_than_shortest_err(int g, int len, std::string filename) {
 void g_greater_than_shortest_train(int g, int len) {
     printf("Error:\n");
     printf("\tg cannot be longer than the shortest sequence in a dataset.\n");
-    printf("\tg = %d, but shortest train sequence has length d\n", g, len);
+    printf("\tg = %d, but shortest train sequence has length %d\n", g, len);
     exit(1);
 }
 
 void g_greater_than_shortest_test(int g, int len) {
     printf("Error:\n");
     printf("\tg cannot be longer than the shortest sequence in a dataset.\n");
-    printf("\tg = %d, but shortest test sequence has length d\n", g, len);
+    printf("\tg = %d, but shortest test sequence has length %d\n", g, len);
     exit(1);
 }
 
