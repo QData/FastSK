@@ -1,4 +1,4 @@
-#include "gakco_core.hpp"
+#include "fastsk.hpp"
 #include "shared.h"
 #include "libsvm-code/libsvm.h"
 

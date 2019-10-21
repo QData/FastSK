@@ -1,5 +1,5 @@
-#ifndef GAKCO_CORE_H
-#define GAKCO_CORE_H
+#ifndef FASTSK_H
+#define FASTSK_H
 
 #include "shared.h"
 #include "libsvm-code/libsvm.h"
