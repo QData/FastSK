@@ -41,7 +41,7 @@ pip install ./fastsk
 or
 
 ```
-pip3 install ./fast
+pip3 install ./fastsk
 ```
 
 ## Tutorial

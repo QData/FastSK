@@ -1,5 +1,5 @@
 #include "svm.hpp"
-#include "gakco_core.hpp"
+#include "fastsk.hpp"
 #include "dataset.hpp"
 #include "shared.h"
 #include "libsvm-code/libsvm.h"

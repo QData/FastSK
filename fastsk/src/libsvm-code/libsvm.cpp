@@ -8,7 +8,7 @@
 #include <limits.h>
 #include <locale.h>
 #include "libsvm.h"
-#include "../gakco_core.hpp"
+#include "../fastsk.hpp"
 
 int libsvm_version = LIBSVM_VERSION;
 typedef float Qfloat;
