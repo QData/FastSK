@@ -16,8 +16,8 @@ public:
     double* kernel = NULL;
     bool quiet = false;
     bool approx = false;
-    double epsilon = 0;
-    int max_iters = 100;
+    double delta = 0.025;
+    int max_iters = -1;
 
     Kernel(int, int, int, bool, double, int);
     void compute(std::vector<std::vector<int> >, 

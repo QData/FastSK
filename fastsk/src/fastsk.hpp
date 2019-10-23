@@ -24,7 +24,7 @@ typedef struct kernel_params {
     int queueSize;
     bool quiet;
     bool approx;
-    double epsilon;
+    double delta;
     int max_iters;
 
 } kernel_params;

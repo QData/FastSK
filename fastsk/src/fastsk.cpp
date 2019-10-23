@@ -42,9 +42,15 @@ double get_variance(unsigned int *Ks, double *K_hat, double *variances, int n_st
         }
         count++;
     }
+
     avg_variance /= count;
-    avg_variance /= iter > 1 ? avg_variance / (iter - 1) : 9999999;
-    max_variance = iter > 1 ? max_variance / (iter - 1) : 9999999;
+    if (iter == 0) {
+        avg_variance = 9999999;
+        max_variance = 9999999;
+    } else {
+        avg_variance /= iter - 1;
+        max_variance /= max_variance / (iter - 1);
+    }
 
     return avg_variance;
 }
@@ -65,6 +71,7 @@ void kernel_build_parallel(int tid, WorkItem *workQueue, int queueSize,
     int dict_size = params->dict_size;
     int num_mutex = params->num_mutex;
     int num_threads = params->num_threads;
+    double delta = params->delta;
     bool quiet = params->quiet;
     bool approx = params->approx;
     int max_iters = params->max_iters;
@@ -146,16 +153,15 @@ void kernel_build_parallel(int tid, WorkItem *workQueue, int queueSize,
             if (iter >= 2) {
                 sd = std::sqrt(sd / iter);
                 //printf("%d, %f\n", iter, sd);
-                if (1.96 * sd < 0.01) {
+                if (delta / sd > 1.96) {
                     printf("thread %d converged in %d iterations...\n", tid, iter);
                     working = false;
                 }
             }
-        }
-
-        if (iter > max_iters) {
-            printf("thread %d reached max iterations...\n", tid);
-            working = false;
+            if (max_iters != -1 & iter > max_iters) {
+                printf("thread %d reached max iterations...\n", tid);
+                working = false;
+            }
         }
 
         free(cnt_m);

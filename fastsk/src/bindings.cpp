@@ -87,8 +87,8 @@ PYBIND11_MODULE(fastsk, m) {
             py::arg("m"),
             py::arg("t")=-1,
             py::arg("approx")=false,
-            py::arg("epsilon")=0,
-            py::arg("max_iters")=100)
+            py::arg("delta")=0.025,
+            py::arg("max_iters")=-1)
         .def("compute", &Kernel::compute,
             py::arg("Xtrain"),
             py::arg("Xtest"))
