@@ -1,6 +1,12 @@
 import os
 import os.path as osp
 import subprocess
+import numpy as np
+from fastsk import Kernel
+from sklearn.svm import LinearSVC
+from sklearn.linear_model import LogisticRegression
+from sklearn.calibration import CalibratedClassifierCV
+from sklearn import metrics
 
 '''Utilities for demoing iGakco-SVM
 '''
@@ -177,6 +183,37 @@ class DslUtility():
             assert len(X) == len(Y)
 
         return X, Y
+
+class FastskRunner():
+    def __init__(self, prefix):
+        self.prefix = prefix
+        self.train_file = osp.join('/localtmp/dcb7xz/FastSK/data', prefix + '.train.fasta')
+        self.test_file = osp.join('/localtmp/dcb7xz/FastSK/data', prefix + '.test.fasta')
+        reader = FastaUtility()
+        self.Xtrain, self.Ytrain = reader.read_data(self.train_file)
+        Xtest, Ytest = reader.read_data(self.test_file)
+        Ytest = np.array(Ytest).reshape(-1, 1)
+        self.Xtest, self.Ytest = Xtest, Ytest
+
+    def compute_train_kernel(self, g, m, t=20, approx=True, I=100, delta=0.025):
+        kernel = Kernel(g=g, m=m, t=t, approx=approx, max_iters=I, delta=delta)
+        kernel.compute_train(self.Xtrain)
+
+    def train_and_test(self, g, m, t, approx, I, delta=0.025, C=1):
+        kernel = Kernel(g=g, m=m, t=t, approx=approx, max_iters=I, delta=delta)
+        kernel.compute(self.Xtrain, self.Xtest)
+        self.Xtrain = kernel.train_kernel()
+        self.Xtest = kernel.test_kernel()
+        svm = LinearSVC(C=C)
+        self.clf = CalibratedClassifierCV(svm, cv=5).fit(self.Xtrain, self.Ytrain)
+        acc, auc = self.evaluate_clf()
+        return acc, auc
+
+    def evaluate_clf(self):
+        acc = self.clf.score(self.Xtest, self.Ytest)
+        probs = self.clf.predict_proba(self.Xtest)[:,1]
+        auc = metrics.roc_auc_score(self.Ytest, probs)
+        return acc, auc
 
 class GkmRunner():
     def __init__(self, exec_location, data_locaton, prefix, outdir="./temp"):
