@@ -147,6 +147,8 @@ def I_experiment(dataset, g, m, k, C):
 def run_I_experiments(params):
     for p in params:
         dataset, type_, g, m, k, C = p['Dataset'], p['type'], p['g'], p['m'], p['k'], p['C']
+        if dataset in ['ZZZ3', 'KAT2B', 'EP300_47848']:
+            continue
         assert k == g - m
         I_experiment(dataset, g, m, k, C)
 
@@ -165,7 +167,7 @@ pass
 
 ## AUC vs I experiments
 #I_experiment('1.1', 8, 4, 4, 0.01)
-#run_I_experiments(params)
+run_I_experiments(params)
 
 ## AUC vs delta experiments
 pass
