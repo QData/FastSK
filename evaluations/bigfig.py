@@ -152,27 +152,95 @@ def run_I_experiments(params):
         assert k == g - m
         I_experiment(dataset, g, m, k, C)
 
+def delta_experiment(dataset, g, m, k, C):
+    output_csv = dataset + '_vary_delta.csv'
+    results = {
+        'delta': [],
+        'acc' : [],
+        'auc' : [],
+    }
+
+    max_I = int(special.comb(g, m))
+    delta_vals = [0.005 * i for i in range(20)] + [0.1 * i for i in range(1, 11)]
+    for d in delta_vals:
+        fastsk = FastskRunner(dataset)
+        acc, auc = fastsk.train_and_test(g, m, t=1, approx=True, I=max_I, delta=d, C=C)
+        log_str = "{}: d = {}, acc = {}, auc = {}".format(dataset, d, acc, auc)
+        print(log_str)
+        results['delta'].append(d)
+        results['acc'].append(acc)
+        results['auc'].append(auc)
+
+    df = pd.DataFrame(results)
+    df.to_csv(output_csv, index=False)
+
+def run_delta_experiments(params):
+    for p in params:
+        dataset, type_, g, m, k, C = p['Dataset'], p['type'], p['g'], p['m'], p['k'], p['C']
+        assert k == g - m
+        if dataset in ['ZZZ3', 'KAT2B', 'EP300_47848']:
+            continue
+        delta_experiment(dataset, g, m, k, C)
+
+def increase_g_experiment(dataset, C):
+    output_csv = dataset + '_increase_g_m4.csv'
+    results = {
+        'g': [],
+        'm': [],
+        'acc' : [],
+        'auc' : [],
+    }
+
+    train_file = osp.join('/localtmp/dcb7xz/FastSK/data', dataset + '.train.fasta')
+    test_file = osp.join('/localtmp/dcb7xz/FastSK/data', dataset + '.test.fasta')
+
+    fasta_util = FastaUtility()
+    max_g = min(fasta_util.shortest_seq(train_file), fasta_util.shortest_seq(test_file), 20)
+
+    for g in range(4, max_g + 1):
+        m = 4
+        max_I = min(int(special.comb(g, m)), 500)
+        fastsk = FastskRunner(dataset)
+        acc, auc = fastsk.train_and_test(g, m, t=1, I=max_I, approx=True, C=C)
+        log_str = "Acc {}, AUC {}, g {}, m {}".format(acc, auc, g, m)
+        print(log_str)
+        results['g'].append(g)
+        results['m'].append(m)
+        results['acc'].append(acc)
+        results['auc'].append(auc)
+
+        df = pd.DataFrame(results)
+        df.to_csv(output_csv, index=False)
+
+
+def run_increase_g_experiments(params):
+    for p in params:
+        dataset, type_, g, m, k, C = p['Dataset'], p['type'], p['g'], p['m'], p['k'], p['C']
+        assert k == g - m
+        increase_g_experiment(dataset, C)
 
 df = pd.read_csv('./evaluations/datasets_to_use.csv')
 params = df.to_dict('records')
 
-## Thread experiments
+### Thread experiments
 # run_thread_experiments(params)
 
-## g experiments
+### g kernel timing experiments
 #run_g_experiments(params)
+
+### Increasing g experiments
+run_increase_g_experiments(params)
 
 ## m experiments
 pass
 
 ## AUC vs I experiments
 #I_experiment('1.1', 8, 4, 4, 0.01)
-run_I_experiments(params)
-
-## AUC vs delta experiments
-pass
+#run_I_experiments(params)
 
 ## AUC vs g experiments
 pass
 
-
+### AUC vs delta experiments
+#delta_experiment('1.1', g=8, m=4, k=4, C=0.01)
+#run_delta_experiments(params)

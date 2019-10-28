@@ -100,6 +100,14 @@ class FastaUtility():
 
         return X, Y
 
+    def shortest_seq(self, data_file):
+        X, Y = self.read_data(data_file)
+        shortest = len(X[0])
+        for x in X:
+            if len(x) < shortest:
+                shortest = len(x)
+        return shortest
+
 class ArabicUtility():
     def __init__(self, vocab=None):
         r"""
