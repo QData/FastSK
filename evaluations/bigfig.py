@@ -6,7 +6,7 @@ import argparse
 import json
 import numpy as np
 from fastsk import Kernel
-from utils import FastaUtility, GkmRunner, FastskRunner
+from utils import FastaUtility, GkmRunner, GaKCoRunner, FastskRunner
 import pandas as pd
 import time
 from scipy import special
@@ -26,10 +26,10 @@ def time_fastsk(g, m, t, prefix, approx=False, max_iters=None):
 
     return end - start
 
-def time_gkm(g, m, t, prefix):
+def time_gkm(g, m, t, dictionary, prefix):
     gkm_data = '/localtmp/dcb7xz/FastSK/baselines/gkm_data'
     gkm_exec = '/localtmp/dcb7xz/FastSK/baselines/gkmsvm'
-    gkm = GkmRunner(gkm_exec, gkm_data, prefix, './temp')
+    gkm = GkmRunner(gkm_exec, gkm_data, prefix, dictionary, './temp')
 
     start = time.time()
     gkm.compute_kernel(g=g, m=m, t=t)
@@ -37,8 +37,18 @@ def time_gkm(g, m, t, prefix):
 
     return end - start
 
-def time_gakco(t):
-    pass
+def time_gakco(g, m, t, type_, prefix):
+    gakco_exec = '/localtmp/dcb7xz/FastSK/baselines/GaKCo-SVM/bin/GaKCo'
+    data = './data/'
+    gakco = GaKCoRunner(gakco_exec, data, type_, prefix)
+
+    start = time.time()
+    #gakco.compute_kernel(g=g, m=m)
+    acc, auc = gakco.train_and_test(g=g, m=m, C=0.01)
+    print("acc = {}, auc = {}".format(acc, auc))
+    end = time.time()
+
+    return end - start
 
 def time_blended(t):
     pass
@@ -147,18 +157,90 @@ def I_experiment(dataset, g, m, k, C):
 def run_I_experiments(params):
     for p in params:
         dataset, type_, g, m, k, C = p['Dataset'], p['type'], p['g'], p['m'], p['k'], p['C']
+        if dataset in ['ZZZ3', 'KAT2B', 'EP300_47848']:
+            continue
         assert k == g - m
         I_experiment(dataset, g, m, k, C)
 
+def delta_experiment(dataset, g, m, k, C):
+    output_csv = dataset + '_vary_delta.csv'
+    results = {
+        'delta': [],
+        'acc' : [],
+        'auc' : [],
+    }
+
+    max_I = int(special.comb(g, m))
+    delta_vals = [0.005 * i for i in range(20)] + [0.1 * i for i in range(1, 11)]
+    for d in delta_vals:
+        fastsk = FastskRunner(dataset)
+        acc, auc = fastsk.train_and_test(g, m, t=1, approx=True, I=max_I, delta=d, C=C)
+        log_str = "{}: d = {}, acc = {}, auc = {}".format(dataset, d, acc, auc)
+        print(log_str)
+        results['delta'].append(d)
+        results['acc'].append(acc)
+        results['auc'].append(auc)
+
+    df = pd.DataFrame(results)
+    df.to_csv(output_csv, index=False)
+
+def run_delta_experiments(params):
+    for p in params:
+        dataset, type_, g, m, k, C = p['Dataset'], p['type'], p['g'], p['m'], p['k'], p['C']
+        assert k == g - m
+        if dataset in ['ZZZ3', 'KAT2B', 'EP300_47848']:
+            continue
+        delta_experiment(dataset, g, m, k, C)
+
+def increase_g_experiment(dataset, C):
+    output_csv = dataset + '_increase_g_m4.csv'
+    results = {
+        'g': [],
+        'm': [],
+        'acc' : [],
+        'auc' : [],
+    }
+
+    train_file = osp.join('/localtmp/dcb7xz/FastSK/data', dataset + '.train.fasta')
+    test_file = osp.join('/localtmp/dcb7xz/FastSK/data', dataset + '.test.fasta')
+
+    fasta_util = FastaUtility()
+    max_g = min(fasta_util.shortest_seq(train_file), fasta_util.shortest_seq(test_file), 20)
+
+    for g in range(4, max_g + 1):
+        m = 4
+        max_I = min(int(special.comb(g, m)), 500)
+        fastsk = FastskRunner(dataset)
+        acc, auc = fastsk.train_and_test(g, m, t=1, I=max_I, approx=True, C=C)
+        log_str = "Acc {}, AUC {}, g {}, m {}".format(acc, auc, g, m)
+        print(log_str)
+        results['g'].append(g)
+        results['m'].append(m)
+        results['acc'].append(acc)
+        results['auc'].append(auc)
+
+        df = pd.DataFrame(results)
+        df.to_csv(output_csv, index=False)
+
+
+def run_increase_g_experiments(params):
+    for p in params:
+        dataset, type_, g, m, k, C = p['Dataset'], p['type'], p['g'], p['m'], p['k'], p['C']
+        assert k == g - m
+        increase_g_experiment(dataset, C)
 
 df = pd.read_csv('./evaluations/datasets_to_use.csv')
 params = df.to_dict('records')
 
-## Thread experiments
+### Thread experiments
 # run_thread_experiments(params)
 
-## g experiments
+### g kernel timing experiments
 #run_g_experiments(params)
+
+### Increasing g experiments
+#run_increase_g_experiments(params)
+print("gakco time = ", time_gakco(8, 4, 1, 'protein', '1.1'))
 
 ## m experiments
 pass
@@ -167,10 +249,9 @@ pass
 #I_experiment('1.1', 8, 4, 4, 0.01)
 #run_I_experiments(params)
 
-## AUC vs delta experiments
-pass
-
 ## AUC vs g experiments
 pass
 
-
+### AUC vs delta experiments
+#delta_experiment('1.1', g=8, m=4, k=4, C=0.01)
+#run_delta_experiments(params)
