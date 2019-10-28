@@ -108,14 +108,6 @@ class FastaUtility():
                 shortest = len(x)
         return shortest
 
-def count_fasta_seq(file):
-    num = 0
-    with open(file, 'r') as f:
-        for line in f:
-            if line[0] == '>':
-                num += 1
-    return num
-
 class ArabicUtility():
     def __init__(self, vocab=None):
         r"""

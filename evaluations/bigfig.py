@@ -239,8 +239,10 @@ params = df.to_dict('records')
 #run_g_experiments(params)
 
 ### Increasing g experiments
+
 #run_increase_g_experiments(params)
-print("gakco time = ", time_gakco(8, 4, 1, 'protein', '1.1'))
+
+run_increase_g_experiments(params)
 
 ## m experiments
 pass
