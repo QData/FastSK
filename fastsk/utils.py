@@ -261,6 +261,108 @@ class GkmRunner():
         print(' '.join(command))
         output = subprocess.check_output(command)
 
+class GaKCoRunner():
+    def __init__(self, exec_location, data_locaton, type_, prefix, outdir='./temp'):
+        self.exec_location = exec_location
+        self.data_locaton = data_locaton
+        self.train_file = osp.join('/localtmp/dcb7xz/FastSK/data', prefix + '.train.fasta')
+        self.test_file = osp.join('/localtmp/dcb7xz/FastSK/data', prefix + '.test.fasta')
+        self.train_test_file = osp.join(outdir, prefix + '_train_test.fasta')
+        assert type_ in ['dna', 'protein']
+        if type_ == 'protein':
+            self.dict_file = osp.join(data_locaton, 'full_prot.dict.txt')
+        else:
+            self.dict_file = osp.join(data_locaton, 'dna.dictionary.txt')
+        self.labels_file = osp.join(outdir, 'labels.txt')
+        self.kernel_file = osp.join(outdir, 'kernel.txt')
+        self.num_train, self.num_test = 0, 0
+
+    def compute_kernel(self, g, m, mode='train', t=1):
+        self.g = g
+        self.m = m
+        self.k = g - m
+
+        assert mode in ['train', 'test', 'train_test']
+        if mode == 'train':
+            data_file = self.train_file
+        elif mode == 'test':
+            data_file = self.test_file
+        else:
+            data_file = self.train_test_file
+
+        command = [self.exec_location,
+            '-g', str(self.g),
+            '-k', str(self.k),
+            data_file,
+            self.dict_file,
+            self.labels_file,
+            self.kernel_file]
+            
+        output = subprocess.check_output(command)
+
+    def train_and_test(self, g, m, C=1):
+        self.combine_train_and_test()
+        self.compute_kernel(g, m, mode='train_test')
+
+        self.Xtrain, self.Xtest = self.read_kernel()
+        self.Ytrain, self.Ytest = self.read_labels()
+        
+        svm = LinearSVC(C=C)
+        self.clf = CalibratedClassifierCV(svm, cv=5).fit(self.Xtrain, self.Ytrain)
+        acc, auc = self.evaluate_clf()
+        return acc, auc
+
+    def evaluate_clf(self):
+        acc = self.clf.score(self.Xtest, self.Ytest)
+        probs = self.clf.predict_proba(self.Xtest)[:,1]
+        auc = metrics.roc_auc_score(self.Ytest, probs)
+        return acc, auc
+
+    def combine_train_and_test(self):
+        lines = []
+        with open(self.train_file, 'r') as f:
+            for line in f:
+                if line[0] == '>':
+                    self.num_train += 1
+                lines.append(line)
+        with open(self.test_file, 'r') as f:
+            for line in f:
+                if line[0] == '>':
+                    self.num_test += 1
+                lines.append(line)
+        with open(self.train_test_file, 'w+') as f:
+            f.writelines(lines)
+
+    def read_labels(self):
+        Ytrain, Ytest = [], []
+        with open(self.train_file, 'r') as f:
+            for line in f:
+                if line[0] == '>':
+                    Ytrain.append(line.rstrip().split('>')[1])
+        with open(self.test_file, 'r') as f:
+            for line in f:
+                if line[0] == '>':
+                    Ytest.append(line.rstrip().split('>')[1])
+
+        return Ytrain, Ytest
+
+    def read_kernel(self):
+        Xtrain, Xtest = [], []
+        with open(self.kernel_file, 'r') as f:
+            count = 0
+            for line in f:
+                x = [float(item.split(':')[1]) for item in line.rstrip().split(' ')][:self.num_train]
+                if (count < self.num_train):
+                    Xtrain.append(x)
+                else:
+                    Xtest.append(x)
+                count += 1
+
+        return Xtrain, Xtest
+
+    def get_labels(self):
+        pass
+
 class BlendedSpectrumRunner():
     def __init__(self, exec_location, data_locaton, prefix, outdir="./temp"):
         self.exec_location = exec_location
@@ -278,3 +380,4 @@ class BlendedSpectrumRunner():
             self.train_data,
             self.kernel_file]
         output = subprocess.check_output(command)
+

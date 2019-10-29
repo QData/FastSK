@@ -6,7 +6,7 @@ import argparse
 import json
 import numpy as np
 from fastsk import Kernel
-from utils import FastaUtility, GkmRunner, FastskRunner
+from utils import FastaUtility, GkmRunner, GaKCoRunner, FastskRunner
 import pandas as pd
 import time
 from scipy import special
@@ -26,10 +26,10 @@ def time_fastsk(g, m, t, prefix, approx=False, max_iters=None):
 
     return end - start
 
-def time_gkm(g, m, t, prefix):
+def time_gkm(g, m, t, dictionary, prefix):
     gkm_data = '/localtmp/dcb7xz/FastSK/baselines/gkm_data'
     gkm_exec = '/localtmp/dcb7xz/FastSK/baselines/gkmsvm'
-    gkm = GkmRunner(gkm_exec, gkm_data, prefix, './temp')
+    gkm = GkmRunner(gkm_exec, gkm_data, prefix, dictionary, './temp')
 
     start = time.time()
     gkm.compute_kernel(g=g, m=m, t=t)
@@ -37,8 +37,18 @@ def time_gkm(g, m, t, prefix):
 
     return end - start
 
-def time_gakco(t):
-    pass
+def time_gakco(g, m, t, type_, prefix):
+    gakco_exec = '/localtmp/dcb7xz/FastSK/baselines/GaKCo-SVM/bin/GaKCo'
+    data = './data/'
+    gakco = GaKCoRunner(gakco_exec, data, type_, prefix)
+
+    start = time.time()
+    #gakco.compute_kernel(g=g, m=m)
+    acc, auc = gakco.train_and_test(g=g, m=m, C=0.01)
+    print("acc = {}, auc = {}".format(acc, auc))
+    end = time.time()
+
+    return end - start
 
 def time_blended(t):
     pass
@@ -244,6 +254,9 @@ params = df.to_dict('records')
 #run_g_experiments(params)
 
 ### Increasing g experiments
+
+#run_increase_g_experiments(params)
+
 run_increase_g_experiments(params)
 
 ## m experiments
