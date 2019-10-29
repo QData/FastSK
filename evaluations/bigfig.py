@@ -182,11 +182,23 @@ def run_delta_experiments(params):
             continue
         delta_experiment(dataset, g, m, k, C)
 
+def check_C_vals(g, m, dataset):
+    best_auc, best_acc, best_C = 0, 0, 0
+    C_vals = [10**i for i in range(-3, 3)]
+    max_I = max_I = min(int(special.comb(g, m)), 500)
+    for C in C_vals:
+        fastsk = FastskRunner(dataset)
+        acc, auc = fastsk.train_and_test(g, m, t=1, I=max_I, approx=True, C=C)
+        if auc > best_auc:
+            best_acc, best_auc = acc, auc
+    return best_acc, best_auc, C
+
 def increase_g_experiment(dataset, C):
-    output_csv = dataset + '_increase_g_m4.csv'
+    output_csv = dataset + '_increase_gC_k6.csv'
     results = {
         'g': [],
         'm': [],
+        'C' : [],
         'acc' : [],
         'auc' : [],
     }
@@ -197,15 +209,18 @@ def increase_g_experiment(dataset, C):
     fasta_util = FastaUtility()
     max_g = min(fasta_util.shortest_seq(train_file), fasta_util.shortest_seq(test_file), 20)
 
-    for g in range(4, max_g + 1):
-        m = 4
-        max_I = min(int(special.comb(g, m)), 500)
-        fastsk = FastskRunner(dataset)
-        acc, auc = fastsk.train_and_test(g, m, t=1, I=max_I, approx=True, C=C)
+    for g in range(6, max_g + 1):
+        k = 6
+        m = g - k
+        #max_I = min(int(special.comb(g, m)), 500)
+        #fastsk = FastskRunner(dataset)
+        #acc, auc = fastsk.train_and_test(g, m, t=1, I=max_I, approx=True, C=C)
+        acc, auc, C = check_C_vals(g, m, dataset)
         log_str = "Acc {}, AUC {}, g {}, m {}".format(acc, auc, g, m)
         print(log_str)
         results['g'].append(g)
         results['m'].append(m)
+        results['C'].append(C)
         results['acc'].append(acc)
         results['auc'].append(auc)
 
