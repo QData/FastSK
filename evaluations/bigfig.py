@@ -54,11 +54,12 @@ def time_blended(t):
     pass
 
 def thread_experiment(dataset, g, m, k):
-    output_csv = dataset + '_vary_threads.csv'
+    output_csv = dataset + '_vary_threads_I50.csv'
     results = {
         'fastsk_exact_time' : [],
         'fastsk_approx_time' : [],
         'fastsk_approx_time_t1' : [],
+        'fastsk_I50': [],
         'gkm_time' : [],
     }
 
@@ -67,21 +68,31 @@ def thread_experiment(dataset, g, m, k):
     Xtrain, Ytrain = reader.read_data(train_file)
 
     for t in range(1, 21):
-        fastsk_exact = time_fastsk(g, m, t, prefix=dataset, approx=False)
-        fastsk_approx = time_fastsk(g, m, t, prefix=dataset, approx=True)
-        fastsk_approx_t1 = time_fastsk(g, m, t=1, prefix=dataset, approx=True)
-        gkm = time_gkm(g, m, t, prefix=dataset)
+        # fastsk_exact = time_fastsk(g, m, t, prefix=dataset, approx=False)
+        # fastsk_approx = time_fastsk(g, m, t, prefix=dataset, approx=True)
+        # fastsk_approx_t1 = time_fastsk(g, m, t=1, prefix=dataset, approx=True)
+        # fastsk_approx_t1 = time_fastsk(g, m, t=1, prefix=dataset, approx=True)
+        # gkm = time_gkm(g, m, t, prefix=dataset)
+        fastsk_exact = 0
+        fastsk_approx = 0
+        fastsk_approx_t1 = 0
+        fastsk_approx_t1 = 0
+        gkm = 0
+        fastsk_I50 = time_fastsk(g, m, t=1, prefix=dataset, approx=True, max_iters=50)
 
         results['fastsk_exact_time'].append(fastsk_exact)
         results['fastsk_approx_time'].append(fastsk_approx)
         results['fastsk_approx_time_t1'].append(fastsk_approx_t1)
+        results['fastsk_I50'].append(fastsk_I50)
         results['gkm_time'].append(gkm)
 
-        log_str = "{} - exact: {}, approx: {} approx_t1: {}, gkm: {}"
-        print(log_str.format(dataset, fastsk_exact, fastsk_approx, fastsk_approx_t1, gkm))
+        # log_str = "{} - exact: {}, approx: {} approx_t1: {}, gkm: {}"
+        # print(log_str.format(dataset, fastsk_exact, fastsk_approx, fastsk_approx_t1, gkm))
+        log_str = "{} - I50: {}"
+        print(log_str.format(dataset, fastsk_I50))
 
-    df = pd.DataFrame(results)
-    df.to_csv(output_csv, index=False)
+        df = pd.DataFrame(results)
+        df.to_csv(output_csv, index=False)
 
 def run_thread_experiments(params):
     for p in params:
@@ -248,7 +259,7 @@ df = pd.read_csv('./evaluations/datasets_to_use.csv')
 params = df.to_dict('records')
 
 ### Thread experiments
-# run_thread_experiments(params)
+run_thread_experiments(params)
 
 ### g kernel timing experiments
 #run_g_experiments(params)
@@ -257,7 +268,7 @@ params = df.to_dict('records')
 
 #run_increase_g_experiments(params)
 
-run_increase_g_experiments(params)
+#run_increase_g_experiments(params)
 
 ## m experiments
 pass
