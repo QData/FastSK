@@ -140,8 +140,18 @@ def I_experiment(dataset, g, m, k, C):
         'auc' : [],
     }
 
-    max_I = min(int(special.comb(g, m)), 500)
-    iter_vals = list(range(10, max_I + 10, 10))
+    if m == 0:
+        m = 1
+
+    max_I = min(int(special.comb(g, m)), 100)
+    iter_vals = []
+    if (max_I > 10):
+        iter_vals += list(range(1, 10))
+        iter_vals += list(range(10, max_I, 10))
+        iter_vals.append(max_I)
+    else:
+        iter_vals = list(range(1, max_I + 1))
+
     for I in iter_vals:
         fastsk = FastskRunner(dataset)
         acc, auc = fastsk.train_and_test(g, m, t=1, approx=True, I=I, delta=0.025, C=C)
@@ -151,14 +161,14 @@ def I_experiment(dataset, g, m, k, C):
         results['acc'].append(acc)
         results['auc'].append(auc)
 
-    df = pd.DataFrame(results)
-    df.to_csv(output_csv, index=False)
+        df = pd.DataFrame(results)
+        df.to_csv(output_csv, index=False)
 
 def run_I_experiments(params):
     for p in params:
         dataset, type_, g, m, k, C = p['Dataset'], p['type'], p['g'], p['m'], p['k'], p['C']
-        if dataset in ['ZZZ3', 'KAT2B', 'EP300_47848']:
-            continue
+        # if dataset in ['ZZZ3', 'KAT2B', 'EP300_47848']:
+        #     continue
         assert k == g - m
         I_experiment(dataset, g, m, k, C)
 
@@ -257,14 +267,14 @@ params = df.to_dict('records')
 
 #run_increase_g_experiments(params)
 
-run_increase_g_experiments(params)
+#run_increase_g_experiments(params)
 
 ## m experiments
 pass
 
 ## AUC vs I experiments
 #I_experiment('1.1', 8, 4, 4, 0.01)
-#run_I_experiments(params)
+run_I_experiments(params)
 
 ## AUC vs g experiments
 pass
