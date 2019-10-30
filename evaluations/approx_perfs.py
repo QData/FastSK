@@ -1,11 +1,11 @@
 import os
 import os.path as osp
 import sys
-sys.path.append('./igakco')
+sys.path.append('./fastsk')
 import argparse
 import json
 import numpy as np
-from igakco import Kernel
+from fastsk import Kernel
 from utils import FastaUtility
 import pandas as pd
 import time
@@ -15,10 +15,6 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.calibration import CalibratedClassifierCV
 from sklearn import metrics
 
-RESULTS_DIR = './results'
-if not osp.exists(RESULTS_DIR):
-    os.makedirs(RESULTS_DIR)
-
 def evaluate_clf(clf, Xtest, Ytest):
     acc = clf.score(Xtest, Ytest)
     probs = clf.predict_proba(Xtest)[:,1]
@@ -26,7 +22,7 @@ def evaluate_clf(clf, Xtest, Ytest):
     return acc, auc
 
 def get_args():
-    parser = argparse.ArgumentParser(description='iGakco Timing Experiments')
+    parser = argparse.ArgumentParser(description='FastSK')
     parser.add_argument('--datasets', type=str, required=True,
         help="Where to find the datasets")
     parser.add_argument('--params', type=str, required=True,
@@ -37,13 +33,33 @@ def get_args():
     return parser.parse_args()
 
 args = get_args()
-file = args.out
+outfile = args.out
 datasets = args.datasets
 parameters = args.params
-results_file = osp.join(RESULTS_DIR, file)
 
 df = pd.read_csv(parameters)
 params = df.to_dict('records')
+
+def train_kernel_time(g, m, t, approx, I=50, Xtrain):
+    start = time.time()
+    kernel = Kernel(g=g, m=m, t=t, approx=approx, I=I)
+    kernel.compute_train(Xtrain)
+    end = time.time()
+
+    return end - start
+
+results = {
+    'Dataset' : [],
+    'g' : [],
+    'm' : [],
+    'k' : [],
+    'C' : [],
+    'acc' : [],
+    'auc' : [],
+    'threads' : [],
+    'approx' : [],
+    'train_k_time' : [],
+}
 
 for p in params:
     print(p)
@@ -61,28 +77,31 @@ for p in params:
     Xtest, Ytest = reader.read_data(test_file)
     Ytest = np.array(Ytest).reshape(-1, 1)
 
-    ### Compute the igakco kernel
-    kernel = Kernel(g=g, m=m, approx=True, epsilon=0.9)
+    ktime = train_kernel_time(g, m, t=1, approx=True, I=50, Xtrain=Xtrain)
+
+    # ### train-test kernel
+    kernel = Kernel(g=g, m=m, t=1, approx=True, I=50)
     kernel.compute(Xtrain, Xtest)
     Xtrain = kernel.train_kernel()
     Xtest = kernel.test_kernel()
 
-    ### Use linear SVM
+    # ### Use linear SVM
     svm = LinearSVC(C=C)
     clf = CalibratedClassifierCV(svm, cv=5).fit(Xtrain, Ytrain)
     acc, auc = evaluate_clf(clf, Xtest, Ytest)
-    print("Acc, AUC = {}, {}".format(acc, auc))
+    print("Ktime, Acc, AUC = {}, {}, {}".format(ktime, acc, auc))
 
-    result = {
-        "data": p['Dataset'],
-        "g": g,
-        "m": m,
-        "k": k,
-        "C": C,
-        "epsilon": 0.1,
-        "acc": acc,
-        "auc": auc
-    }
+    results['Dataset'].append(p['Dataset'])
+    results['g'].append(g)
+    results['m'].append(m)
+    results['k'].append(k)
+    results['C'].append(C)
+    results['I'].append(50)
+    results['acc'].append(acc)
+    results['auc'].append(auc)
+    results['threads'].append(1)
+    results['approx'].append(True)
+    results['train_k_time'].append(ktime)
 
-    with open(results_file, 'a+') as f:
-        f.write(str(result) + '\n')
+    res = pd.DataFrame(results)
+    res.to_csv(outfile, index=False)
