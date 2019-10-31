@@ -212,7 +212,7 @@ class FastskRunner():
         kernel.compute(self.Xtrain, self.Xtest)
         self.Xtrain = kernel.train_kernel()
         self.Xtest = kernel.test_kernel()
-        svm = LinearSVC(C=C)
+        svm = LinearSVC(C=C, class_weight='balanced')
         self.clf = CalibratedClassifierCV(svm, cv=5).fit(self.Xtrain, self.Ytrain)
         acc, auc = self.evaluate_clf()
         return acc, auc
@@ -254,9 +254,10 @@ class GkmRunner():
             '-a', str(2),
             '-l', str(g), 
             '-k', str(k), 
-            '-d', str(m),
             '-T', str(t),
             '-R']
+        if (m > 0):
+            command += ['-d', str(m)]
         command += [self.train_pos_file, self.train_neg_file, self.kernel_file]
         print(' '.join(command))
         output = subprocess.check_output(command)

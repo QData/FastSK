@@ -40,7 +40,7 @@ parameters = args.params
 df = pd.read_csv(parameters)
 params = df.to_dict('records')
 
-def train_kernel_time(g, m, t, approx, I=50, Xtrain):
+def train_kernel_time(g, m, t, approx, Xtrain, I=50):
     start = time.time()
     kernel = Kernel(g=g, m=m, t=t, approx=approx, I=I)
     kernel.compute_train(Xtrain)
@@ -54,6 +54,7 @@ results = {
     'm' : [],
     'k' : [],
     'C' : [],
+    'I' : [],
     'acc' : [],
     'auc' : [],
     'threads' : [],
@@ -62,14 +63,20 @@ results = {
 }
 
 for p in params:
-    print(p)
     train_file = p['Dataset'] + '.train.fasta'
     test_file = p['Dataset'] + '.test.fasta'
     train_file = osp.join(datasets, train_file)
     test_file = osp.join(datasets, test_file)
 
     g, m, k, C = p['g'], p['m'], p['k'], p['C']
+    type_ = p['type']
     assert k == g - m
+    t = 20
+    approx = False
+    I = 50
+
+    if (type_ != 'protein'):
+        continue
     
     ### Read the data
     reader = FastaUtility()
@@ -77,16 +84,17 @@ for p in params:
     Xtest, Ytest = reader.read_data(test_file)
     Ytest = np.array(Ytest).reshape(-1, 1)
 
-    ktime = train_kernel_time(g, m, t=1, approx=True, I=50, Xtrain=Xtrain)
+    #ktime = train_kernel_time(g, m, t=1, approx=True, I=50, Xtrain=Xtrain)
+    ktime = 0
 
     # ### train-test kernel
-    kernel = Kernel(g=g, m=m, t=1, approx=True, I=50)
+    kernel = Kernel(g=g, m=m, t=t, approx=approx)
     kernel.compute(Xtrain, Xtest)
     Xtrain = kernel.train_kernel()
     Xtest = kernel.test_kernel()
 
     # ### Use linear SVM
-    svm = LinearSVC(C=C)
+    svm = LinearSVC(C=C, class_weight='balanced', max_iter=2000)
     clf = CalibratedClassifierCV(svm, cv=5).fit(Xtrain, Ytrain)
     acc, auc = evaluate_clf(clf, Xtest, Ytest)
     print("Ktime, Acc, AUC = {}, {}, {}".format(ktime, acc, auc))
@@ -99,9 +107,11 @@ for p in params:
     results['I'].append(50)
     results['acc'].append(acc)
     results['auc'].append(auc)
-    results['threads'].append(1)
-    results['approx'].append(True)
+    results['threads'].append(t)
+    results['approx'].append(approx)
     results['train_k_time'].append(ktime)
+
+    print(results)
 
     res = pd.DataFrame(results)
     res.to_csv(outfile, index=False)

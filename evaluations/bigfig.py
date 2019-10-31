@@ -26,10 +26,10 @@ def time_fastsk(g, m, t, prefix, approx=False, max_iters=None):
 
     return end - start
 
-def time_gkm(g, m, t, dictionary, prefix):
+def time_gkm(g, m, t, prefix):
     gkm_data = '/localtmp/dcb7xz/FastSK/baselines/gkm_data'
     gkm_exec = '/localtmp/dcb7xz/FastSK/baselines/gkmsvm'
-    gkm = GkmRunner(gkm_exec, gkm_data, prefix, dictionary, './temp')
+    gkm = GkmRunner(gkm_exec, gkm_data, prefix, './temp')
 
     start = time.time()
     gkm.compute_kernel(g=g, m=m, t=t)
@@ -101,47 +101,52 @@ def run_thread_experiments(params):
         if type_ == 'dna':
             thread_experiment(dataset, g, m, k)
 
-def g_experiment(dataset):
+def g_time_experiment(dataset):
     output_csv = dataset + '_vary_g.csv'
     results = {
         'g': [],
         'm': [],
         'fastsk_exact_time' : [],
-        'fastsk_approx_time' : [],
-        'fastsk_approx_time_t1' : [],
+        'fastsk_approx_t1' : [],
+        'fastsk_I50' : [],
         'gkm_time' : [],
     }
     train_file = osp.join('./data', dataset + '.train.fasta')
     reader = FastaUtility()
     Xtrain, Ytrain = reader.read_data(train_file)
     
-    min_g, max_g = 4, 20
+    min_g, max_g = 6, 20
+    k = 6
     for g in range(min_g, max_g + 1):
-        m = g // 2
+        m = g - k
+        max_I = int(special.comb(g, m))
 
-        fastsk_exact = time_fastsk(g, m, t=20, prefix=dataset, approx=False)
-        fastsk_approx = time_fastsk(g, m, t=20, prefix=dataset, approx=True)
-        fastsk_approx_t1 = time_fastsk(g, m, t=1, prefix=dataset, approx=True)
-        gkm = time_gkm(g, m, t=20, prefix=dataset)
+        if (g <= 16):
+            fastsk_exact = time_fastsk(g, m, t=20, prefix=dataset, approx=False)
+            #fastsk_approx = time_fastsk(g, m, t=20, prefix=dataset, approx=True)
+            gkm = time_gkm(g, m, t=20, prefix=dataset)
+
+        fastsk_approx_t1 = time_fastsk(g, m, t=1, prefix=dataset, approx=True, max_iters=max_I)
+        fastsk_I50 = time_fastsk(g, m, t=1, prefix=dataset, approx=True, max_iters=50)
 
         results['g'].append(g)
         results['m'].append(m)
         results['fastsk_exact_time'].append(fastsk_exact)
-        results['fastsk_approx_time'].append(fastsk_approx)
-        results['fastsk_approx_time_t1'].append(fastsk_approx_t1)
+        results['fastsk_approx_t1'].append(fastsk_approx_t1)
+        results['fastsk_I50'].append(fastsk_I50)
         results['gkm_time'].append(gkm)
 
-        log_str = "{} - exact: {}, approx: {} approx_t1: {}, gkm: {}"
-        print(log_str.format(dataset, fastsk_exact, fastsk_approx, fastsk_approx_t1, gkm))
+        log_str = "{} - exact: {}, approx: {} approx_I50: {}, gkm: {}"
+        print(log_str.format(dataset, fastsk_exact, fastsk_approx_t1, fastsk_I50, gkm))
 
-    df = pd.DataFrame(results)
-    df.to_csv(output_csv, index=False)
+        df = pd.DataFrame(results)
+        df.to_csv(output_csv, index=False)
 
-def run_g_experiments(params):
+def run_g_time_experiments(params):
     for p in params:
         dataset, type_ = p['Dataset'], p['type']
         if type_ == 'dna':
-            g_experiment(dataset)
+            g_time_experiment(dataset)
 
 def I_experiment(dataset, g, m, k, C):
     output_csv = dataset + '_vary_I.csv'
@@ -225,9 +230,10 @@ def check_C_vals(g, m, dataset):
     return best_acc, best_auc, C
 
 def increase_g_experiment(dataset, C):
-    output_csv = dataset + '_increase_gC_k6.csv'
+    output_csv = dataset + '_increase_g_k4.csv'
     results = {
         'g': [],
+        'k': [],
         'm': [],
         'C' : [],
         'acc' : [],
@@ -239,9 +245,9 @@ def increase_g_experiment(dataset, C):
 
     fasta_util = FastaUtility()
     max_g = min(fasta_util.shortest_seq(train_file), fasta_util.shortest_seq(test_file), 20)
+    k = 4
 
-    for g in range(6, max_g + 1):
-        k = 6
+    for g in range(k, max_g + 1):
         m = g - k
         #max_I = min(int(special.comb(g, m)), 500)
         #fastsk = FastskRunner(dataset)
@@ -250,6 +256,7 @@ def increase_g_experiment(dataset, C):
         log_str = "Acc {}, AUC {}, g {}, m {}".format(acc, auc, g, m)
         print(log_str)
         results['g'].append(g)
+        results['k'].append(k)
         results['m'].append(m)
         results['C'].append(C)
         results['acc'].append(acc)
@@ -263,16 +270,17 @@ def run_increase_g_experiments(params):
     for p in params:
         dataset, type_, g, m, k, C = p['Dataset'], p['type'], p['g'], p['m'], p['k'], p['C']
         assert k == g - m
-        increase_g_experiment(dataset, C)
+        if type_ == 'protein':
+            increase_g_experiment(dataset, C)
 
 df = pd.read_csv('./evaluations/datasets_to_use.csv')
 params = df.to_dict('records')
 
 ### Thread experiments
-run_thread_experiments(params)
+#run_thread_experiments(params)
 
 ### g kernel timing experiments
-#run_g_experiments(params)
+run_g_time_experiments(params)
 
 ### Increasing g experiments
 
@@ -285,7 +293,7 @@ pass
 
 ## AUC vs I experiments
 #I_experiment('1.1', 8, 4, 4, 0.01)
-run_I_experiments(params)
+#run_I_experiments(params)
 
 ## AUC vs g experiments
 pass
