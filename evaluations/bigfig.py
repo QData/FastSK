@@ -14,7 +14,8 @@ import multiprocessing
 import subprocess
 
 # Subprocess timeout (s)
-TIMEOUT = 1800
+TIMEOUT = 3600
+MAXTIME = 1800
 
 def time_fastsk(g, m, t, prefix, approx=False, max_iters=None, timeout=None):
     '''Run FastGSK kernel computation. If a timeout is provided,
@@ -167,19 +168,20 @@ def g_time_experiment(dataset):
     min_g, max_g = 6, 20
     k = 6
     
-    skip_fastsk_exact = skip_gkm_exact = False
-    skip_fastsk_approx = skip_gkm_approx = False
+    skip_fastsk_exact, skip_gkm_exact = False, False
+    skip_fastsk_approx, skip_gkm_approx = False, False
     for g in range(min_g, max_g + 1):
         m = g - k
         max_I = int(special.comb(g, m))
+
+        fastsk_exact, fastsk_approx_t1, gkm_exact, gkm_approx = [0] * 4
 
         if not skip_fastsk_exact:
             fastsk_exact = time_fastsk(g, m, t=20, 
                 prefix=dataset, 
                 approx=False, 
                 timeout=TIMEOUT)
-            results['fastsk_exact'].append(fastsk_exact)
-            if (fastsk_exact >= TIMEOUT):
+            if (fastsk_exact >= MAXTIME):
                 skip_fastsk_exact = True
         
         if not skip_fastsk_approx:
@@ -188,8 +190,7 @@ def g_time_experiment(dataset):
                 approx=True, 
                 max_iters=max_I, 
                 timeout=TIMEOUT)
-            results['fastsk_approx_t1'].append(fastsk_approx_t1)
-            if (fastsk_approx_t1 >= TIMEOUT):
+            if (fastsk_approx_t1 >= MAXTIME):
                 skip_fastsk_approx = True
 
         if not skip_gkm_exact:
@@ -197,27 +198,30 @@ def g_time_experiment(dataset):
                 prefix=dataset, 
                 approx=False, 
                 timeout=TIMEOUT)
-            results['gkm_exact'].append(gkm_exact)
-            if (gkm_exact >= TIMEOUT):
+            if (gkm_exact >= MAXTIME):
                 skip_gkm_exact = True
         
         if not skip_gkm_approx:
-            gkm_approx = time_gkm(g, m, t=20, 
+            gkm_approx = time_gkm(g, m, t=20,
                 prefix=dataset, 
                 approx=True, 
                 timeout=TIMEOUT)
-            results['gkm_approx'].append(gkm_approx)
-            if (gkm_approx >= TIMEOUT):
+            if (gkm_approx >= MAXTIME):
                 skip_gkm_approx = True
         
         fastsk_I50 = time_fastsk(g, m, t=1, prefix=dataset, approx=True, max_iters=50)
+
+        results['fastsk_exact'].append(fastsk_exact)
+        results['fastsk_approx_t1'].append(fastsk_approx_t1)
+        results['gkm_exact'].append(gkm_exact)
+        results['gkm_approx'].append(gkm_approx)
         results['fastsk_I50'].append(fastsk_I50)
         results['g'].append(g)
-        results['k'].append(m)
+        results['k'].append(k)
         results['m'].append(m)
 
-        prog_str = '{} - g = {}'
-        print(prog_str.format(dataset, g))
+        prog_str = '{} - g = {}. FastSK-Exact: {}, FastSK-Approx: {}, gkm-exact: {}, gkm-approx: {}'
+        print(prog_str.format(dataset, g, fastsk_exact, fastsk_approx_t1, gkm_exact, gkm_approx))
 
         df = pd.DataFrame(results)
         df.to_csv(output_csv, index=False)

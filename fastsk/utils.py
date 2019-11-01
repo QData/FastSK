@@ -303,8 +303,10 @@ class GkmRunner():
             '-k', str(k),
             '-T', str(t),
             '-R']
-        if (not approx):
-            command += ['-d', str(g)]
+        if (not approx and m > 0):
+            command += ['-d', str(m)]
+        else:
+            command += ['-d', str(3)]
         command += [self.train_pos_file, self.train_neg_file, self.kernel_file]
         print(' '.join(command))
         output = subprocess.check_output(command)
