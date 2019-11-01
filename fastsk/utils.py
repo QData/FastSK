@@ -224,43 +224,90 @@ class FastskRunner():
         return acc, auc
 
 class GkmRunner():
-    def __init__(self, exec_location, data_locaton, prefix, outdir="./temp"):
+    def __init__(self, exec_location, data_locaton, dataset, outdir="./temp"):
+        r"""Initialize a GkmRunner object for running gkm-SVM2.9
+        
+        Parameters
+        ----------
+        exec_location : string
+            folder containing gkm-SVM2.0 executables
+        data_location : string
+            folder containing data files in the gkm-SVM2.0 format
+        dataset : string
+            name of the dataset to use
+        outdir : string 
+            name of directory to save files created by gkm-SVM2.0
+        """
         self.exec_location = exec_location
         self.dir = data_locaton
-        self.prefix = prefix
+        self.dataset = dataset
         self.outdir = outdir
+        self.g, self.k, self.approx = 0, 0, False
 
         ## Data files
-        self.train_pos_file = osp.join(self.dir, self.prefix + '.train.pos.fasta')
-        self.train_neg_file = osp.join(self.dir, self.prefix + '.train.neg.fasta')
-        self.test_pos_file = osp.join(self.dir, self.prefix + '.test.pos.fasta')
-        self.test_neg_file = osp.join(self.dir, self.prefix + '.test.neg.fasta')
+        self.train_pos_file = osp.join(self.dir, self.dataset + '.train.pos.fasta')
+        self.train_neg_file = osp.join(self.dir, self.dataset + '.train.neg.fasta')
+        self.test_pos_file = osp.join(self.dir, self.dataset + '.test.pos.fasta')
+        self.test_neg_file = osp.join(self.dir, self.dataset + '.test.neg.fasta')
         
         ## Temp files that gkm creates
         if not osp.exists(self.outdir):
             os.makedirs(self.outdir)
-        self.kernel_file = osp.join(self.outdir, self.prefix + '_kernel.out')
+        self.kernel_file = osp.join(self.outdir, self.dataset + '_kernel.out')
         self.svm_file_prefix = osp.join(self.outdir, "svmtrain")
         self.svmalpha = self.svm_file_prefix + '_svalpha.out'
         self.svseq = self.svm_file_prefix + '_svseq.fa'
-        self.pos_pred_file = osp.join(self.outdir, self.prefix + '.preds.pos.out')
-        self.neg_pred_file = osp.join(self.outdir, self.prefix + '.preds.neg.out')    
+        self.pos_pred_file = osp.join(self.outdir, self.dataset + '.preds.pos.out')
+        self.neg_pred_file = osp.join(self.outdir, self.dataset + '.preds.neg.out')    
 
-    def compute_kernel(self, g, m, t):
+    def compute_kernel(self, g, m, t, approx=False):
+        r"""Compute the training kernel using gkm-SVM2.0. The kernel function is given by:
+        .. math::
+            K_{gkm}(x,y) = \sum_{d=0}^{g}N_d(x,y)h_d
+        
+        where :math:`N_d(x,y)` denotes the d-mismatch neighborhood of $x$, $y$. I.e., the number of pairs of $g$-mers
+        with a Hamming distance of up to $d$ shared in common between samples $x$ and $y$.
+
+        Parameters
+        ----------
+        g : int
+            word length
+        m : int
+            number of gaps/mismatch positions. Note k = g - m
+        t : int
+            number of threads to use
+        approx : boolean
+            whether to perform the truncated summation of gkm-SVM2.0 algorithm.
+
+            In particular, this will set the '-d' flag to 3 (the default)
+        dataset : string
+            name of the dataset to use
+        outdir : string 
+            name of directory to save files created by gkm-SVM2.0
+
+        Returns
+        ----------
+        X : list
+            list of sequences where characters have been mapped to numbers.
+        Y : list
+            list of labels
+        """
         k = g - m
+        self.g, self.k, self.approx = g, k, approx
+
         ### compute kernel ###
         execute = osp.join(self.exec_location, 'gkmsvm_kernel')
         command = [execute,
             '-a', str(2),
-            '-l', str(g), 
-            '-k', str(k), 
+            '-l', str(g),
+            '-k', str(k),
             '-T', str(t),
             '-R']
-        if (m > 0):
-            command += ['-d', str(m)]
+        if (not approx):
+            command += ['-d', str(g)]
         command += [self.train_pos_file, self.train_neg_file, self.kernel_file]
         print(' '.join(command))
-        output = subprocess.check_output(command)
+        output = subprocess.check_output(command, timeout=20)
 
 class GaKCoRunner():
     def __init__(self, exec_location, data_locaton, type_, prefix, outdir='./temp'):
