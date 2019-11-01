@@ -307,7 +307,7 @@ class GkmRunner():
             command += ['-d', str(g)]
         command += [self.train_pos_file, self.train_neg_file, self.kernel_file]
         print(' '.join(command))
-        output = subprocess.check_output(command, timeout=20)
+        output = subprocess.check_output(command)
 
 class GaKCoRunner():
     def __init__(self, exec_location, data_locaton, type_, prefix, outdir='./temp'):
