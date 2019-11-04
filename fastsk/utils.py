@@ -266,12 +266,12 @@ class FastskRunner():
         kernel = Kernel(g=g, m=m, t=t, approx=approx, max_iters=I, delta=delta)
         kernel.compute_train(self.Xtrain)
 
-    def train_and_test(self, g, m, t, approx, I, delta=0.025, C=1):
+    def train_and_test(self, g, m, t, approx, I=100, delta=0.025, C=1):
         kernel = Kernel(g=g, m=m, t=t, approx=approx, max_iters=I, delta=delta)
         kernel.compute(self.Xtrain, self.Xtest)
         self.Xtrain = kernel.train_kernel()
         self.Xtest = kernel.test_kernel()
-        svm = LinearSVC(C=C, class_weight='balanced')
+        svm = LinearSVC(C=C, class_weight='balanced', max_iter=2000)
         self.clf = CalibratedClassifierCV(svm, cv=5).fit(self.Xtrain, self.Ytrain)
         acc, auc = self.evaluate_clf()
         return acc, auc

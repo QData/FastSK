@@ -258,7 +258,7 @@ def run_delta_experiments(params):
 def check_C_vals(g, m, dataset):
     best_auc, best_acc, best_C = 0, 0, 0
     C_vals = [10**i for i in range(-3, 3)]
-    max_I = max_I = min(int(special.comb(g, m)), 500)
+    max_I = max_I = min(int(special.comb(g, m)), 100)
     for C in C_vals:
         fastsk = FastskRunner(dataset)
         acc, auc = fastsk.train_and_test(g, m, t=1, I=max_I, approx=True, C=C)
@@ -266,8 +266,8 @@ def check_C_vals(g, m, dataset):
             best_acc, best_auc = acc, auc
     return best_acc, best_auc, C
 
-def increase_g_experiment(dataset, C):
-    output_csv = dataset + '_increase_g_k4.csv'
+def g_auc_experiment(dataset, C):
+    output_csv = dataset + '_g_auc_k6.csv'
     results = {
         'g': [],
         'k': [],
@@ -282,7 +282,7 @@ def increase_g_experiment(dataset, C):
 
     fasta_util = FastaUtility()
     max_g = min(fasta_util.shortest_seq(train_file), fasta_util.shortest_seq(test_file), 20)
-    k = 4
+    k = 6
 
     for g in range(k, max_g + 1):
         m = g - k
@@ -303,12 +303,12 @@ def increase_g_experiment(dataset, C):
         df.to_csv(output_csv, index=False)
 
 
-def run_increase_g_experiments(params):
+def run_g_auc_experiments(params):
     for p in params:
         dataset, type_, g, m, k, C = p['Dataset'], p['type'], p['g'], p['m'], p['k'], p['C']
         assert k == g - m
-        if type_ == 'protein':
-            increase_g_experiment(dataset, C)
+        if not dataset in ['KAT2B', 'TP53', 'ZZZ3'] and type_ == 'dna':
+            g_auc_experiment(dataset, C)
 
 df = pd.read_csv('./evaluations/datasets_to_use.csv')
 params = df.to_dict('records')
@@ -317,11 +317,17 @@ params = df.to_dict('records')
 #run_thread_experiments(params)
 
 ### g kernel timing experiments
-run_g_time_experiments(params)
+#run_g_time_experiments(params)
 
-### Increasing g experiments
+### g kernel AUC experiments
+#run_g_auc_experiments(params)
+g_auc_experiment('TP53', 0.1)
 
-#run_increase_g_experiments(params)
+'''
+KAT2B,dna,13,7,6,1
+TP53,dna,7,2,5,0.1
+ZZZ3,dna,10,4,6,0.1
+'''
 
 #run_increase_g_experiments(params)
 
