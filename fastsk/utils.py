@@ -212,7 +212,7 @@ class FastskRunner():
         kernel.compute(self.Xtrain, self.Xtest)
         self.Xtrain = kernel.train_kernel()
         self.Xtest = kernel.test_kernel()
-        svm = LinearSVC(C=C, class_weight='balanced')
+        svm = LinearSVC(C=C, class_weight='balanced', max_iter=2000)
         self.clf = CalibratedClassifierCV(svm, cv=5).fit(self.Xtrain, self.Ytrain)
         acc, auc = self.evaluate_clf()
         return acc, auc
