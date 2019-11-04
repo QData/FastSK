@@ -6,7 +6,7 @@ import argparse
 import json
 import numpy as np
 from fastsk import Kernel
-from utils import FastaUtility, GkmRunner, GaKCoRunner, FastskRunner
+from utils import FastaUtility, GkmRunner, GaKCoRunner, FastskRunner, time_fastsk, time_gkm
 import pandas as pd
 import time
 from scipy import special
@@ -16,66 +16,9 @@ import subprocess
 # Subprocess timeout (s)
 TIMEOUT = 3600
 MAXTIME = 1800
-
-def time_fastsk(g, m, t, prefix, approx=False, max_iters=None, timeout=None):
-    '''Run FastGSK kernel computation. If a timeout is provided,
-    it'll run as a subprocess, which will be killed when the timeout is
-    reached.
-    '''
-    fastsk = FastskRunner(prefix)
-    
-    start = time.time()
-    if timeout:
-        if max_iters:
-            args = {'t': t, 'approx': approx, 'I': max_iters}
-        else:
-            args = {'t': t, 'approx': approx}
-        p = multiprocessing.Process(target=fastsk.compute_train_kernel, 
-            name='TimeFastSK', 
-            args=(g, m),
-            kwargs=args)
-        p.start()
-        p.join(timeout)
-        if p.is_alive():
-            p.terminate()
-            p.join()
-    else:
-        if max_iters:
-            fastsk.compute_train_kernel(g, m, t=t, approx=approx, I=max_iters)
-        else:
-            fastsk.compute_train_kernel(g, m, t=t, approx=approx)
-
-    end = time.time()
-    
-    return end - start
-
-def time_gkm(g, m, t, prefix, approx=False, timeout=None):
-    '''Run gkm-SVM2.0 kernel computation. If a timeout is provided,
-    it'll be run as a subprocess, which will be killed when the timeout is 
-    reached.
-    '''
-    gkm_data = '/localtmp/dcb7xz/FastSK/baselines/gkm_data'
-    gkm_exec = '/localtmp/dcb7xz/FastSK/baselines/gkmsvm'
-    gkm = GkmRunner(gkm_exec, gkm_data, prefix, './temp')
-
-    start = time.time()
-    if timeout:
-        kwargs = {'approx': approx}
-        p = multiprocessing.Process(target=gkm.compute_kernel,
-            name='TimeGkm',
-            args=(g, m, t),
-            kwargs=kwargs)
-        p.start()
-        p.join(timeout)
-        if p.is_alive():
-            p.terminate()
-            p.join()
-    else:
-        gkm.compute_kernel(g, m, t, approx=approx)
-
-    end = time.time()
-
-    return end - start
+GKM_DATA = '/localtmp/dcb7xz/FastSK/baselines/gkm_data'
+GKM_EXEC = '/localtmp/dcb7xz/FastSK/baselines/gkmsvm'
+FASTSK_DATA = '/localtmp/dcb7xz/FastSK/data/'
 
 def time_gakco(g, m, t, type_, prefix):
     gakco_exec = '/localtmp/dcb7xz/FastSK/baselines/GaKCo-SVM/bin/GaKCo'
@@ -116,17 +59,17 @@ def thread_experiment(dataset, g, m, k):
     Xtrain, Ytrain = reader.read_data(train_file)
 
     for t in range(1, 21):
-        # fastsk_exact = time_fastsk(g, m, t, prefix=dataset, approx=False)
-        # fastsk_approx = time_fastsk(g, m, t, prefix=dataset, approx=True)
-        # fastsk_approx_t1 = time_fastsk(g, m, t=1, prefix=dataset, approx=True)
-        # fastsk_approx_t1 = time_fastsk(g, m, t=1, prefix=dataset, approx=True)
-        # gkm = time_gkm(g, m, t, prefix=dataset)
+        # fastsk_exact = time_fastsk(g, m, t, FASTSK_DATA, prefix=dataset, approx=False)
+        # fastsk_approx = time_fastsk(g, m, t, FASTSK_DATA, prefix=dataset, approx=True)
+        # fastsk_approx_t1 = time_fastsk(g, m, t=1, FASTSK_DATA, prefix=dataset, approx=True)
+        # fastsk_approx_t1 = time_fastsk(g, m, t=1, FASTSK_DATA, prefix=dataset, approx=True)
+        # gkm = time_gkm(g, m, t, GKM_DATA, GKM_EXEC, prefix=dataset)
         fastsk_exact = 0
         fastsk_approx = 0
         fastsk_approx_t1 = 0
         fastsk_approx_t1 = 0
         gkm = 0
-        fastsk_I50 = time_fastsk(g, m, t=1, prefix=dataset, approx=True, max_iters=50)
+        fastsk_I50 = time_fastsk(g, m, t=1, FASTSK_DATA, prefix=dataset, approx=True, max_iters=50)
 
         results['fastsk_exact_time'].append(fastsk_exact)
         results['fastsk_approx_time'].append(fastsk_approx)
@@ -150,7 +93,7 @@ def run_thread_experiments(params):
             thread_experiment(dataset, g, m, k)
 
 def g_time_experiment(dataset):
-    output_csv = dataset + '_g_time.csv'
+    output_csv = dataset + '_approx_g_time.csv'
     results = {
         'g': [],
         'k': [],
@@ -168,7 +111,7 @@ def g_time_experiment(dataset):
     min_g, max_g = 6, 20
     k = 6
     
-    skip_fastsk_exact, skip_gkm_exact = False, False
+    skip_fastsk_exact, skip_gkm_exact = True, True
     skip_fastsk_approx, skip_gkm_approx = False, False
     for g in range(min_g, max_g + 1):
         m = g - k
@@ -177,7 +120,8 @@ def g_time_experiment(dataset):
         fastsk_exact, fastsk_approx_t1, gkm_exact, gkm_approx = [0] * 4
 
         if not skip_fastsk_exact:
-            fastsk_exact = time_fastsk(g, m, t=20, 
+            fastsk_exact = time_fastsk(g, m, t=20,
+                data_location=FASTSK_DATA,
                 prefix=dataset, 
                 approx=False, 
                 timeout=TIMEOUT)
@@ -186,6 +130,7 @@ def g_time_experiment(dataset):
         
         if not skip_fastsk_approx:
             fastsk_approx_t1 = time_fastsk(g, m, t=1, 
+                data_location=FASTSK_DATA,
                 prefix=dataset, 
                 approx=True, 
                 max_iters=max_I, 
@@ -194,7 +139,9 @@ def g_time_experiment(dataset):
                 skip_fastsk_approx = True
 
         if not skip_gkm_exact:
-            gkm_exact = time_gkm(g, m, t=20, 
+            gkm_exact = time_gkm(g, m, t=20,
+                gkm_data=GKM_DATA,
+                gkm_exec=GKM_EXEC, 
                 prefix=dataset, 
                 approx=False, 
                 timeout=TIMEOUT)
@@ -203,13 +150,19 @@ def g_time_experiment(dataset):
         
         if not skip_gkm_approx:
             gkm_approx = time_gkm(g, m, t=20,
+                gkm_data=GKM_DATA,
+                gkm_exec=GKM_EXEC, 
                 prefix=dataset, 
                 approx=True, 
                 timeout=TIMEOUT)
             if (gkm_approx >= MAXTIME):
                 skip_gkm_approx = True
         
-        fastsk_I50 = time_fastsk(g, m, t=1, prefix=dataset, approx=True, max_iters=50)
+        fastsk_I50 = time_fastsk(g, m, t=1, 
+            data_location=FASTSK_DATA, 
+            prefix=dataset, 
+            approx=True, 
+            max_iters=50)
 
         results['fastsk_exact'].append(fastsk_exact)
         results['fastsk_approx_t1'].append(fastsk_approx_t1)

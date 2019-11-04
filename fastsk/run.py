@@ -10,6 +10,7 @@ from sklearn.svm import LinearSVC
 from sklearn.linear_model import LogisticRegression
 from sklearn.calibration import CalibratedClassifierCV
 from sklearn import metrics
+import time
 
 '''For a linear kernel, we need the training and
 testing data ahead of time. With fastsk, we can use
@@ -54,8 +55,11 @@ Xtest, Ytest = reader.read_data(test_file)
 Ytest = np.array(Ytest).reshape(-1, 1)
 
 ### Compute the fastsk kernel
+start = time.time()
 kernel = Kernel(g=g, m=m, t=t, approx=approx, max_iters=I, delta=d)
 kernel.compute(Xtrain, Xtest)
+end = time.time()
+print(end - start)
 Xtrain = kernel.train_kernel()
 Xtest = kernel.test_kernel()
 

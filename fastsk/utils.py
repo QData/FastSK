@@ -7,9 +7,67 @@ from sklearn.svm import LinearSVC
 from sklearn.linear_model import LogisticRegression
 from sklearn.calibration import CalibratedClassifierCV
 from sklearn import metrics
+import time
+import multiprocessing
+import subprocess
 
-'''Utilities for demoing iGakco-SVM
-'''
+def time_fastsk(g, m, t, data_location, prefix, approx=False, max_iters=None, timeout=None):
+    '''Run FastGSK kernel computation. If a timeout is provided,
+    it'll run as a subprocess, which will be killed when the timeout is
+    reached.
+    '''
+    fastsk = FastskRunner(prefix, data_location)
+    
+    start = time.time()
+    if timeout:
+        if max_iters:
+            args = {'t': t, 'approx': approx, 'I': max_iters}
+        else:
+            args = {'t': t, 'approx': approx}
+        p = multiprocessing.Process(target=fastsk.compute_train_kernel, 
+            name='TimeFastSK', 
+            args=(g, m),
+            kwargs=args)
+        p.start()
+        p.join(timeout)
+        if p.is_alive():
+            p.terminate()
+            p.join()
+    else:
+        if max_iters:
+            fastsk.compute_train_kernel(g, m, t=t, approx=approx, I=max_iters)
+        else:
+            fastsk.compute_train_kernel(g, m, t=t, approx=approx)
+
+    end = time.time()
+    
+    return end - start
+
+def time_gkm(g, m, t, prefix, gkm_data, gkm_exec, approx=False, timeout=None, alphabet=None):
+    '''Run gkm-SVM2.0 kernel computation. If a timeout is provided,
+    it'll be run as a subprocess, which will be killed when the timeout is 
+    reached.
+    '''
+    gkm = GkmRunner(gkm_exec, gkm_data, prefix, './temp')
+
+    start = time.time()
+    if timeout:
+        kwargs = {'approx': approx, 'alphabet': alphabet}
+        p = multiprocessing.Process(target=gkm.compute_kernel,
+            name='TimeGkm',
+            args=(g, m, t),
+            kwargs=kwargs)
+        p.start()
+        p.join(timeout)
+        if p.is_alive():
+            p.terminate()
+            p.join()
+    else:
+        gkm.compute_kernel(g, m, t, approx=approx, alphabet=alphabet)
+
+    end = time.time()
+
+    return end - start
 
 class Vocabulary(object):
     """A class for storing the vocabulary of a 
@@ -193,10 +251,11 @@ class DslUtility():
         return X, Y
 
 class FastskRunner():
-    def __init__(self, prefix):
+    def __init__(self, prefix, data_location='/localtmp/dcb7xz/FastSK/data'):
         self.prefix = prefix
-        self.train_file = osp.join('/localtmp/dcb7xz/FastSK/data', prefix + '.train.fasta')
-        self.test_file = osp.join('/localtmp/dcb7xz/FastSK/data', prefix + '.test.fasta')
+        self.train_file = osp.join(data_location, prefix + '.train.fasta')
+        self.test_file = osp.join(data_location, prefix + '.test.fasta')
+        
         reader = FastaUtility()
         self.Xtrain, self.Ytrain = reader.read_data(self.train_file)
         Xtest, Ytest = reader.read_data(self.test_file)
@@ -260,7 +319,7 @@ class GkmRunner():
         self.pos_pred_file = osp.join(self.outdir, self.dataset + '.preds.pos.out')
         self.neg_pred_file = osp.join(self.outdir, self.dataset + '.preds.neg.out')    
 
-    def compute_kernel(self, g, m, t, approx=False):
+    def compute_kernel(self, g, m, t, approx=False, alphabet=None):
         r"""Compute the training kernel using gkm-SVM2.0. The kernel function is given by:
         .. math::
             K_{gkm}(x,y) = \sum_{d=0}^{g}N_d(x,y)h_d
@@ -307,6 +366,8 @@ class GkmRunner():
             command += ['-d', str(m)]
         else:
             command += ['-d', str(3)]
+        if alphabet is not None:
+            command += ['-A', alphabet]
         command += [self.train_pos_file, self.train_neg_file, self.kernel_file]
         print(' '.join(command))
         output = subprocess.check_output(command)
@@ -419,7 +480,7 @@ class BlendedSpectrumRunner():
         self.train_data = "file.txt"
         self.kernel_file = osp.join(outdir, "kernel.txt")
 
-    def compute_kernel(self, k1, k2):
+    def compute_kernel(self, k1=3, k2=5):
         self.k1, self.k2 = k1, k2
 
         command = ["java", 
