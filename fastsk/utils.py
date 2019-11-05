@@ -69,6 +69,27 @@ def time_gkm(g, m, t, prefix, gkm_data, gkm_exec, approx=False, timeout=None, al
 
     return end - start
 
+def time_gakco(g, m, t, type_, prefix):
+    gakco_exec = '/localtmp/dcb7xz/FastSK/baselines/GaKCo-SVM/bin/GaKCo'
+    data = './data/'
+    gakco = GaKCoRunner(gakco_exec, data, type_, prefix)
+
+    start = time.time()
+    kwargs = {'C': 0.01}
+    p = multiprocessing.Process(target=gakco.train_and_test,
+        name='TimeGaKCo',
+        args=(g, m),
+        kwargs=kwargs)
+    p.start()
+    p.join(TIMEOUT)
+    if p.is_alive():
+        p.terminate()
+        p.join()
+
+    end = time.time()
+
+    return end - start
+
 class Vocabulary(object):
     """A class for storing the vocabulary of a 
     sequence dataset. Maps words or characters to indexes in the
@@ -266,12 +287,12 @@ class FastskRunner():
         kernel = Kernel(g=g, m=m, t=t, approx=approx, max_iters=I, delta=delta)
         kernel.compute_train(self.Xtrain)
 
-    def train_and_test(self, g, m, t, approx, I=100, delta=0.025, C=1):
+    def train_and_test(self, g, m, t, approx, I, delta=0.025, C=1):
         kernel = Kernel(g=g, m=m, t=t, approx=approx, max_iters=I, delta=delta)
         kernel.compute(self.Xtrain, self.Xtest)
         self.Xtrain = kernel.train_kernel()
         self.Xtest = kernel.test_kernel()
-        svm = LinearSVC(C=C, class_weight='balanced', max_iter=2000)
+        svm = LinearSVC(C=C, class_weight='balanced')
         self.clf = CalibratedClassifierCV(svm, cv=5).fit(self.Xtrain, self.Ytrain)
         acc, auc = self.evaluate_clf()
         return acc, auc
@@ -475,20 +496,89 @@ class GaKCoRunner():
         pass
 
 class BlendedSpectrumRunner():
-    def __init__(self, exec_location, data_locaton, prefix, outdir="./temp"):
-        self.exec_location = exec_location
-        self.train_data = "file.txt"
+    def __init__(self, exec_dir, data_locaton, prefix, outdir="./temp"):
+        self.exec_dir = exec_dir
+        self.train_fasta = osp.join(data_locaton, prefix + '.train.fasta')
+        self.test_fasta = osp.join(data_locaton, prefix + '.test.fasta')
+        self.outdir = outdir
+        self.seq_file = osp.join(self.outdir, prefix + '_spectrum.txt')
+        self.num_train, self.num_test = 0, 0
+
         self.kernel_file = osp.join(outdir, "kernel.txt")
 
-    def compute_kernel(self, k1=3, k2=5):
+    def combine_train_and_test(self):
+        Xtrain, Xtest, self.Ytrain, self.Ytest = [], [], [], []
+        lines = []
+        with open(self.train_fasta, 'r') as f:
+            label_line = True
+            for line in f:
+                line = line.rstrip()
+                if label_line:
+                    self.num_train += 1
+                    label = line.split('>')[1]
+                    self.Ytrain.append(label)
+                    label_line = False
+                else:
+                    Xtrain.append(line.lower())
+                    label_line = True
+        with open(self.test_fasta, 'r') as f:
+            label_line = True
+            for line in f:
+                line = line.rstrip()
+                if label_line:
+                    self.num_test += 1
+                    label = line.split('>')[1]
+                    self.Ytest.append(label)
+                    label_line = False
+                else:
+                    Xtest.append(line.lower())
+                    label_line = True
+        X = Xtrain + Xtest
+        with open(self.seq_file, 'w+') as f:
+            for x in X:
+                f.write(x + '\n')
+
+    def compute_kernel(self, datafile, k1=3, k2=5):
         self.k1, self.k2 = k1, k2
 
-        command = ["java", 
-            self.exec_location, 
+        command = ["java",
+            '-cp', self.exec_dir,
+            'ComputeStringKernel',
             "spectrum",
             str(self.k1),
             str(self.k2),
-            self.train_data,
+            self.seq_file,
             self.kernel_file]
         output = subprocess.check_output(command)
+
+    def read_kernel(self):
+        Xtrain, Xtest = [], []
+        with open(self.kernel_file, 'r') as f:
+            count = 0
+            for line in f:
+                x = [float(item) for item in line.rstrip().split(' ')][:self.num_train]
+                if (count < self.num_train):
+                    Xtrain.append(x)
+                else:
+                    Xtest.append(x)
+                count += 1
+
+        return Xtrain, Xtest
+
+    def train_and_test(self, k1=3, k2=5, C=1):
+        self.combine_train_and_test()
+        self.compute_kernel(self.seq_file, k1, k2)
+
+        self.Xtrain, self.Xtest = self.read_kernel()
+        
+        svm = LinearSVC(C=C, class_weight='balanced', max_iter=3000)
+        self.clf = CalibratedClassifierCV(svm, cv=5).fit(self.Xtrain, self.Ytrain)
+        acc, auc = self.evaluate_clf()
+        return acc, auc
+
+    def evaluate_clf(self):
+        acc = self.clf.score(self.Xtest, self.Ytest)
+        probs = self.clf.predict_proba(self.Xtest)[:,1]
+        auc = metrics.roc_auc_score(self.Ytest, probs)
+        return acc, auc
 

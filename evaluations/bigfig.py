@@ -6,7 +6,7 @@ import argparse
 import json
 import numpy as np
 from fastsk import Kernel
-from utils import FastaUtility, GkmRunner, GaKCoRunner, FastskRunner, time_fastsk, time_gkm
+from utils import FastaUtility, GkmRunner, GaKCoRunner, FastskRunner, time_fastsk, time_gkm, time_gakco
 import pandas as pd
 import time
 from scipy import special
@@ -19,27 +19,6 @@ MAXTIME = 1800
 GKM_DATA = '/localtmp/dcb7xz/FastSK/baselines/gkm_data'
 GKM_EXEC = '/localtmp/dcb7xz/FastSK/baselines/gkmsvm'
 FASTSK_DATA = '/localtmp/dcb7xz/FastSK/data/'
-
-def time_gakco(g, m, t, type_, prefix):
-    gakco_exec = '/localtmp/dcb7xz/FastSK/baselines/GaKCo-SVM/bin/GaKCo'
-    data = './data/'
-    gakco = GaKCoRunner(gakco_exec, data, type_, prefix)
-
-    start = time.time()
-    kwargs = {'C': 0.01}
-    p = multiprocessing.Process(target=gakco.train_and_test,
-        name='TimeGaKCo',
-        args=(g, m),
-        kwargs=kwargs)
-    p.start()
-    p.join(TIMEOUT)
-    if p.is_alive():
-        p.terminate()
-        p.join()
-
-    end = time.time()
-
-    return end - start
 
 def time_blended(t):
     pass
@@ -69,7 +48,11 @@ def thread_experiment(dataset, g, m, k):
         fastsk_approx_t1 = 0
         fastsk_approx_t1 = 0
         gkm = 0
-        fastsk_I50 = time_fastsk(g, m, t=1, FASTSK_DATA, prefix=dataset, approx=True, max_iters=50)
+        fastsk_I50 = time_fastsk(g, m, t=1, 
+            data_location=FASTSK_DATA, 
+            prefix=dataset, 
+            approx=True, 
+            max_iters=50)
 
         results['fastsk_exact_time'].append(fastsk_exact)
         results['fastsk_approx_time'].append(fastsk_approx)
@@ -310,8 +293,78 @@ def run_g_auc_experiments(params):
         if not dataset in ['KAT2B', 'TP53', 'ZZZ3'] and type_ == 'dna':
             g_auc_experiment(dataset, C)
 
+def fastsk_gkm_dna_kernel_times(params):
+    output_csv = 'fastsk_gkm_dna_kernel_times.csv'
+    results = {
+        'dataset': [],
+        'g': [],
+        'm': [],
+        'k': [],        
+        'fastsk_exact': [],
+        'fastsk_approx_t1': [],
+        'fastsk_I50': [],
+        'gkm_exact': [],
+        'gkm_approx': [],
+    }
+    count = 0
+    for p in params:
+        dataset, type_, g, m, k = p['Dataset'], p['type'], p['g'], p['m'], p['k']
+        if type_ != 'dna':
+            continue
+
+        max_I = int(special.comb(g, m))
+
+        fastsk_exact = time_fastsk(g, m, t=20,
+            data_location=FASTSK_DATA,
+            prefix=dataset, 
+            approx=False)
+        
+        fastsk_approx_t1 = time_fastsk(g, m, t=1, 
+            data_location=FASTSK_DATA,
+            prefix=dataset, 
+            approx=True, 
+            max_iters=max_I)
+
+        fastsk_I50 = time_fastsk(g, m, t=1, 
+            data_location=FASTSK_DATA, 
+            prefix=dataset, 
+            approx=True, 
+            max_iters=50)
+
+        gkm_exact = time_gkm(g, m, t=20,
+            gkm_data=GKM_DATA,
+            gkm_exec=GKM_EXEC, 
+            prefix=dataset, 
+            approx=False)
+        
+        gkm_approx = time_gkm(g, m, t=1,
+            gkm_data=GKM_DATA,
+            gkm_exec=GKM_EXEC, 
+            prefix=dataset, 
+            approx=True)
+
+        results['dataset'].append(dataset)
+        results['g'].append(g)
+        results['m'].append(m)
+        results['k'].append(k)
+        results['fastsk_exact'].append(fastsk_exact)
+        results['fastsk_approx_t1'].append(fastsk_approx_t1)
+        results['fastsk_I50'].append(fastsk_I50)
+        results['gkm_exact'].append(gkm_exact)
+        results['gkm_approx'].append(gkm_approx)
+
+        for key in results:
+            print('{} - {}'.format(key, results[key][count]))
+        
+        df = pd.DataFrame(results)
+        df.to_csv(output_csv, index=False)
+
+        count += 1
+
 df = pd.read_csv('./evaluations/datasets_to_use.csv')
 params = df.to_dict('records')
+
+fastsk_gkm_dna_kernel_times(params)
 
 ### Thread experiments
 #run_thread_experiments(params)
@@ -321,7 +374,7 @@ params = df.to_dict('records')
 
 ### g kernel AUC experiments
 #run_g_auc_experiments(params)
-g_auc_experiment('TP53', 0.1)
+#g_auc_experiment('TP53', 0.1)
 
 '''
 KAT2B,dna,13,7,6,1
