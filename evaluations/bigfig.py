@@ -293,6 +293,64 @@ def run_g_auc_experiments(params):
         if not dataset in ['KAT2B', 'TP53', 'ZZZ3'] and type_ == 'dna':
             g_auc_experiment(dataset, C)
 
+def fastsk_gakco_protein_kernel_times(params):
+    output_csv = 'fastsk_gakco_protein_kernel_times.csv'
+    results = {
+        'dataset': [],
+        'g': [],
+        'm': [],
+        'k': [],        
+        'fastsk_exact': [],
+        'fastsk_approx_t1': [],
+        'fastsk_I50': [],
+        'gakco': [],
+    }
+    count = 0
+    for p in params:
+        dataset, type_, g, m, k = p['Dataset'], p['type'], p['g'], p['m'], p['k']
+        if type_ != 'protein':
+            continue
+
+        max_I = int(special.comb(g, m))
+
+        fastsk_exact = time_fastsk(g, m, t=20,
+            data_location=FASTSK_DATA,
+            prefix=dataset, 
+            approx=False)
+        
+        fastsk_approx_t1 = time_fastsk(g, m, t=1, 
+            data_location=FASTSK_DATA,
+            prefix=dataset, 
+            approx=True, 
+            max_iters=max_I)
+
+        fastsk_I50 = time_fastsk(g, m, t=1, 
+            data_location=FASTSK_DATA, 
+            prefix=dataset, 
+            approx=True, 
+            max_iters=50)
+
+        gakco = time_gakco(g, m, 
+            type_='protein',
+            prefix=dataset)
+
+        results['dataset'].append(dataset)
+        results['g'].append(g)
+        results['m'].append(m)
+        results['k'].append(k)
+        results['fastsk_exact'].append(fastsk_exact)
+        results['fastsk_approx_t1'].append(fastsk_approx_t1)
+        results['fastsk_I50'].append(fastsk_I50)
+        results['gakco'].append(gakco)
+
+        for key in results:
+            print('{} - {}'.format(key, results[key][count]))
+        
+        df = pd.DataFrame(results)
+        df.to_csv(output_csv, index=False)
+
+        count += 1
+
 def fastsk_gkm_dna_kernel_times(params):
     output_csv = 'fastsk_gkm_dna_kernel_times.csv'
     results = {
@@ -364,7 +422,8 @@ def fastsk_gkm_dna_kernel_times(params):
 df = pd.read_csv('./evaluations/datasets_to_use.csv')
 params = df.to_dict('records')
 
-fastsk_gkm_dna_kernel_times(params)
+#fastsk_gkm_dna_kernel_times(params)
+fastsk_gakco_protein_kernel_times(params)
 
 ### Thread experiments
 #run_thread_experiments(params)

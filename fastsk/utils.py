@@ -69,23 +69,13 @@ def time_gkm(g, m, t, prefix, gkm_data, gkm_exec, approx=False, timeout=None, al
 
     return end - start
 
-def time_gakco(g, m, t, type_, prefix):
+def time_gakco(g, m, type_, prefix, timeout=None):
     gakco_exec = '/localtmp/dcb7xz/FastSK/baselines/GaKCo-SVM/bin/GaKCo'
     data = './data/'
     gakco = GaKCoRunner(gakco_exec, data, type_, prefix)
 
     start = time.time()
-    kwargs = {'C': 0.01}
-    p = multiprocessing.Process(target=gakco.train_and_test,
-        name='TimeGaKCo',
-        args=(g, m),
-        kwargs=kwargs)
-    p.start()
-    p.join(TIMEOUT)
-    if p.is_alive():
-        p.terminate()
-        p.join()
-
+    gakco.compute_kernel(g, m, mode='train')
     end = time.time()
 
     return end - start
