@@ -69,23 +69,23 @@ def time_gkm(g, m, t, prefix, gkm_data, gkm_exec, approx=False, timeout=None, al
 
     return end - start
 
-def time_gakco(g, m, t, type_, prefix):
+def time_gakco(g, m, type_, prefix, timeout=None):
     gakco_exec = '/localtmp/dcb7xz/FastSK/baselines/GaKCo-SVM/bin/GaKCo'
     data = './data/'
     gakco = GaKCoRunner(gakco_exec, data, type_, prefix)
 
     start = time.time()
-    kwargs = {'C': 0.01}
-    p = multiprocessing.Process(target=gakco.train_and_test,
-        name='TimeGaKCo',
-        args=(g, m),
-        kwargs=kwargs)
-    p.start()
-    p.join(TIMEOUT)
-    if p.is_alive():
-        p.terminate()
-        p.join()
+    gakco.compute_kernel(g, m, mode='train')
+    end = time.time()
 
+    return end - start
+
+def time_blended(k1, k2, prefix, timeout=None):
+    blended_exec = '/localtmp/dcb7xz/FastSK/baselines/String_Kernels_Package/code/'
+    data = './data/'
+    blended = BlendedSpectrumRunner(blended_exec, data, prefix)
+    start = time.time()
+    blended.compute_kernel(k1, k2, mode='train')
     end = time.time()
 
     return end - start
@@ -647,14 +647,18 @@ class BlendedSpectrumRunner():
         self.train_fasta = osp.join(data_locaton, prefix + '.train.fasta')
         self.test_fasta = osp.join(data_locaton, prefix + '.test.fasta')
         self.outdir = outdir
-        self.seq_file = osp.join(self.outdir, prefix + '_spectrum.txt')
+        if not osp.exists(self.outdir):
+            os.makedirs(self.outdir)
+        self.train_seq = osp.join(self.outdir, prefix + '_spectrum.train.txt')
+        self.test_seq = osp.join(self.outdir, prefix + '_spectrum.test.txt')
+        self.train_and_test_seq = osp.join(self.outdir, prefix + '_.train-tst.spectrum.txt')
         self.num_train, self.num_test = 0, 0
+        self.write_seq(self.train_fasta, mode='train')
 
         self.kernel_file = osp.join(outdir, "kernel.txt")
 
     def combine_train_and_test(self):
         Xtrain, Xtest, self.Ytrain, self.Ytest = [], [], [], []
-        lines = []
         with open(self.train_fasta, 'r') as f:
             label_line = True
             for line in f:
@@ -680,12 +684,45 @@ class BlendedSpectrumRunner():
                     Xtest.append(line.lower())
                     label_line = True
         X = Xtrain + Xtest
-        with open(self.seq_file, 'w+') as f:
+        with open(self.train_and_test, 'w+') as f:
             for x in X:
                 f.write(x + '\n')
 
-    def compute_kernel(self, datafile, k1=3, k2=5):
+    
+    def write_seq(self, datafile, mode='train'):        
+        assert mode in ['train', 'test']
+        if mode == 'train':
+            outfile = self.train_seq
+        else:
+            outfile = self.test_seq
+        X, Y = [], []
+        with open(datafile, 'r') as f:
+            label_line = True
+            for line in f:
+                line = line.rstrip()
+                if label_line:
+                    label = line.split('>')[1]
+                    Y.append(label)
+                    label_line = False
+                else:
+                    X.append(line.lower())
+                    label_line = True
+        
+        with open(outfile, 'w+') as f:
+            for x in X:
+                f.write(x + '\n')
+
+    def compute_kernel(self, k1=3, k2=5, mode='train_and_test'):
         self.k1, self.k2 = k1, k2
+
+        datafile = self.train_seq
+        assert mode in ['train', 'test', 'train_and_test']
+        if mode == 'train':
+            datafile = self.train_seq
+        elif mode == 'test':
+            datafile = self.test_seq
+        else:
+            datafile = self.train_and_test_seq
 
         command = ["java",
             '-cp', self.exec_dir,
@@ -693,7 +730,7 @@ class BlendedSpectrumRunner():
             "spectrum",
             str(self.k1),
             str(self.k2),
-            self.seq_file,
+            datafile,
             self.kernel_file]
         output = subprocess.check_output(command)
 
@@ -713,7 +750,7 @@ class BlendedSpectrumRunner():
 
     def train_and_test(self, k1=3, k2=5, C=1):
         self.combine_train_and_test()
-        self.compute_kernel(self.seq_file, k1, k2)
+        self.compute_kernel(k1, k2, mode='train_and_test')
 
         self.Xtrain, self.Xtest = self.read_kernel()
         
