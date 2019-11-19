@@ -7,7 +7,7 @@ import json
 import numpy as np
 from fastsk import Kernel
 from utils import FastaUtility, GkmRunner, GaKCoRunner, FastskRunner
-from utils import time_fastsk, time_gkm, time_gakco, time_blended
+from utils import time_fastsk, time_gkm, time_gakco, time_blended, train_and_test_gkm
 import pandas as pd
 import time
 from scipy import special
@@ -298,12 +298,11 @@ def check_C_vals(g, m, dataset):
     return best_acc, best_auc, C
 
 def g_auc_experiment(dataset, C):
-    output_csv = dataset + '_g_auc_k6.csv'
+    output_csv = dataset + '_nov18_g_auc.csv'
     results = {
         'g': [],
         'k': [],
         'm': [],
-        'C' : [],
         'fastsk_approx_acc' : [],
         'fastsk_approx_auc' : [],
         'gkm_approx_acc' : [],
@@ -322,15 +321,25 @@ def g_auc_experiment(dataset, C):
         #max_I = min(int(special.comb(g, m)), 500)
         #fastsk = FastskRunner(dataset)
         #acc, auc = fastsk.train_and_test(g, m, t=1, I=max_I, approx=True, C=C)
-        acc, auc, C = check_C_vals(g, m, dataset)
-        log_str = "Acc {}, AUC {}, g {}, m {}".format(acc, auc, g, m)
-        print(log_str)
+        
+        fastsk = FastskRunner(dataset)
+        fastsk_approx_acc, fastsk_approx_auc = fastsk.train_and_test(g, m, t=1, I=50,
+            approx=True, skip_variance=True, C=C)
+
+        gkm_approx_acc, gkm_approx_auc = train_and_test_gkm(g=g, m=m, t=20, 
+            prefix=dataset, gkm_data=GKM_DATA, gkm_exec=GKM_EXEC, 
+            approx=True, timeout=None, alphabet=None)
+
+        log_str = "g = {}, fastsk_auc = {}, gkm_auc = {}"
+        print(log_str.format(g, fastsk_approx_auc, gkm_approx_auc))
+
         results['g'].append(g)
         results['k'].append(k)
         results['m'].append(m)
-        results['C'].append(C)
-        results['acc'].append(acc)
-        results['auc'].append(auc)
+        results['fastsk_approx_acc'].append(fastsk_approx_acc)
+        results['fastsk_approx_auc'].append(fastsk_approx_auc)
+        results['gkm_approx_acc'].append(gkm_approx_acc)
+        results['gkm_approx_auc'].append(gkm_approx_auc)
 
         df = pd.DataFrame(results)
         df.to_csv(output_csv, index=False)
@@ -340,7 +349,7 @@ def run_g_auc_experiments(params):
     for p in params:
         dataset, type_, g, m, k, C = p['Dataset'], p['type'], p['g'], p['m'], p['k'], p['C']
         assert k == g - m
-        if not dataset in ['KAT2B', 'TP53', 'ZZZ3'] and type_ == 'dna':
+        if type_ == 'dna':
             g_auc_experiment(dataset, C)
 
 def fastsk_gakco_protein_kernel_times(params):
@@ -536,6 +545,8 @@ def fastsk_blended_nlp_kernel_times(params):
 df = pd.read_csv('./evaluations/datasets_to_use.csv')
 params = df.to_dict('records')
 
+run_g_auc_experiments(params)
+
 #fastsk_gkm_dna_kernel_times(params)
 #fastsk_gakco_protein_kernel_times(params)
 #fastsk_blended_nlp_kernel_times(params)
@@ -544,7 +555,7 @@ params = df.to_dict('records')
 #run_thread_experiments(params)
 
 ### g kernel timing experiments
-run_g_time_experiments(params)
+##run_g_time_experiments(params)
 
 ### g kernel AUC experiments
 #run_g_auc_experiments(params)
