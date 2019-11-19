@@ -26,6 +26,7 @@ typedef struct kernel_params {
     bool approx;
     double delta;
     int max_iters;
+    bool skip_variance;
 
 } kernel_params;
 

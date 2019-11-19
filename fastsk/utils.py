@@ -11,7 +11,7 @@ import time
 import multiprocessing
 import subprocess
 
-def time_fastsk(g, m, t, data_location, prefix, approx=False, max_iters=None, timeout=None):
+def time_fastsk(g, m, t, data_location, prefix, approx=False, max_iters=None, timeout=None, skip_variance=False):
     '''Run FastGSK kernel computation. If a timeout is provided,
     it'll run as a subprocess, which will be killed when the timeout is
     reached.
@@ -21,9 +21,9 @@ def time_fastsk(g, m, t, data_location, prefix, approx=False, max_iters=None, ti
     start = time.time()
     if timeout:
         if max_iters:
-            args = {'t': t, 'approx': approx, 'I': max_iters}
+            args = {'t': t, 'approx': approx, 'skip_variance': skip_variance, 'I': max_iters}
         else:
-            args = {'t': t, 'approx': approx}
+            args = {'t': t, 'approx': approx, 'skip_variance': skip_variance}
         p = multiprocessing.Process(target=fastsk.compute_train_kernel, 
             name='TimeFastSK', 
             args=(g, m),
@@ -35,9 +35,9 @@ def time_fastsk(g, m, t, data_location, prefix, approx=False, max_iters=None, ti
             p.join()
     else:
         if max_iters:
-            fastsk.compute_train_kernel(g, m, t=t, approx=approx, I=max_iters)
+            fastsk.compute_train_kernel(g, m, t=t, approx=approx, I=max_iters, skip_variance=skip_variance)
         else:
-            fastsk.compute_train_kernel(g, m, t=t, approx=approx)
+            fastsk.compute_train_kernel(g, m, t=t, approx=approx, skip_variance=skip_variance)
 
     end = time.time()
     
@@ -283,12 +283,12 @@ class FastskRunner():
         Ytest = np.array(Ytest).reshape(-1, 1)
         self.Xtest, self.Ytest = Xtest, Ytest
 
-    def compute_train_kernel(self, g, m, t=20, approx=True, I=100, delta=0.025):
-        kernel = Kernel(g=g, m=m, t=t, approx=approx, max_iters=I, delta=delta)
+    def compute_train_kernel(self, g, m, t=20, approx=True, I=100, delta=0.025, skip_variance=False):
+        kernel = Kernel(g=g, m=m, t=t, approx=approx, max_iters=I, delta=delta, skip_variance=skip_variance)
         kernel.compute_train(self.Xtrain)
 
-    def train_and_test(self, g, m, t, approx, I, delta=0.025, C=1):
-        kernel = Kernel(g=g, m=m, t=t, approx=approx, max_iters=I, delta=delta)
+    def train_and_test(self, g, m, t, approx, I, delta=0.025, skip_variance=False, C=1):
+        kernel = Kernel(g=g, m=m, t=t, approx=approx, max_iters=I, delta=delta, skip_variance=skip_variance)
         kernel.compute(self.Xtrain, self.Xtest)
         self.Xtrain = kernel.train_kernel()
         self.Xtest = kernel.test_kernel()
@@ -329,18 +329,26 @@ class GkmRunner():
         self.train_neg_file = osp.join(self.dir, self.dataset + '.train.neg.fasta')
         self.test_pos_file = osp.join(self.dir, self.dataset + '.test.pos.fasta')
         self.test_neg_file = osp.join(self.dir, self.dataset + '.test.neg.fasta')
+        self.train_test_pos_file = osp.join(self.outdir, self.dataset + '.train_test.pos.fasta')
+        self.train_test_neg_file = osp.join(self.outdir, self.dataset + '.train_test.neg.fasta')
         
         ## Temp files that gkm creates
         if not osp.exists(self.outdir):
             os.makedirs(self.outdir)
-        self.kernel_file = osp.join(self.outdir, self.dataset + '_kernel.out')
+        self.train_kernel_file = osp.join(self.outdir, self.dataset + '_train_kernel.out')
+        self.test_kernel_file = osp.join(self.outdir, self.dataset + '_train_kernel.out')
+        self.train_test_kernel_file = osp.join(self.outdir, self.dataset + '_train_test_kernel.out')
         self.svm_file_prefix = osp.join(self.outdir, "svmtrain")
         self.svmalpha = self.svm_file_prefix + '_svalpha.out'
         self.svseq = self.svm_file_prefix + '_svseq.fa'
         self.pos_pred_file = osp.join(self.outdir, self.dataset + '.preds.pos.out')
-        self.neg_pred_file = osp.join(self.outdir, self.dataset + '.preds.neg.out')    
+        self.neg_pred_file = osp.join(self.outdir, self.dataset + '.preds.neg.out')
 
-    def compute_kernel(self, g, m, t, approx=False, alphabet=None):
+        ## Vals for train-test kernel
+        self.num_pos_train, self.num_neg_train, self.num_pos_test, self.num_neg_test = [0] * 4   
+        self.kernel_tri = []
+
+    def compute_kernel(self, g, m, t, approx=False, alphabet=None, mode='train'):
         r"""Compute the training kernel using gkm-SVM2.0. The kernel function is given by:
         .. math::
             K_{gkm}(x,y) = \sum_{d=0}^{g}N_d(x,y)h_d
@@ -372,6 +380,7 @@ class GkmRunner():
         Y : list
             list of labels
         """
+        assert mode in ['train', 'test', 'train_test']
         k = g - m
         self.g, self.k, self.approx = g, k, approx
 
@@ -389,9 +398,146 @@ class GkmRunner():
             command += ['-d', str(3)]
         if alphabet is not None:
             command += ['-A', alphabet]
-        command += [self.train_pos_file, self.train_neg_file, self.kernel_file]
+        if mode == 'train':
+            command += [self.train_pos_file, self.train_neg_file, self.train_kernel_file]
+        elif mode == 'test':
+            command += [self.test_pos_file, self.test_neg_file, self.test_kernel_file]
+        else:
+            command += [self.train_test_pos_file, self.train_test_neg_file, self.train_test_kernel_file]
         print(' '.join(command))
         output = subprocess.check_output(command)
+
+    def train_and_test(self, g, m, t, approx=False, alphabet=None):
+        self.combine_train_and_test()
+        self.compute_kernel(g, m, t, approx=approx, alphabet=alphabet, mode='train_test')
+        self.parse_train_test_kernel()
+
+    def parse_train_test_kernel(self):
+        Xtrain, Ytrain, Xtest, Ytest = [], [], [], []
+        self.kernel_tri
+        num_train = self.num_pos_train + self.num_neg_train
+        with open(self.train_test_kernel_file, 'r') as f:
+            for line in f:
+                vals = line.strip().split('\t')
+                self.kernel_tri.append(vals)
+
+        '''kernel file:
+            - train_pos
+            - test_pos
+            - train_neg
+            - test_neg
+        '''
+
+        # pos train
+        start = 0
+        for i in range(self.num_pos_train):
+            x = []
+            for j in range(num_train):
+                x.append(self.tri_access(i, j))
+                start += 1
+            assert len(x) == num_train
+            Xtrain.append(x)
+            Ytrain.append(1)
+
+        # test pos
+        for i in range(start, start + self.num_pos_test):
+            x = []
+            for j in range(num_train):
+                x.append(self.tri_access(i , j))
+                start += 1
+            assert len(x) == num_train
+            Xtest.append(x)
+            Ytest.append(1)
+
+        # train neg
+        for i in range(start, start + self.num_neg_train):
+            x = []
+            for j in range(num_train):
+                x.append(self.tri_access(i, j))
+                start += 1
+            assert len(x) == num_train
+            Xtrain.append(x)
+            Ytrain.append(-1)
+
+        # test neg
+        for i in range(start, start + self.num_neg_test):
+            x = []
+            for j in range(num_train):
+                x.append(self.tri_access(i, j))
+                start += 1
+            assert len(x) == num_train
+            Xtest.append(x)
+            Ytest.append(-1)
+
+        print(len(tri[0]))
+
+    def tri_access(self, i, j):
+        if j > i:
+            i, j = j, i
+        return self.kernel_tri[i][j]
+
+    def combine_train_and_test(self):
+        pos_sequences, neg_sequences = [], []
+        pos_labels, neg_labels = [], []
+        num_pos_train, num_neg_train = 0, 0
+        num_pos_test, num_neg_test = 0, 0
+
+        with open(self.train_pos_file, 'r') as f:
+            label_line = True
+            for line in f:
+                line = line.rstrip()
+                if label_line:
+                    pos_labels.append(line)
+                    label_line = False
+                else:
+                    pos_sequences.append(line)
+                    self.num_pos_train += 1
+                    label_line = True
+
+        with open(self.test_pos_file, 'r') as f:
+            label_line = True
+            for line in f:
+                line = line.rstrip()
+                if label_line:
+                    pos_labels.append(line)
+                    label_line = False
+                else:
+                    pos_sequences.append(line)
+                    self.num_pos_test += 1
+                    label_line = True
+
+        with open(self.train_neg_file, 'r') as f:
+            label_line = True
+            for line in f:
+                line = line.rstrip()
+                if label_line:
+                    neg_labels.append(line)
+                    label_line = False
+                else:
+                    neg_sequences.append(line)
+                    self.num_neg_train += 1
+                    label_line = True
+
+        with open(self.test_neg_file, 'r') as f:
+            label_line = True
+            for line in f:
+                line = line.rstrip()
+                if label_line:
+                    neg_labels.append(line)
+                    label_line = False
+                else:
+                    neg_sequences.append(line)
+                    self.num_neg_test += 1
+                    label_line = True
+
+        with open(self.train_test_pos_file, 'w+') as f:
+            for seq, label in zip(pos_sequences, pos_labels):
+                f.write('{}\n{}\n'.format(label, seq))
+
+        with open(self.train_test_neg_file, 'w+') as f:
+            for seq, label in zip(neg_sequences, neg_labels):
+                f.write('{}\n{}\n'.format(label, seq))
+
 
 class GaKCoRunner():
     def __init__(self, exec_location, data_locaton, type_, prefix, outdir='./temp'):

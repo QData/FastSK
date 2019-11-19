@@ -35,6 +35,8 @@ def get_args():
         help="Delta parameter for approximation algorithm")
     parser.add_argument('-I', type=int, required=False, default=50,
         help='Maximum number of iterations to use if running the approximation algorithm')
+    parser.add_argument('--skip-variance', action='store_true', required=False, default=False,
+        help='Can use approximation algo for the given itations, but will not compute variances')
 
     return parser.parse_args()
 
@@ -47,6 +49,7 @@ def evaluate_clf(clf, Xtest, Ytest):
 args = get_args()
 train_file, test_file = args.trn, args.tst
 g, m, C, t, approx, I, d = args.g, args.m, args.C, args.t, args.approx, args.I, args.delta
+skip_variance = args.skip_variance
 
 ### Read the data
 reader = FastaUtility()
@@ -56,10 +59,15 @@ Ytest = np.array(Ytest).reshape(-1, 1)
 
 ### Compute the fastsk kernel
 start = time.time()
-kernel = Kernel(g=g, m=m, t=t, approx=approx, max_iters=I, delta=d)
+kernel = Kernel(g=g, m=m, t=t, 
+    approx=approx, 
+    max_iters=I, 
+    delta=d,
+    skip_variance=skip_variance)
+
 kernel.compute(Xtrain, Xtest)
 end = time.time()
-print(end - start)
+print("Kernl computation time:", end - start)
 Xtrain = kernel.train_kernel()
 Xtest = kernel.test_kernel()
 

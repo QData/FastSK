@@ -82,13 +82,14 @@ PYBIND11_MODULE(fastsk, m) {
             py::arg("metric")="accuracy");
 
     py::class_<Kernel>(m, "Kernel")
-        .def(py::init<int, int, int, bool, double, int>(), 
+        .def(py::init<int, int, int, bool, double, int, bool>(), 
             py::arg("g"), 
             py::arg("m"),
             py::arg("t")=-1,
             py::arg("approx")=false,
             py::arg("delta")=0.025,
-            py::arg("max_iters")=-1)
+            py::arg("max_iters")=-1,
+            py::arg("skip_variance")=false)
         .def("compute", &Kernel::compute,
             py::arg("Xtrain"),
             py::arg("Xtest"))
