@@ -23,6 +23,7 @@ GKM_DATA = '/localtmp/dcb7xz/FastSK/baselines/gkm_data'
 GKM_EXEC = '/localtmp/dcb7xz/FastSK/baselines/gkmsvm'
 FASTSK_DATA = '/localtmp/dcb7xz/FastSK/data/'
 BLENDED_EXEC = '/localtmp/dcb7xz/FastSK/baselines/String_Kernel_Package/code/'
+PROT_DICT = '/localtmp/dcb7xz/FastSK/data/full_prot.dict.txt'
 
 
 def thread_experiment(dataset, g, m, k):
@@ -77,29 +78,25 @@ def run_thread_experiments(params):
         if type_ == 'dna':
             thread_experiment(dataset, g, m, k)
 
-def g_time_experiment(dataset):
-    '''Nov 14 experiments:
-        - FastSK-Approx 1 thread
-        - FastSK-Approx 10 thread
-        - FastSK-Approx 20 thread
-        - FastSK-Approx 1 thread
-        - FastSK-Approx 10 thread
-        - FastSK-Approx 20 thread
+def g_time_experiment(dataset, output_dir, type_):
+    '''Dec 14 experiments:
+        - FastSK-Exact 20 thread
+        - FastSK-Approx Approx 1 thread (convergence)
+        - FastSK-Approx 20 thread (no convergence, 50 iters)
+        - gkm-Exact 20 thread
+        - gkm-Approx 20 thread
+        - GaKCo (max threads)
     '''
-    output_csv = dataset + '_g_times_nov14.csv'
+    output_csv = osp.join(output_dir, dataset + '_g_times_dec14.csv')
     results = {
         'g': [],
         'k': [],
         'm': [],
+        'FastSK-Exact': [],
         'FastSK-Approx 1 thread': [],
-        'FastSK-Approx 10 thread': [],
-        'FastSK-Approx 20 thread': [],
-        'FastSK-Approx 1 thread no variance 50 iters': [],
-        'FastSK-Approx 10 thread no variance 50 iters': [],
         'FastSK-Approx 20 thread no variance 50 iters': [],
-        'gkm-Approx 1 thread': [],
-        'gkm-Approx 10 thread': [],
-        'gkm-Approx 20 thread': []
+        'gkm-Approx 20 thread': [],
+        'GaKCo': []
     }
 
     train_file = osp.join('./data', dataset + '.train.fasta')
@@ -109,112 +106,86 @@ def g_time_experiment(dataset):
     min_g, max_g = 6, 20
     k = 6
     
-    skip_fastsk_exact, skip_gkm_exact = True, True
-    skip_fastsk_approx_t1, skip_fastsk_approx_t10, skip_fastsk_approx_t20 = False, False, False
-    skip_fastsk_approx_t1_no_var, skip_fastsk_approx_t10_no_var, skip_fastsk_approx_t20_no_var = False, False, False
-    skip_gkm_approx_t1, skip_gkm_approx_t10, skip_gkm_approx_t20 = False, False, False
+    skip_fastsk_exact = False
+    skip_fastsk_approx_t1 = False
+    skip_fastsk_approx_t20_no_var = False
+
+    skip_gkm_exact = False
+    skip_gkm_approx_t20 = False
+    skip_gakco = False
 
     for g in range(min_g, max_g + 1):
         m = g - k
         max_I = int(special.comb(g, m))
 
-        fastsk_approx_t1, fastsk_approx_t10, fastsk_approx_t20 = [0] * 3
-        gkm_approx_t1, gkm_approx_t10, gkm_approx_t20 = [0] * 3
+        fastsk_exact = 0
+        fastsk_approx_t1 = 0
+        fastsk_approx_t20_no_var = 0
+        gkm_exact = 0
+        gkm_approx_t20 = 0
+        gakco = 0
 
         ## FastSK-Exact 
         if not skip_fastsk_exact:
-            fastsk_exact = time_fastsk(g, m, t=20, data_location=FASTSK_DATA,prefix=dataset,approx=False,timeout=TIMEOUT)
+            fastsk_exact = time_fastsk(g, m, t=20, data_location=FASTSK_DATA,
+                prefix=dataset, approx=False, timeout=TIMEOUT)
             if (fastsk_exact >= MAXTIME and g > 8):
                 skip_fastsk_exact = True
         
         ## FastSK-Approx, iterate until convergence is reached
         if not skip_fastsk_approx_t1:
-            fastsk_approx_t1 = time_fastsk(g, m, t=1, data_location=FASTSK_DATA, prefix=dataset,
-                approx=True, max_iters=max_I, timeout=TIMEOUT)
+            fastsk_approx_t1 = time_fastsk(g, m, t=1, data_location=FASTSK_DATA, 
+                prefix=dataset, approx=True, max_iters=max_I, timeout=TIMEOUT)
             if (fastsk_approx_t1 >= MAXTIME and g > 8):
                 skip_fastsk_approx_t1 = True
 
-        if not skip_fastsk_approx_t10:
-            fastsk_approx_t10 = time_fastsk(g, m, t=10, data_location=FASTSK_DATA, prefix=dataset,
-                approx=True, max_iters=max_I, timeout=TIMEOUT)
-            if (fastsk_approx_t10 >= MAXTIME and g > 8):
-                skip_fastsk_approx_t10 = True
-
-        if not skip_fastsk_approx_t20:
-            fastsk_approx_t20 = time_fastsk(g, m, t=20, data_location=FASTSK_DATA, prefix=dataset,
-                approx=True, max_iters=max_I, timeout=TIMEOUT)
-            if (fastsk_approx_t20 >= MAXTIME and g > 8):
-                skip_fastsk_approx_t20 = True
-
-        ## FastSK-Approx, don't make convergence calculations; iterate 100 times
-        if not skip_fastsk_approx_t1_no_var:
-            fastsk_approx_t1_no_var = time_fastsk(g, m, t=1, data_location=FASTSK_DATA, prefix=dataset,
-                approx=True, max_iters=50, skip_variance=True, timeout=TIMEOUT)
-            if (fastsk_approx_t1_no_var >= MAXTIME and g > 8):
-                skip_fastsk_approx_t1_no_var = True
-
-        if not skip_fastsk_approx_t10_no_var:
-            fastsk_approx_t10_no_var = time_fastsk(g, m, t=10, data_location=FASTSK_DATA, prefix=dataset, 
-                approx=True, max_iters=50, skip_variance=True, timeout=TIMEOUT)
-            if (fastsk_approx_t10_no_var >= MAXTIME and g > 8):
-                skip_fastsk_approx_t10_no_var = True
-
+        ## FastSK-Approx, don't make convergence calculations; iterate 50 times
         if not skip_fastsk_approx_t20_no_var:
-            fastsk_approx_t20_no_var = time_fastsk(g, m, t=20, data_location=FASTSK_DATA, prefix=dataset, 
-                approx=True, max_iters=50, skip_variance=True, timeout=TIMEOUT)
+            fastsk_approx_t20_no_var = time_fastsk(g, m, t=20, data_location=FASTSK_DATA, 
+                prefix=dataset, approx=True, max_iters=50, skip_variance=True, timeout=TIMEOUT)
             if (fastsk_approx_t20_no_var >= MAXTIME and g > 8):
                 skip_fastsk_approx_t20_no_var = True
 
         ## gkm-Exact
         if not skip_gkm_exact:
             gkm_exact = time_gkm(g, m, t=20, gkm_data=GKM_DATA, gkm_exec=GKM_EXEC, 
-                prefix=dataset, approx=False, timeout=TIMEOUT)
+                prefix=dataset, approx=False, timeout=TIMEOUT, alphabet=PROT_DICT)
             if (gkm_exact >= MAXTIME and g > 8):
                 skip_gkm_exact = True
         
         ## gkm-Approx, max_d = 3
-        if not skip_gkm_approx_t1:
-            gkm_approx_t1 = time_gkm(g, m, t=1, gkm_data=GKM_DATA, gkm_exec=GKM_EXEC, 
-                prefix=dataset, approx=True, timeout=TIMEOUT)
-            if (gkm_approx_t1 >= MAXTIME and g > 8):
-                skip_gkm_approx_t1 = True
-
-        if not skip_gkm_approx_t10:
-            gkm_approx_t10 = time_gkm(g, m, t=10, gkm_data=GKM_DATA, gkm_exec=GKM_EXEC, 
-                prefix=dataset, approx=True, timeout=TIMEOUT)
-            if (gkm_approx_t10 >= MAXTIME and g > 8):
-                skip_gkm_approx_t10 = True
-
         if not skip_gkm_approx_t20:
             gkm_approx_t20 = time_gkm(g, m, t=20, gkm_data=GKM_DATA, gkm_exec=GKM_EXEC, 
-                prefix=dataset, approx=True, timeout=TIMEOUT)
+                prefix=dataset, approx=True, timeout=TIMEOUT, alphabet=PROT_DICT)
             if (gkm_approx_t20 >= MAXTIME and g > 8):
                 skip_gkm_approx_t20 = True
+
+        if not skip_gakco and m > 0:
+            gakco = time_gakco(g, m, type_=type_, 
+                prefix=dataset, timeout=None)
+            if gakco >= MAXTIME and g > 8:
+                skip_gakco = True
 
         ## Save results
         results['g'].append(g)
         results['k'].append(k)
         results['m'].append(m)
+        results['FastSK-Exact'] = fastsk_exact
         results['FastSK-Approx 1 thread'].append(fastsk_approx_t1)
-        results['FastSK-Approx 10 thread'].append(fastsk_approx_t10)
-        results['FastSK-Approx 20 thread'].append(fastsk_approx_t20)
-        results['FastSK-Approx 1 thread no variance 50 iters'].append(fastsk_approx_t1_no_var)
-        results['FastSK-Approx 10 thread no variance 50 iters'].append(fastsk_approx_t10_no_var)
         results['FastSK-Approx 20 thread no variance 50 iters'].append(fastsk_approx_t20_no_var)
-        results['gkm-Approx 1 thread'].append(gkm_approx_t1)
-        results['gkm-Approx 10 thread'].append(gkm_approx_t10)
         results['gkm-Approx 20 thread'].append(gkm_approx_t20)
+        results['GaKCo'].append(gakco)
 
         print("{} - g = {}, m = {}".format(dataset, g, m))
 
         df = pd.DataFrame(results)
         df.to_csv(output_csv, index=False)
 
-def run_g_time_experiments(params):
+def run_g_time_experiments(params, output_dir):
     for p in params:
         dataset, type_ = p['Dataset'], p['type']
-        if type_ == 'dna':
-            g_time_experiment(dataset)
+        if type_ == 'protein':
+            g_time_experiment(dataset, output_dir, type_)
 
 def I_experiment(dataset, g, m, k, C):
     output_csv = dataset + '_vary_I.csv'
@@ -545,7 +516,7 @@ def fastsk_blended_nlp_kernel_times(params):
 df = pd.read_csv('./evaluations/datasets_to_use.csv')
 params = df.to_dict('records')
 
-run_g_auc_experiments(params)
+#run_g_auc_experiments(params)
 
 #fastsk_gkm_dna_kernel_times(params)
 #fastsk_gakco_protein_kernel_times(params)
@@ -555,7 +526,7 @@ run_g_auc_experiments(params)
 #run_thread_experiments(params)
 
 ### g kernel timing experiments
-##run_g_time_experiments(params)
+run_g_time_experiments(params, 'dec14_g_times')
 
 ### g kernel AUC experiments
 #run_g_auc_experiments(params)

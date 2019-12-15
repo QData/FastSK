@@ -61,7 +61,7 @@ def time_gkm(g, m, t, prefix, gkm_data, gkm_exec, approx=False, timeout=None, al
     if timeout:
         p = multiprocessing.Process(target=gkm.compute_train_kernel,
             name='TimeGkm',
-            args=(t))
+            args=(t,))
         p.start()
         p.join(timeout)
         if p.is_alive():
@@ -315,10 +315,22 @@ class GkmRunner():
         self.dataset = dataset
         self.outdir = outdir
         self.g, self.k, self.alphabet = g, k, alphabet
+        
+        '''Important note: 
+        gkmSVM's -d parameter (max_m) is *not* the same as our
+        m = g - k parameter. It's actually the upper bound of the 
+        summation shown in equation 3 in the
+        2014 gkmSVM paper (ghandi2014enhanced).'''
         if (approx):
-            self.max_m = 3 # their default value for max_m (d parameter)
+            '''By default, their approximation algorithm truncates the
+            summation from eq. 3 to a value of 3 mismatches.
+            '''
+            self.max_m = 3
         else:
-            self.max_m = self.g- self.k
+            '''If using the exact algo, the summation runs from
+            0 to l (their l is our g)
+            '''
+            self.max_m = self.g
 
         ## Data files
         self.train_pos_file = osp.join(self.dir, self.dataset + '.train.pos.fasta')
@@ -348,7 +360,7 @@ class GkmRunner():
             '-T', str(t),
             '-R']
         if self.alphabet is not None:
-            command += ['-A', alphabet]
+            command += ['-A', self.alphabet]
         command += [self.train_pos_file, self.train_neg_file, self.kernel_file]
         print(' '.join(command))
         output = subprocess.check_output(command)
