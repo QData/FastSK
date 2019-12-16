@@ -333,7 +333,7 @@ def run_g_auc_experiments(params, output_dir):
     for p in params:
         dataset, type_, g, m, k, C = p['Dataset'], p['type'], p['g'], p['m'], p['k'], p['C']
         assert k == g - m
-        if type_ == 'protein':
+        if type_ == 'dna':
             g_auc_experiment(dataset, output_dir, C)
 
 def fastsk_gakco_protein_kernel_times(params):
