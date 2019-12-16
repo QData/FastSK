@@ -283,18 +283,27 @@ class FastskRunner():
         self.test_file = osp.join(data_location, prefix + '.test.fasta')
         
         reader = FastaUtility()
-        self.Xtrain, self.Ytrain = reader.read_data(self.train_file)
-        Xtest, Ytest = reader.read_data(self.test_file)
+        self.train_seq, self.Ytrain = reader.read_data(self.train_file)
+        self.test_seq, Ytest = reader.read_data(self.test_file)
         Ytest = np.array(Ytest).reshape(-1, 1)
-        self.Xtest, self.Ytest = Xtest, Ytest
+        self.Ytest = Ytest
 
     def compute_train_kernel(self, g, m, t=20, approx=True, I=100, delta=0.025, skip_variance=False):
-        kernel = Kernel(g=g, m=m, t=t, approx=approx, max_iters=I, delta=delta, skip_variance=skip_variance)
-        kernel.compute_train(self.Xtrain)
+        kernel = Kernel(g=g, m=m, t=t, 
+            approx=approx, 
+            max_iters=I, 
+            delta=delta, 
+            skip_variance=skip_variance)
+        kernel.compute_train(self.train_seq)
 
     def train_and_test(self, g, m, t, approx, I, delta=0.025, skip_variance=False, C=1):
-        kernel = Kernel(g=g, m=m, t=t, approx=approx, max_iters=I, delta=delta, skip_variance=skip_variance)
-        kernel.compute(self.Xtrain, self.Xtest)
+        kernel = Kernel(g=g, m=m, t=t, 
+            approx=approx, 
+            max_iters=I, 
+            delta=delta, 
+            skip_variance=skip_variance)
+
+        kernel.compute(self.train_seq, self.test_seq)
         self.Xtrain = kernel.train_kernel()
         self.Xtest = kernel.test_kernel()
         svm = LinearSVC(C=C, class_weight='balanced')

@@ -268,16 +268,18 @@ def check_C_vals(g, m, dataset):
             best_acc, best_auc = acc, auc
     return best_acc, best_auc, C
 
-def g_auc_experiment(dataset, C):
-    output_csv = dataset + '_nov18_g_auc.csv'
+def g_auc_experiment(dataset, output_dir, C):
+    output_csv = osp.join(output_dir, dataset + '_dec15_g_auc.csv')
     results = {
         'g': [],
         'k': [],
         'm': [],
-        'fastsk_approx_acc' : [],
-        'fastsk_approx_auc' : [],
-        'gkm_approx_acc' : [],
-        'gkm_approx_auc' : [],
+        'fastsk_approx_i50_acc': [],
+        'fastsk_approx_i50_auc': [],
+        'fastsk_approx_conv_acc': [],
+        'fastsk_approx_conv_auc': [],
+        'gkm_approx_acc': [],
+        'gkm_approx_auc': [],
     }
 
     train_file = osp.join('/localtmp/dcb7xz/FastSK/data', dataset + '.train.fasta')
@@ -289,39 +291,50 @@ def g_auc_experiment(dataset, C):
 
     for g in range(k, max_g + 1):
         m = g - k
-        #max_I = min(int(special.comb(g, m)), 500)
-        #fastsk = FastskRunner(dataset)
-        #acc, auc = fastsk.train_and_test(g, m, t=1, I=max_I, approx=True, C=C)
+
+        #### Run experiments
         
+        ## FastSK-Approx with up to 50 iterations/mismatch combos
         fastsk = FastskRunner(dataset)
-        fastsk_approx_acc, fastsk_approx_auc = fastsk.train_and_test(g, m, t=1, I=50,
+        fastsk_approx_i50_acc, fastsk_approx_i50_auc = fastsk.train_and_test(g, m, t=1, I=50,
             approx=True, skip_variance=True, C=C)
 
+
+        ## FastSK-Approx that just runs until convergence (no max iters)
+        #fastsk = FastskRunner(dataset)
+        max_I = int(special.comb(g, m))
+        fastsk_approx_conv_acc, fastsk_approx_conv_auc = fastsk.train_and_test(g, m, t=1, I=max_I,
+            approx=True, skip_variance=True, C=C)
+
+        ## gkm-Approx (m_max = 3)
         gkm_approx_acc, gkm_approx_auc = train_and_test_gkm(g=g, m=m, t=20, 
             prefix=dataset, gkm_data=GKM_DATA, gkm_exec=GKM_EXEC, 
-            approx=True, timeout=None, alphabet=None)
+            approx=True, timeout=None, alphabet=PROT_DICT)
 
-        log_str = "g = {}, fastsk_auc = {}, gkm_auc = {}"
-        print(log_str.format(g, fastsk_approx_auc, gkm_approx_auc))
+        #### Log results
+
+        log_str = "g = {}, fastsk conv auc = {}, fastsk i=50 auc = {}, gkm approx auc = {}"
+        print(log_str.format(g, fastsk_approx_conv_auc, fastsk_approx_i50_auc, gkm_approx_auc))
 
         results['g'].append(g)
         results['k'].append(k)
         results['m'].append(m)
-        results['fastsk_approx_acc'].append(fastsk_approx_acc)
-        results['fastsk_approx_auc'].append(fastsk_approx_auc)
+        results['fastsk_approx_i50_acc'].append(fastsk_approx_i50_acc)
+        results['fastsk_approx_i50_auc'].append(fastsk_approx_i50_auc)
+        results['fastsk_approx_conv_acc'].append(fastsk_approx_conv_acc)
+        results['fastsk_approx_conv_auc'].append(fastsk_approx_conv_auc)
         results['gkm_approx_acc'].append(gkm_approx_acc)
         results['gkm_approx_auc'].append(gkm_approx_auc)
 
         df = pd.DataFrame(results)
         df.to_csv(output_csv, index=False)
 
-
-def run_g_auc_experiments(params):
+def run_g_auc_experiments(params, output_dir):
     for p in params:
         dataset, type_, g, m, k, C = p['Dataset'], p['type'], p['g'], p['m'], p['k'], p['C']
         assert k == g - m
-        if type_ == 'dna':
-            g_auc_experiment(dataset, C)
+        if type_ == 'protein':
+            g_auc_experiment(dataset, output_dir, C)
 
 def fastsk_gakco_protein_kernel_times(params):
     output_csv = 'fastsk_gakco_protein_kernel_times.csv'
@@ -516,7 +529,7 @@ def fastsk_blended_nlp_kernel_times(params):
 df = pd.read_csv('./evaluations/datasets_to_use.csv')
 params = df.to_dict('records')
 
-#run_g_auc_experiments(params)
+run_g_auc_experiments(params, output_dir='dec15_g_auc_results')
 
 #fastsk_gkm_dna_kernel_times(params)
 #fastsk_gakco_protein_kernel_times(params)
@@ -526,7 +539,7 @@ params = df.to_dict('records')
 #run_thread_experiments(params)
 
 ### g kernel timing experiments
-run_g_time_experiments(params, 'dec14_g_times')
+#run_g_time_experiments(params, output_dir='dec14_g_times')
 
 ### g kernel AUC experiments
 #run_g_auc_experiments(params)
