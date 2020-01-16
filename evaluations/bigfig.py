@@ -77,6 +77,134 @@ def run_thread_experiments(params):
         if type_ == 'dna':
             thread_experiment(dataset, g, m, k)
 
+def m_time_experiment(dataset, output_dir):
+    '''January 2020: create timing figures by varying m and
+    keeping g fixed
+
+    Results collected:
+        - FastSK-Exact 20 thread
+        - FastSK-Approx 1 thread
+        - FastSK-Approx 1 thread no variance 50 iters
+        - gkmSVM-Exact 20 thread
+        - gkmSVM-Approx 20 thread
+    '''
+    output_csv = osp.join(output_dir, dataset + '_vary_m.csv')
+    results = {
+        'g': [],
+        'k': [],
+        'm': [],
+        'FastSK-Exact 20 thread': [],
+        'FastSK-Approx 1 thread': [],
+        'FastSK-Approx 1 thread no variance 50 iters': [],
+        'gkmSVM-Exact 20 thread': [],
+        'gkmSVM-Approx 20 thread': []
+    }
+
+    train_file = osp.join('./data', dataset + '.train.fasta')
+    reader = FastaUtility()
+    Xtrain, Ytrain = reader.read_data(train_file)
+
+    g = 16
+    min_m, max_m = 0, g - 2
+
+    # flags to skip results that have timed out
+    skip_fastsk_exact = False
+    skip_fastsk_approx = False
+    skip_fastsk_approx_no_var = False
+    skip_gkm_exact = False
+    skip_gkm_approx = False
+
+    for m in range(min_m, max_m + 1):
+        k = g - m
+        max_I = int(special.comb(g, m))
+
+        fastsk_exact, fastsk_approx, fastsk_approx_no_var = [0] * 3
+        gkm_exact, gkm_approx = [0] * 2
+
+        ## FastSK-Exact 
+        if not skip_fastsk_exact:
+            fastsk_exact = time_fastsk(g, m, t=20, 
+                data_location=FASTSK_DATA, 
+                prefix=dataset, 
+                approx=False, 
+                timeout=TIMEOUT)
+            if (fastsk_exact >= MAXTIME and m > 4):
+                skip_fastsk_exact = True
+        
+        ## FastSK-Approx, iterate until convergence is reached
+        if not skip_fastsk_approx:
+            fastsk_approx = time_fastsk(g, m, t=1, 
+                data_location=FASTSK_DATA, 
+                prefix=dataset,
+                approx=True, 
+                max_iters=max_I, 
+                timeout=TIMEOUT)
+            if (fastsk_approx >= MAXTIME and m > 4):
+                skip_fastsk_approx = True
+
+        ## FastSK-Approx, iterate up to 50 iters, don't compute variance
+        if not skip_fastsk_approx_no_var:
+            fastsk_approx_no_var = time_fastsk(g, m, t=1, 
+                data_location=FASTSK_DATA, 
+                prefix=dataset,
+                approx=True, 
+                max_iters=50, 
+                skip_variance=True, 
+                timeout=TIMEOUT)
+            if (fastsk_approx_no_var >= MAXTIME and m > 4):
+                skip_fastsk_approx_no_var = True
+
+        ## gkm-Exact
+        if not skip_gkm_exact:
+            gkm_exact = time_gkm(g, m, t=20, 
+                gkm_data=GKM_DATA, 
+                gkm_exec=GKM_EXEC, 
+                prefix=dataset, 
+                approx=False, 
+                timeout=TIMEOUT)
+            if (gkm_exact >= MAXTIME and m > 4):
+                skip_gkm_exact = True
+        
+        ## gkm-Approx, max_d = 3
+        if not skip_gkm_approx:
+            gkm_approx = time_gkm(g, m, t=20, 
+                gkm_data=GKM_DATA, 
+                gkm_exec=GKM_EXEC, 
+                prefix=dataset, 
+                approx=True, 
+                timeout=TIMEOUT)
+            if (gkm_approx >= MAXTIME and m > 4):
+                skip_gkm_approx = True
+
+        ## Save results
+        results['g'].append(g)
+        results['k'].append(k)
+        results['m'].append(m)
+        results['FastSK-Exact 20 thread'].append(fastsk_exact)
+        results['FastSK-Approx 1 thread'].append(fastsk_approx)
+        results['FastSK-Approx 1 thread no variance 50 iters'].append(fastsk_approx_no_var)
+        results['gkmSVM-Exact 20 thread'].append(gkm_exact)
+        results['gkmSVM-Approx 20 thread'].append(gkm_approx)
+
+        print("{}: g = {}, m = {}".format(dataset, g, m))
+
+        df = pd.DataFrame(results)
+        df.to_csv(output_csv, index=False)
+
+def run_m_time_experiments(params, output_dir):
+    '''January 2020: create timing figures by varying m and
+    keeping g fixed. 
+    Note: need to run DNA and protein experiments separately,
+    since gkm needs to be recompiled to handle protein data
+    '''
+    if not osp.exists(output_dir):
+        os.makedirs(output_dir)
+
+    for p in params:
+        dataset, type_ = p['Dataset'], p['type']
+        if type_ == 'dna':
+            m_time_experiment(dataset, output_dir)
+
 def g_time_experiment(dataset):
     '''Nov 14 experiments:
         - FastSK-Approx 1 thread
@@ -545,7 +673,9 @@ def fastsk_blended_nlp_kernel_times(params):
 df = pd.read_csv('./evaluations/datasets_to_use.csv')
 params = df.to_dict('records')
 
-run_g_auc_experiments(params)
+#run_g_auc_experiments(params)
+
+run_m_time_experiments(params, output_dir='jan_2020_vary_m')
 
 #fastsk_gkm_dna_kernel_times(params)
 #fastsk_gakco_protein_kernel_times(params)

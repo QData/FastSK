@@ -61,7 +61,7 @@ def time_gkm(g, m, t, prefix, gkm_data, gkm_exec, approx=False, timeout=None, al
     if timeout:
         p = multiprocessing.Process(target=gkm.compute_train_kernel,
             name='TimeGkm',
-            args=(t))
+            args=(t,))
         p.start()
         p.join(timeout)
         if p.is_alive():
