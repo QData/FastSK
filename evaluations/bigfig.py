@@ -24,6 +24,7 @@ GKM_EXEC = '/localtmp/dcb7xz/FastSK/baselines/gkmsvm'
 FASTSK_DATA = '/localtmp/dcb7xz/FastSK/data/'
 BLENDED_EXEC = '/localtmp/dcb7xz/FastSK/baselines/String_Kernel_Package/code/'
 PROT_DICT = '/localtmp/dcb7xz/FastSK/data/full_prot.dict.txt'
+GKM_PROT_DICT = '/localtmp/dcb7xz/FastSK/baselines/gkm_data/protein.dictionary.txt'
 
 
 def thread_experiment(dataset, g, m, k):
@@ -78,7 +79,6 @@ def run_thread_experiments(params):
         if type_ == 'dna':
             thread_experiment(dataset, g, m, k)
 
-<<<<<<< HEAD
 def m_time_experiment(dataset, output_dir):
     '''January 2020: create timing figures by varying m and
     keeping g fixed
@@ -162,7 +162,8 @@ def m_time_experiment(dataset, output_dir):
                 gkm_data=GKM_DATA, 
                 gkm_exec=GKM_EXEC, 
                 prefix=dataset, 
-                approx=False, 
+                approx=False,
+                alphabet=GKM_PROT_DICT,
                 timeout=TIMEOUT)
             if (gkm_exact >= MAXTIME and m > 4):
                 skip_gkm_exact = True
@@ -173,7 +174,8 @@ def m_time_experiment(dataset, output_dir):
                 gkm_data=GKM_DATA, 
                 gkm_exec=GKM_EXEC, 
                 prefix=dataset, 
-                approx=True, 
+                approx=True,
+                alphabet=GKM_PROT_DICT,
                 timeout=TIMEOUT)
             if (gkm_approx >= MAXTIME and m > 4):
                 skip_gkm_approx = True
@@ -204,7 +206,7 @@ def run_m_time_experiments(params, output_dir):
 
     for p in params:
         dataset, type_ = p['Dataset'], p['type']
-        if type_ == 'dna':
+        if type_ == 'protein':
             m_time_experiment(dataset, output_dir)
 
 def g_time_experiment(dataset):
@@ -660,7 +662,7 @@ params = df.to_dict('records')
 
 #run_g_auc_experiments(params)
 
-run_m_time_experiments(params, output_dir='jan_2020_vary_m')
+run_m_time_experiments(params, output_dir='jan_2020_vary_m_prot')
 
 #fastsk_gkm_dna_kernel_times(params)
 #fastsk_gakco_protein_kernel_times(params)
