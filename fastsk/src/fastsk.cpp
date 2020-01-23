@@ -75,6 +75,7 @@ void kernel_build_parallel(int tid, WorkItem *workQueue, int queueSize,
     bool quiet = params->quiet;
     bool approx = params->approx;
     int max_iters = params->max_iters;
+    bool skip_variance = params->skip_variance;
 
     int num_comb = nchoosek(g, k);
 
@@ -82,22 +83,28 @@ void kernel_build_parallel(int tid, WorkItem *workQueue, int queueSize,
     bool working = true;
     int iter = 1;
 
-    // counts for one partial mismatch profile
+    // counts for one partial kernel
     unsigned int* Ks = (unsigned int*) malloc(sizeof(unsigned int) * n_str_pairs);
     memset(Ks, 0, sizeof(unsigned int) * n_str_pairs);
 
-    // mean partial mismatch profile (cumulated with online sample mean)
-    double* K_hat = (double*) malloc(sizeof(double) * n_str_pairs);
-    memset(K_hat, 0, sizeof(double) * n_str_pairs);
-    // mean partial mismatch profile (cumulated with online sample mean)
-    double* variances = (double*) malloc(sizeof(double) * n_str_pairs);
-    memset(variances, 0, sizeof(double) * n_str_pairs);
+    
+    double* K_hat;
+    double* variances;
+
+    if (approx && !skip_variance) {
+        // mean partial mismatch profile (cumulated with online sample mean)
+        K_hat = (double*) malloc(sizeof(double) * n_str_pairs);
+        memset(K_hat, 0, sizeof(double) * n_str_pairs);
+        // mean partial mismatch profile (cumulated with online sample mean)
+        variances = (double*) malloc(sizeof(double) * n_str_pairs);
+        memset(variances, 0, sizeof(double) * n_str_pairs);
+    }
 
     while (working) {
         WorkItem workItem = workQueue[itemNum];
 
-        // don't cumulate mismatch profiles if approximating kernel
-        if (approx) {
+        // don't cumulate mismatch profiles if computing partial kernel variances
+        if (approx && !skip_variance) {
             memset(Ks, 0, sizeof(unsigned int) * n_str_pairs);
         }
 
@@ -148,7 +155,7 @@ void kernel_build_parallel(int tid, WorkItem *workQueue, int queueSize,
         // compute partial mismatch profile for these mismatch positions (slow)
         countAndUpdateTri(Ks, features_srt, group_srt, k, nfeat, total_str);
 
-        if (approx) {
+        if (approx && !skip_variance) {
             double sd = get_variance(Ks, K_hat, variances, n_str_pairs, iter);
             if (iter >= 2) {
                 sd = std::sqrt(sd / iter);
@@ -158,7 +165,9 @@ void kernel_build_parallel(int tid, WorkItem *workQueue, int queueSize,
                     working = false;
                 }
             }
-            if (max_iters != -1 & iter > max_iters) {
+        }
+        if (approx) {
+            if (max_iters != -1 && iter > max_iters) {
                 printf("thread %d reached max iterations...\n", tid);
                 working = false;
             }
@@ -206,20 +215,22 @@ void kernel_build_parallel(int tid, WorkItem *workQueue, int queueSize,
                 pthread_mutex_lock(&mutexes[count]);
                 if (count + 1 < num_mutex) count++;
             }
-            double val = approx ? K_hat[j1] : Ks[j1];
+            double val = (approx && !skip_variance) ? K_hat[j1] : Ks[j1];
             if (val != 0) Ksfinal[j1] += val;
         }
         pthread_mutex_unlock(&mutexes[num_mutex - 1]);
     } else {
         for (int i = 0; i < n_str_pairs; i++) {
-            double val = approx ? K_hat[i] : Ks[i];
+            double val = (approx && !skip_variance) ? K_hat[i] : Ks[i];
             if (val != 0) Ksfinal[i] += val;
         }
     }
 
     free(Ks);
-    free(K_hat);
-    free(variances);
+    if (approx && !skip_variance) {
+        free(K_hat);
+        free(variances);
+    }
 }
 
 double* construct_kernel(kernel_params *params) {

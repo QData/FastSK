@@ -8,7 +8,7 @@
 #include <math.h>
 #include <cstring>
 
-Kernel::Kernel(int g, int m, int t, bool approx, double delta, int max_iters) {
+Kernel::Kernel(int g, int m, int t, bool approx, double delta, int max_iters, bool skip_variance) {
     this->g = g;
     this->m = m;
     this->k = g - m;
@@ -16,6 +16,7 @@ Kernel::Kernel(int g, int m, int t, bool approx, double delta, int max_iters) {
     this->approx = approx;
     this->delta = delta;
     this->max_iters = max_iters;
+    this->skip_variance = skip_variance;
 }
 
 void Kernel::compute(std::vector<std::vector<int> > Xtrain, 
@@ -100,6 +101,7 @@ void Kernel::compute(std::vector<std::vector<int> > Xtrain,
     params.approx = this->approx;
     params.delta = this->delta;
     params.max_iters = this->max_iters;
+    params.skip_variance = this->skip_variance;
 
     /* Compute the kernel matrix */
     double *K = construct_kernel(&params);
@@ -171,6 +173,7 @@ void Kernel::compute_train(std::vector<std::vector<int> > Xtrain) {
     params.approx = this->approx;
     params.delta = this->delta;
     params.max_iters = this->max_iters;
+    params.skip_variance = this->skip_variance;
 
     /* Compute the kernel matrix */
     double *K = construct_kernel(&params);

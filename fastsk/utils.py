@@ -1,9 +1,99 @@
 import os
 import os.path as osp
 import subprocess
+import numpy as np
+from fastsk import Kernel
+from sklearn.svm import LinearSVC
+from sklearn.linear_model import LogisticRegression
+from sklearn.calibration import CalibratedClassifierCV
+from sklearn import metrics
+import time
+import multiprocessing
+import subprocess
 
-'''Utilities for demoing iGakco-SVM
-'''
+def time_fastsk(g, m, t, data_location, prefix, approx=False, max_iters=None, timeout=None, skip_variance=False):
+    '''Run FastGSK kernel computation. If a timeout is provided,
+    it'll run as a subprocess, which will be killed when the timeout is
+    reached.
+    '''
+    fastsk = FastskRunner(prefix, data_location)
+    
+    start = time.time()
+    if timeout:
+        if max_iters:
+            args = {'t': t, 'approx': approx, 'skip_variance': skip_variance, 'I': max_iters}
+        else:
+            args = {'t': t, 'approx': approx, 'skip_variance': skip_variance}
+        p = multiprocessing.Process(target=fastsk.compute_train_kernel, 
+            name='TimeFastSK', 
+            args=(g, m),
+            kwargs=args)
+        p.start()
+        p.join(timeout)
+        if p.is_alive():
+            p.terminate()
+            p.join()
+    else:
+        if max_iters:
+            fastsk.compute_train_kernel(g, m, t=t, approx=approx, I=max_iters, skip_variance=skip_variance)
+        else:
+            fastsk.compute_train_kernel(g, m, t=t, approx=approx, skip_variance=skip_variance)
+
+    end = time.time()
+    
+    return end - start
+
+def train_and_test_gkm(g, m, t, prefix, gkm_data, gkm_exec, approx=False, timeout=None, alphabet=None):
+    k = g - m
+    gkm = GkmRunner(gkm_exec, gkm_data, prefix, g, k, approx, alphabet, './temp')
+    acc, auc = gkm.train_and_test(t)
+    return acc, auc
+
+def time_gkm(g, m, t, prefix, gkm_data, gkm_exec, approx=False, timeout=None, alphabet=None):
+    '''Run gkm-SVM2.0 kernel computation. If a timeout is provided,
+    it'll be run as a subprocess, which will be killed when the timeout is 
+    reached.
+    '''
+    k = g - m
+    gkm = GkmRunner(gkm_exec, gkm_data, prefix, g, k, approx, alphabet, './temp')
+
+    start = time.time()
+    if timeout:
+        p = multiprocessing.Process(target=gkm.compute_train_kernel,
+            name='TimeGkm',
+            args=(t,))
+        p.start()
+        p.join(timeout)
+        if p.is_alive():
+            p.terminate()
+            p.join()
+    else:
+        gkm.compute_train_kernel(t)
+
+    end = time.time()
+
+    return end - start
+
+def time_gakco(g, m, type_, prefix, timeout=None):
+    gakco_exec = '/localtmp/dcb7xz/FastSK/baselines/GaKCo-SVM/bin/GaKCo'
+    data = './data/'
+    gakco = GaKCoRunner(gakco_exec, data, type_, prefix)
+
+    start = time.time()
+    gakco.compute_kernel(g, m, mode='train')
+    end = time.time()
+
+    return end - start
+
+def time_blended(k1, k2, prefix, timeout=None):
+    blended_exec = '/localtmp/dcb7xz/FastSK/baselines/String_Kernels_Package/code/'
+    data = './data/'
+    blended = BlendedSpectrumRunner(blended_exec, data, prefix)
+    start = time.time()
+    blended.compute_kernel(k1, k2, mode='train')
+    end = time.time()
+
+    return end - start
 
 class Vocabulary(object):
     """A class for storing the vocabulary of a 
@@ -94,6 +184,14 @@ class FastaUtility():
 
         return X, Y
 
+    def shortest_seq(self, data_file):
+        X, Y = self.read_data(data_file)
+        shortest = len(X[0])
+        for x in X:
+            if len(x) < shortest:
+                shortest = len(x)
+        return shortest
+
 class ArabicUtility():
     def __init__(self, vocab=None):
         r"""
@@ -178,58 +276,407 @@ class DslUtility():
 
         return X, Y
 
+class FastskRunner():
+    def __init__(self, prefix, data_location='/localtmp/dcb7xz/FastSK/data'):
+        self.prefix = prefix
+        self.train_file = osp.join(data_location, prefix + '.train.fasta')
+        self.test_file = osp.join(data_location, prefix + '.test.fasta')
+        
+        reader = FastaUtility()
+        self.train_seq, self.Ytrain = reader.read_data(self.train_file)
+        self.test_seq, Ytest = reader.read_data(self.test_file)
+        Ytest = np.array(Ytest).reshape(-1, 1)
+        self.Ytest = Ytest
+
+    def compute_train_kernel(self, g, m, t=20, approx=True, I=100, delta=0.025, skip_variance=False):
+        kernel = Kernel(g=g, m=m, t=t, 
+            approx=approx, 
+            max_iters=I, 
+            delta=delta, 
+            skip_variance=skip_variance)
+        kernel.compute_train(self.train_seq)
+
+    def train_and_test(self, g, m, t, approx, I, delta=0.025, skip_variance=False, C=1):
+        kernel = Kernel(g=g, m=m, t=t, 
+            approx=approx, 
+            max_iters=I, 
+            delta=delta, 
+            skip_variance=skip_variance)
+
+        kernel.compute(self.train_seq, self.test_seq)
+        self.Xtrain = kernel.train_kernel()
+        self.Xtest = kernel.test_kernel()
+        svm = LinearSVC(C=C, class_weight='balanced')
+        self.clf = CalibratedClassifierCV(svm, cv=5).fit(self.Xtrain, self.Ytrain)
+        acc, auc = self.evaluate_clf()
+        return acc, auc
+
+    def evaluate_clf(self):
+        acc = self.clf.score(self.Xtest, self.Ytest)
+        probs = self.clf.predict_proba(self.Xtest)[:,1]
+        auc = metrics.roc_auc_score(self.Ytest, probs)
+        return acc, auc
+
 class GkmRunner():
-    def __init__(self, exec_location, data_locaton, prefix, outdir="./temp"):
+    def __init__(self, exec_location, data_locaton, dataset, g, k, approx=False, alphabet=None, outdir="./temp"):
         self.exec_location = exec_location
         self.dir = data_locaton
-        self.prefix = prefix
+        self.dataset = dataset
         self.outdir = outdir
+        self.g, self.k, self.alphabet = g, k, alphabet
+        
+        '''Important note: 
+        gkmSVM's -d parameter (max_m) is *not* the same as our
+        m = g - k parameter. It's actually the upper bound of the 
+        summation shown in equation 3 in the
+        2014 gkmSVM paper (ghandi2014enhanced).'''
+        if (approx):
+            '''By default, their approximation algorithm truncates the
+            summation from eq. 3 to a value of 3 mismatches.
+            '''
+            self.max_m = 3
+        else:
+            '''If using the exact algo, the summation runs from
+            0 to l (their l is our g)
+            '''
+            self.max_m = self.g
 
         ## Data files
-        self.train_pos_file = osp.join(self.dir, self.prefix + '.train.pos.fasta')
-        self.train_neg_file = osp.join(self.dir, self.prefix + '.train.neg.fasta')
-        self.test_pos_file = osp.join(self.dir, self.prefix + '.test.pos.fasta')
-        self.test_neg_file = osp.join(self.dir, self.prefix + '.test.neg.fasta')
+        self.train_pos_file = osp.join(self.dir, self.dataset + '.train.pos.fasta')
+        self.train_neg_file = osp.join(self.dir, self.dataset + '.train.neg.fasta')
+        self.test_pos_file = osp.join(self.dir, self.dataset + '.test.pos.fasta')
+        self.test_neg_file = osp.join(self.dir, self.dataset + '.test.neg.fasta')
+        self.train_test_pos_file = osp.join(self.outdir, self.dataset + '.train_test.pos.fasta')
+        self.train_test_neg_file = osp.join(self.outdir, self.dataset + '.train_test.neg.fasta')
         
         ## Temp files that gkm creates
         if not osp.exists(self.outdir):
             os.makedirs(self.outdir)
-        self.kernel_file = osp.join(self.outdir, self.prefix + '_kernel.out')
+        self.kernel_file = osp.join(self.outdir, self.dataset + '_kernel.out')
         self.svm_file_prefix = osp.join(self.outdir, "svmtrain")
         self.svmalpha = self.svm_file_prefix + '_svalpha.out'
         self.svseq = self.svm_file_prefix + '_svseq.fa'
-        self.pos_pred_file = osp.join(self.outdir, self.prefix + '.preds.pos.out')
-        self.neg_pred_file = osp.join(self.outdir, self.prefix + '.preds.neg.out')    
+        self.pos_pred_file = osp.join(self.outdir, self.dataset + '.preds.pos.out')
+        self.neg_pred_file = osp.join(self.outdir, self.dataset + '.preds.neg.out')
 
-    def compute_kernel(self, g, m, t):
-        k = g - m
-        ### compute kernel ###
+    def compute_train_kernel(self, t):
         execute = osp.join(self.exec_location, 'gkmsvm_kernel')
         command = [execute,
             '-a', str(2),
-            '-l', str(g), 
-            '-k', str(k), 
-            '-d', str(m),
+            '-l', str(self.g),
+            '-k', str(self.k),
+            '-d', str(self.max_m),
             '-T', str(t),
             '-R']
+        if self.alphabet is not None:
+            command += ['-A', self.alphabet]
         command += [self.train_pos_file, self.train_neg_file, self.kernel_file]
         print(' '.join(command))
         output = subprocess.check_output(command)
 
-class BlendedSpectrumRunner():
-    def __init__(self, exec_location, data_locaton, prefix, outdir="./temp"):
+    def train_svm(self):
+        execute = osp.join(self.exec_location, 'gkmsvm_train')
+        command = [execute, self.kernel_file, self.train_pos_file,
+            self.train_neg_file, self.svm_file_prefix]
+        print(' '.join(command))
+        output = subprocess.check_output(command)
+
+    def classify(self):
+        ## pos predictions
+        execute = osp.join(self.exec_location, 'gkmsvm_classify')
+        command = [execute,
+            "-l", str(self.g),
+            "-k", str(self.k),
+            "-d", str(self.max_m),
+            '-R']
+        if self.alphabet is not None:
+            command += ['-A', self.alphabet]
+        command += [self.test_pos_file, self.svseq, self.svmalpha, self.pos_pred_file]
+        print(' '.join(command))
+        subprocess.check_output(command)
+
+        # get neg preds
+        command = [execute,
+            "-l", str(self.g),
+            "-k", str(self.k),
+            "-d", str(self.max_m),
+            '-R']
+        if self.alphabet is not None:
+            command += ['-A', self.alphabet]
+
+        command += [self.test_neg_file, self.svseq, self.svmalpha, self.neg_pred_file]
+        print(' '.join(command))
+        subprocess.check_output(command)
+
+    def evaluate(self):
+        pos_preds = self.read_preds(self.pos_pred_file)
+        neg_preds = self.read_preds(self.neg_pred_file)
+
+        print("Computing accuracy...")
+        acc = self.get_accuracy(pos_preds, neg_preds)
+        print("Computing AUC...")
+        auc = self.get_auc(pos_preds, neg_preds)
+        print("Accuracy = {}, AUC = {}".format(acc, auc))
+        return acc, auc
+
+    def train_and_test(self, t=20):
+        self.compute_train_kernel(t)
+        self.train_svm()
+        self.classify()
+        acc, auc = self.evaluate()
+        return acc, auc
+
+    def read_preds(self, file):
+        preds = []
+        with open(file, 'r') as f:
+            for line in f:
+                line = line.split()
+                assert len(line) == 2
+                preds.append(float(line[1]))
+        return preds
+
+    def get_accuracy(self, pos_preds, neg_preds):
+        accuracy = 0
+        num_correct = 0
+        num_pred = len(pos_preds) + len(neg_preds)
+        for pred in pos_preds:
+            if pred > 0:
+                num_correct += 1
+        for pred in neg_preds:
+            if pred <= 0:
+                num_correct += 1
+        return num_correct / num_pred
+
+    def get_auc(self, pos_preds, neg_preds):
+        ytrue = [1 for _ in pos_preds] + [-1 for _ in neg_preds]
+        yscore = [score for score in pos_preds] + [score for score in neg_preds]
+        auc = metrics.roc_auc_score(ytrue, yscore)
+        return auc
+
+
+class GaKCoRunner():
+    def __init__(self, exec_location, data_locaton, type_, prefix, outdir='./temp'):
         self.exec_location = exec_location
-        self.train_data = "file.txt"
+        self.data_locaton = data_locaton
+        self.train_file = osp.join('/localtmp/dcb7xz/FastSK/data', prefix + '.train.fasta')
+        self.test_file = osp.join('/localtmp/dcb7xz/FastSK/data', prefix + '.test.fasta')
+        self.train_test_file = osp.join(outdir, prefix + '_train_test.fasta')
+        assert type_ in ['dna', 'protein']
+        if type_ == 'protein':
+            self.dict_file = osp.join(data_locaton, 'full_prot.dict.txt')
+        else:
+            self.dict_file = osp.join(data_locaton, 'dna.dictionary.txt')
+        self.labels_file = osp.join(outdir, 'labels.txt')
+        self.kernel_file = osp.join(outdir, 'kernel.txt')
+        self.num_train, self.num_test = 0, 0
+
+    def compute_kernel(self, g, m, mode='train', t=1):
+        self.g = g
+        self.m = m
+        self.k = g - m
+
+        assert mode in ['train', 'test', 'train_test']
+        if mode == 'train':
+            data_file = self.train_file
+        elif mode == 'test':
+            data_file = self.test_file
+        else:
+            data_file = self.train_test_file
+
+        command = [self.exec_location,
+            '-g', str(self.g),
+            '-k', str(self.k),
+            data_file,
+            self.dict_file,
+            self.labels_file,
+            self.kernel_file]
+            
+        output = subprocess.check_output(command)
+
+    def train_and_test(self, g, m, C=1):
+        self.combine_train_and_test()
+        self.compute_kernel(g, m, mode='train_test')
+
+        self.Xtrain, self.Xtest = self.read_kernel()
+        self.Ytrain, self.Ytest = self.read_labels()
+        
+        svm = LinearSVC(C=C)
+        self.clf = CalibratedClassifierCV(svm, cv=5).fit(self.Xtrain, self.Ytrain)
+        acc, auc = self.evaluate_clf()
+        return acc, auc
+
+    def evaluate_clf(self):
+        acc = self.clf.score(self.Xtest, self.Ytest)
+        probs = self.clf.predict_proba(self.Xtest)[:,1]
+        auc = metrics.roc_auc_score(self.Ytest, probs)
+        return acc, auc
+
+    def combine_train_and_test(self):
+        lines = []
+        with open(self.train_file, 'r') as f:
+            for line in f:
+                if line[0] == '>':
+                    self.num_train += 1
+                lines.append(line)
+        with open(self.test_file, 'r') as f:
+            for line in f:
+                if line[0] == '>':
+                    self.num_test += 1
+                lines.append(line)
+        with open(self.train_test_file, 'w+') as f:
+            f.writelines(lines)
+
+    def read_labels(self):
+        Ytrain, Ytest = [], []
+        with open(self.train_file, 'r') as f:
+            for line in f:
+                if line[0] == '>':
+                    Ytrain.append(line.rstrip().split('>')[1])
+        with open(self.test_file, 'r') as f:
+            for line in f:
+                if line[0] == '>':
+                    Ytest.append(line.rstrip().split('>')[1])
+
+        return Ytrain, Ytest
+
+    def read_kernel(self):
+        Xtrain, Xtest = [], []
+        with open(self.kernel_file, 'r') as f:
+            count = 0
+            for line in f:
+                x = [float(item.split(':')[1]) for item in line.rstrip().split(' ')][:self.num_train]
+                if (count < self.num_train):
+                    Xtrain.append(x)
+                else:
+                    Xtest.append(x)
+                count += 1
+
+        return Xtrain, Xtest
+
+    def get_labels(self):
+        pass
+
+class BlendedSpectrumRunner():
+    def __init__(self, exec_dir, data_locaton, prefix, outdir="./temp"):
+        self.exec_dir = exec_dir
+        self.train_fasta = osp.join(data_locaton, prefix + '.train.fasta')
+        self.test_fasta = osp.join(data_locaton, prefix + '.test.fasta')
+        self.outdir = outdir
+        if not osp.exists(self.outdir):
+            os.makedirs(self.outdir)
+        self.train_seq = osp.join(self.outdir, prefix + '_spectrum.train.txt')
+        self.test_seq = osp.join(self.outdir, prefix + '_spectrum.test.txt')
+        self.train_and_test_seq = osp.join(self.outdir, prefix + '_.train-tst.spectrum.txt')
+        self.num_train, self.num_test = 0, 0
+        self.write_seq(self.train_fasta, mode='train')
+
         self.kernel_file = osp.join(outdir, "kernel.txt")
 
-    def compute_kernel(self, k1, k2):
+    def combine_train_and_test(self):
+        Xtrain, Xtest, self.Ytrain, self.Ytest = [], [], [], []
+        with open(self.train_fasta, 'r') as f:
+            label_line = True
+            for line in f:
+                line = line.rstrip()
+                if label_line:
+                    self.num_train += 1
+                    label = line.split('>')[1]
+                    self.Ytrain.append(label)
+                    label_line = False
+                else:
+                    Xtrain.append(line.lower())
+                    label_line = True
+        with open(self.test_fasta, 'r') as f:
+            label_line = True
+            for line in f:
+                line = line.rstrip()
+                if label_line:
+                    self.num_test += 1
+                    label = line.split('>')[1]
+                    self.Ytest.append(label)
+                    label_line = False
+                else:
+                    Xtest.append(line.lower())
+                    label_line = True
+        X = Xtrain + Xtest
+        with open(self.train_and_test, 'w+') as f:
+            for x in X:
+                f.write(x + '\n')
+
+    
+    def write_seq(self, datafile, mode='train'):        
+        assert mode in ['train', 'test']
+        if mode == 'train':
+            outfile = self.train_seq
+        else:
+            outfile = self.test_seq
+        X, Y = [], []
+        with open(datafile, 'r') as f:
+            label_line = True
+            for line in f:
+                line = line.rstrip()
+                if label_line:
+                    label = line.split('>')[1]
+                    Y.append(label)
+                    label_line = False
+                else:
+                    X.append(line.lower())
+                    label_line = True
+        
+        with open(outfile, 'w+') as f:
+            for x in X:
+                f.write(x + '\n')
+
+    def compute_kernel(self, k1=3, k2=5, mode='train_and_test'):
         self.k1, self.k2 = k1, k2
 
-        command = ["java", 
-            self.exec_location, 
+        datafile = self.train_seq
+        assert mode in ['train', 'test', 'train_and_test']
+        if mode == 'train':
+            datafile = self.train_seq
+        elif mode == 'test':
+            datafile = self.test_seq
+        else:
+            datafile = self.train_and_test_seq
+
+        command = ["java",
+            '-cp', self.exec_dir,
+            'ComputeStringKernel',
             "spectrum",
             str(self.k1),
             str(self.k2),
-            self.train_data,
+            datafile,
             self.kernel_file]
         output = subprocess.check_output(command)
+
+    def read_kernel(self):
+        Xtrain, Xtest = [], []
+        with open(self.kernel_file, 'r') as f:
+            count = 0
+            for line in f:
+                x = [float(item) for item in line.rstrip().split(' ')][:self.num_train]
+                if (count < self.num_train):
+                    Xtrain.append(x)
+                else:
+                    Xtest.append(x)
+                count += 1
+
+        return Xtrain, Xtest
+
+    def train_and_test(self, k1=3, k2=5, C=1):
+        self.combine_train_and_test()
+        self.compute_kernel(k1, k2, mode='train_and_test')
+
+        self.Xtrain, self.Xtest = self.read_kernel()
+        
+        svm = LinearSVC(C=C, class_weight='balanced', max_iter=3000)
+        self.clf = CalibratedClassifierCV(svm, cv=5).fit(self.Xtrain, self.Ytrain)
+        acc, auc = self.evaluate_clf()
+        return acc, auc
+
+    def evaluate_clf(self):
+        acc = self.clf.score(self.Xtest, self.Ytest)
+        probs = self.clf.predict_proba(self.Xtest)[:,1]
+        auc = metrics.roc_auc_score(self.Ytest, probs)
+        return acc, auc
+

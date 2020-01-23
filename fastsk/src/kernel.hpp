@@ -18,8 +18,9 @@ public:
     bool approx = false;
     double delta = 0.025;
     int max_iters = -1;
+    bool skip_variance = false;
 
-    Kernel(int, int, int, bool, double, int);
+    Kernel(int, int, int, bool, double, int, bool);
     void compute(std::vector<std::vector<int> >, 
         std::vector<std::vector<int> >);
     void compute_train(std::vector<std::vector<int> > Xtrain);

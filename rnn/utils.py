@@ -138,7 +138,7 @@ class FastaDataset(data.Dataset):
     def get_vocab(self):
         return self._vocab
 
-    def split(self, k=7):
+    def split(self, k=5):
         """Shuffle dataset and split into k folds.
         Args:
             k (int): number of 
