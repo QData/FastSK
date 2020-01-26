@@ -26,6 +26,26 @@ BLENDED_EXEC = '/localtmp/dcb7xz/FastSK/baselines/String_Kernel_Package/code/'
 PROT_DICT = '/localtmp/dcb7xz/FastSK/data/full_prot.dict.txt'
 GKM_PROT_DICT = '/localtmp/dcb7xz/FastSK/baselines/gkm_data/protein.dictionary.txt'
 
+def get_args():
+    parser = argparse.ArgumentParser(description='FastSK Experiments')
+    parser.add_argument('--threads', action='store_true', default=False,
+        help='Run time vs number of threads experiments')
+    parser.add_argument('--m-time', action='store_true', default=False,
+        help='Run kernel time vs g')
+    parser.add_argument('--g-time', action='store_true', default=False,
+        help='Run kernel time vs g experiments')
+    parser.add_argument('--I-auc', action='store_true', default=False,
+        help='Run AUC vs I (max number of iterations) experiments')
+    parser.add_argument('--delta-auc', action='store_true', default=False,
+        help='Run AUC vs delta (convergence algorithm error parameter) experiments')
+    parser.add_argument('--g-auc', action='store_true', default=False,
+        help='Run AUC vs g experiments')
+    parser.add_argument('--output_dir', type=str, required=True,
+        help='Directory to save results')
+    parser.add_argument('--params-csv', type=str, default='./evaluations/datasets_to_use.csv',
+        help='CSV file containing kernel parameters and dataset names')
+    return parser.parse_args()
+
 
 def thread_experiment(dataset, g, m, k):
     output_csv = dataset + '_vary_threads_I50.csv'
@@ -399,7 +419,8 @@ def check_C_vals(g, m, dataset):
             best_acc, best_auc = acc, auc
     return best_acc, best_auc, C
 
-def g_auc_experiment(dataset, output_dir, C):
+def g_auc_experiment(dataset, output_dir, C, type_):
+    assert type_ in ['dna', 'protein']
     output_csv = osp.join(output_dir, dataset + '_dec15_g_auc.csv')
     results = {
         'g': [],
@@ -438,9 +459,10 @@ def g_auc_experiment(dataset, output_dir, C):
             approx=True, skip_variance=True, C=C)
 
         ## gkm-Approx (m_max = 3)
+        gkm_alphabet = GKM_PROT_DICT if type_ == 'protein' else None
         gkm_approx_acc, gkm_approx_auc = train_and_test_gkm(g=g, m=m, t=20, 
             prefix=dataset, gkm_data=GKM_DATA, gkm_exec=GKM_EXEC, 
-            approx=True, timeout=None, alphabet=PROT_DICT)
+            approx=True, timeout=None, alphabet=gkm_alphabet)
 
         #### Log results
 
@@ -465,7 +487,9 @@ def run_g_auc_experiments(params, output_dir):
         dataset, type_, g, m, k, C = p['Dataset'], p['type'], p['g'], p['m'], p['k'], p['C']
         assert k == g - m
         if type_ == 'dna':
-            g_auc_experiment(dataset, output_dir, C)
+            # jan 25: run EP300_47848, Pbde, KAT2B, TP53, ZZZ
+            if dataset in ['EP300_47848', 'Pbde', 'KAT2B', 'TP53', 'ZZZ3']:
+                g_auc_experiment(dataset, output_dir, C, type_)
 
 def fastsk_gakco_protein_kernel_times(params):
     output_csv = 'fastsk_gakco_protein_kernel_times.csv'
@@ -657,45 +681,26 @@ def fastsk_blended_nlp_kernel_times(params):
 
         count += 1
 
-df = pd.read_csv('./evaluations/datasets_to_use.csv')
-params = df.to_dict('records')
+def main():
+    args = get_args()
+    df = pd.read_csv(args.params_csv)
+    params = df.to_dict('records')
 
-#run_g_auc_experiments(params)
+    if not osp.exists(args.output_dir):
+        os.makedirs(args.output_dir)    
 
-run_m_time_experiments(params, output_dir='jan_2020_vary_m_prot')
+    if args.threads:
+        run_thread_experiments(params)
+    if args.m_time:
+        run_m_time_experiments(params, args.output_dir)
+    if args.g_time:
+        run_g_time_experiments(params, args.output_dir)
+    if args.I_auc:
+        run_I_experiments(params)
+    if args.delta_auc:
+        run_delta_experiments(params)
+    if args.g_auc:
+        run_g_auc_experiments(params, args.output_dir)
 
-#fastsk_gkm_dna_kernel_times(params)
-#fastsk_gakco_protein_kernel_times(params)
-#fastsk_blended_nlp_kernel_times(params)
-
-### Thread experiments
-#run_thread_experiments(params)
-
-### g kernel timing experiments
-#run_g_time_experiments(params, output_dir='dec14_g_times')
-
-### g kernel AUC experiments
-#run_g_auc_experiments(params)
-#g_auc_experiment('TP53', 0.1)
-
-'''
-KAT2B,dna,13,7,6,1
-TP53,dna,7,2,5,0.1
-ZZZ3,dna,10,4,6,0.1
-'''
-
-#run_increase_g_experiments(params)
-
-## m experiments
-pass
-
-## AUC vs I experiments
-#I_experiment('1.1', 8, 4, 4, 0.01)
-#run_I_experiments(params)
-
-## AUC vs g experiments
-pass
-
-### AUC vs delta experiments
-#delta_experiment('1.1', g=8, m=4, k=4, C=0.01)
-#run_delta_experiments(params)
+if __name__ == '__main__':
+    main()
