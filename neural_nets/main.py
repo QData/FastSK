@@ -1,7 +1,6 @@
 ### main.py
 
 import numpy as np
-from skorch import NeuralNetClassifier
 from sklearn.model_selection import GridSearchCV, ParameterGrid
 from sklearn import metrics
 from tqdm import tqdm, trange
@@ -14,8 +13,9 @@ import torch.nn.functional as F
 from torch.utils import data
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 
-from utils import Vocabulary, FastaDataset, collate
-from models import SeqLSTM
+from utils import Vocabulary, FastaDataset, CharCnnDataset, collate, get_evaluation
+from utils import AverageMeter
+from models import SeqLSTM, CharacterLevelCNN
 
 def get_args():
     parser = argparse.ArgumentParser(description='Bio-Sequence RNN Baselines')
@@ -23,7 +23,7 @@ def get_args():
         help='input batch size for training (default: 64)')
     parser.add_argument('--trn', type=str, required=True, help='Training file', metavar='1.1.train.fasta')
     parser.add_argument('--tst', type=str, required=True, help='Test file', metavar='1.1.test.fasta')
-    parser.add_argument('--file', type=str, required=True, help='File to gris search results to')
+    parser.add_argument('--file', type=str, required=True, help='File to grid search results to')
     parser.add_argument('--no-cuda', action='store_true', default=False, help='disables CUDA')
     parser.add_argument('--num-folds', type=int, default=5, help='Number of folds for CV')
     parser.add_argument('--epochs', type=int, default=20, help='Maximum number of epochs')
@@ -187,32 +187,176 @@ def run_best(trainset, testset):
     with open(output_file, 'a+') as f:
         f.write("\n\nFinal model: " + str(best_params) + '\n' + result + '\n')
 
-def main():
-    trainset = FastaDataset(train_file)
-    alphabet = trainset.get_vocab()
-    testset = FastaDataset(test_file, alphabet)
+#def train_cnn(model, training_generator, optimizer, criterion, epoch, writer, log_file, scheduler, class_names, args, print_every=25):
+def train_cnn(model, training_generator, optimizer, criterion, epoch, print_every=25):
+    model.train()
+    
+    losses = AverageMeter()
+    accuracies = AverageMeter()
+    aucs = AverageMeter()
 
-    param_space = {
-        'lr': [0.0001],
-        'input_size': [alphabet.size()], 
-        'embedding_size': [32, 64, 128, 256], 
-        'hidden_size': [32, 64, 128, 256],
-        'output_size': [2],
-        'n_layers': [1, 2, 3, 4],
-        'bidir': [True],
-        'optimizer': ['Adam'],
+    num_iter_per_epoch = len(training_generator)
+
+    y_true, y_pred, pos_scores = [], [], []
+
+    progress_bar = tqdm(enumerate(training_generator),
+        total=num_iter_per_epoch)
+
+    for iter, batch in progress_bar:
+        samples, labels = batch
+        labels = labels.squeeze(1)
+
+        if use_cuda:
+            samples = samples.cuda()
+            labels = labels.cuda()
+
+        optimizer.zero_grad()
+        logits = model(samples)
+
+        loss = criterion(logits, labels)
+        loss.backward()
+        optimizer.step()
+
+        ## training metrics
+        training_metrics = get_evaluation(labels.cpu().numpy(), 
+            logits.cpu().detach().numpy())
+        acc, auc = training_metrics['accuracy'], training_metrics['auc']
+        losses.update(loss.data, samples.size(0))
+        accuracies.update(acc, samples.size(0))
+        aucs.update(auc, samples.size(0))
+
+        y_true += labels.cpu().numpy().tolist()
+        y_pred += torch.max(logits, 1)[1].cpu().numpy().tolist()
+        pos_scores += logits.cpu().detach().numpy()[:,1].tolist()
+
+        lr = optimizer.state_dict()["param_groups"][0]["lr"]
+
+        if (iter % print_every == 0) and (iter > 0):
+            print_str = "[Training - Epoch: {}], LR: {}, Iteration: {}/{}, Loss: {}, Accuracy: {}, AUC: {}"
+            print(print_str.format(
+                epoch + 1,
+                lr,
+                iter,
+                num_iter_per_epoch,
+                losses.avg,
+                accuracies.avg,
+                aucs.avg
+            ))
+
+    try:
+        train_auc = metrics.roc_auc_score(y_true, pos_scores)
+    except ValueError as e:
+        print("y_prob = ", y_prob)
+        print("y_true = ", y_true)
+        train_auc = 0
+        exit()
+
+    print("Avg loss: {}, Acc: {}, AUC: {}".format(losses.avg.item(), accuracies.avg.item(), train_auc))
+    return losses.avg.item(), accuracies.avg.item(), train_auc
+
+def evaluate_cnn(model, validation_generator, criterion, epoch, print_every=25):
+    model.eval()
+    losses = AverageMeter()
+    accuracies = AverageMeter()
+    aucs = AverageMeter()
+    num_iter_per_epoch = len(validation_generator)
+
+    y_true, y_pred, pos_scores = [], [], []
+
+    progress_bar = tqdm(enumerate(training_generator),
+        total=num_iter_per_epoch)
+
+    for iter, batch in progress_bar:
+        samples, labels = batch
+        labels = labels.squeeze(1)
+        if use_cuda:
+            samples = samples.cuda()
+            labels = labels.cuda()
+
+        with torch.no_grad():
+            logits = model(samples)
+
+        loss = criterion(logits, labels)
+
+        ## validation metrics
+        validation_metrics = get_evaluation(labels.cpu().numpy(),
+            logits.cpu().detach().numpy())
+        acc, auc = validation_metrics['accuracy'], training_metrics['auc']
+        losses.update(loss.data, samples.size(0))
+        accuracies.update(acc, samples.size(0))
+        aucs.update(auc, samples.size(0))
+
+        y_true += labels.cpu().numpy().tolist()
+        y_pred += torch.max(logits, 1)[1].cpu().numpy().tolist()
+        pos_scores += logits.cpu().detach().numpy()[:,1].tolist()
+
+        if (iter % print_every == 0) and (iter > 0):
+            print_str = "[Validation - Epoch: {}], Iteration: {}/{}, Loss: {}, Accuracy: {}, AUC: {}"
+            print(print_str.format(
+                epoch + 1,
+                iter,
+                num_iter_per_epoch,
+                losses.avg,
+                accuracies.avg,
+                aucs.avg
+            ))
+
+    try:
+        vali_auc = metrics.roc_auc_score(y_true, pos_scores)
+    except ValueError as e:
+        vali_auc = 0
+        exit()
+
+    print("Avg loss: {}, Acc: {}, AUC: {}".format(losses.avg.item(), accuracies.avg.item(), vali_auc))
+    return losses.avg.item(), accuracies.avg.item(), vali_auc
+
+
+def run_char_cnn(args):
+    pass
+
+def main():
+    trainset = CharCnnDataset(train_file)
+    alphabet = trainset.get_vocab()
+    testset = CharCnnDataset(test_file, alphabet) 
+    
+    max_len = trainset.max_length
+    
+    cnn_args = {
+        'max_length': max(trainset.max_length, testset.max_length), # not dynamic/per batch
+        'number_of_characters': len(alphabet), # alphabet size
+        'dropout_input': 0.1, # default value from repo
+        'batch_size': 64 # temp - read from console
     }
 
-    param_list = list(ParameterGrid(param_space))
+    training_params = {
+        "batch_size": 64,
+        "shuffle": True,
+        "drop_last": True
+    }
 
-    count = 0
-    for params in param_list:
-        count += 1
-        run(params, trainset)
-        if (count % 5 == 0):
-            run_best(trainset, testset)
+    validation_params = {
+        "batch_size": 64,
+        "shuffle": False,
+        "drop_last": True
+    }
 
-    run_best(trainset, testset)
+    training_generator = data.DataLoader(trainset, **training_params)
+    test_generator = data.DataLoader(testset, **validation_params)
+
+    model = CharacterLevelCNN(cnn_args, number_of_classes=2)
+    model = model.cuda() if use_cuda else model
+    criterion = nn.CrossEntropyLoss()
+
+    opt = optim.SGD(model.parameters(),
+        lr=0.01,
+        momentum=0.9,
+        weight_decay=0.00001)
+
+    for epoch in range(args.epochs): 
+        train_cnn(model, training_generator,
+            optimizer=opt,
+            criterion=criterion,
+            epoch=epoch)
 
 if __name__ == '__main__':
     main()
