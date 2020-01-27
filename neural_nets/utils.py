@@ -9,27 +9,28 @@ import torch.nn.functional as F
 
 PAD_IDX = 0
 
-def get_evaluation(y_true, y_prob):
+def get_evaluation(y_true, y_prob, metrics_list):
+    evaluation = {}
     y_pred = np.argmax(y_prob, -1)
-    pos_scores = y_prob[:,1].tolist()
+    if 'accuracy' in metrics_list:
+        evaluation['accuracy'] = metrics.accuracy_score(y_true, y_pred)
+    if 'auc' in metrics_list:
+        pos_scores = y_prob[:,1].tolist()
     
-    '''Exploding gradient can cause logits to
-    contain NaN values, which will make roc_auc_score
-    crash. Exploding gradient is avoided if:
-        * learning rate < 1
-        * we use gradient clipping (see torch.nn.utils.clip_grad_norm)
-    '''
-    try:
-        auc = metrics.roc_auc_score(y_true, pos_scores)
-    except ValueError as e:
-        print("y_prob = ", y_prob)
-        print("y_true = ", y_true)
-        auc = 0
-        exit()
-    evaluation = {
-        'accuracy': metrics.accuracy_score(y_true, y_pred),
-        'auc': auc
-    }
+        '''Exploding gradient can cause logits to
+        contain NaN values, which will make roc_auc_score
+        crash. Exploding gradient is avoided if:
+            * learning rate < 1
+            * we use gradient clipping (see torch.nn.utils.clip_grad_norm)
+        '''
+        try:
+            auc = metrics.roc_auc_score(y_true, pos_scores)
+        except ValueError as e:
+            print(e)
+            print("y_prob = ", y_prob)
+            print("y_true = ", y_true)
+            exit()
+        evaluation['auc'] = 0
     return evaluation
 
 
@@ -82,7 +83,7 @@ class Vocabulary(object):
         """
         if token not in self._token2idx:
             self._token2idx[token] = self._size
-            self._token2idx[self._size] = token
+            self._idx2token[self._size] = token
             self._size += 1
         return self._token2idx.get(token)
 
@@ -93,6 +94,9 @@ class Vocabulary(object):
 
     def __len__(self):
         return self.size()
+
+    def __str__(self):
+        return str(self._token2idx)
 
 class Fold(data.Dataset):
     """Dataset wrapper for a cross validation fold. Used to
@@ -231,16 +235,62 @@ class FastaDataset(data.Dataset):
 
         return train_fold, vali_fold
 
-class CharCnnDataset(data.Dataset):
-    def __init__(self, file_path, vocab=None, transform=None):
-        self.file_path = file_path
-        self.transform = transform
+
+class FastaReader(object):
+    
+    def __init__(self, train_file, test_file, vocab=None):
+        self.train_file = train_file
+        self.test_file = test_file
         self._vocab = Vocabulary() if vocab is None else vocab
-        self.sequences = []
-        self.labels = []
-        self.max_length = self._get_max_length_and_vocab(file_path)
+        self.max_len = 0
+        self.alphabet_size = 0
+        self.num_train = 0
+        self.num_test = 0
+
+    def get_data(self):
+        self.train_samples, self.train_labels = self._read_file(self.train_file, shuffle=True)
+        self.test_samples, self.test_labels = self._read_file(self.test_file, shuffle=False)
+        self.num_train, self.num_test = len(self.train_samples), len(self.test_samples)
         self.alphabet_size = len(self._vocab)
-        self._read_data()
+
+    ## private utility
+    def _read_file(self, file, shuffle=True):
+        samples, labels = [], []
+        with open(file, 'r', encoding='utf-8') as f:
+            label_line = True
+            for line in f:
+                line = line.strip().lower()
+                if label_line:
+                    split = line.split('>')
+                    assert len(split) == 2
+                    label = int(split[1])
+                    assert label in [-1, 0, 1]
+                    labels.append(label)
+                    label_line = False
+                else:
+                    seq = list(line)
+                    seq = [self._vocab.add(token) for token in seq]
+                    self.max_len = max(self.max_len, len(seq))
+                    samples.append(seq)
+                    label_line = True
+
+            assert len(samples) == len(labels)
+
+        if shuffle:
+            # unison shuffle sequences and labels
+            shuffle = list(zip(samples, labels))
+            random.shuffle(shuffle)
+            samples, labels = zip(*shuffle)
+
+        return samples, labels
+
+
+class CharCnnDataset(data.Dataset):
+    
+    def __init__(self, samples, labels, max_len, alphabet_size, transform=None):
+        self.max_len, self.alphabet_size = max_len, alphabet_size
+        self.transform = transform
+        self.sequences, self.labels = self._create_tensors(samples, labels)
 
     def __len__(self):
         return len(self.labels)
@@ -251,24 +301,21 @@ class CharCnnDataset(data.Dataset):
         label = self.labels[idx]
         return sequence, label
 
-    def get_vocab(self):
-        return self._vocab
+    def _create_tensors(self, samples, labels):
+        x, y = [], []
+        for seq, label in zip(samples, labels):
+            y.append(torch.tensor([label], dtype=torch.long))
 
-    def _get_max_length_and_vocab(self, file_path):
-        max_length = 0
-        with open(self.file_path, 'r', encoding='utf-8') as f:
-            label_line = True
-            for line in f:
-                line = line.strip().lower()
-                if label_line:
-                    label_line = False
-                else:
-                    max_length = max(max_length, len(line))
-                    seq = list(line)
-                    for token in seq:
-                        self._vocab.add(token)
-                    label_line = True
-        return max_length
+            ## one-hot encode sample and pad to max_len
+            ## shape: (max_len x alphabet_size)
+            length = len(seq)
+            t = torch.zeros(self.max_len, self.alphabet_size)
+            seq = torch.tensor(seq, dtype=torch.long)
+            t[:length,:] = F.one_hot(seq, num_classes=self.alphabet_size)
+            x.append(t)
+
+        assert len(x) == len(y)
+        return x, y
 
     def _read_data(self):
         """Read a file in FASTA format. Specifically, resembles:
@@ -294,7 +341,7 @@ class CharCnnDataset(data.Dataset):
                     seq = list(line)
                     length = len(seq)
                     # maxlen x alphabet_size
-                    t = torch.zeros(self.max_length, self.alphabet_size)
+                    t = torch.zeros(self.max_len, self.alphabet_size)
                     seq = [self._vocab.add(token) for token in seq]
                     seq = torch.tensor(seq, dtype=torch.long)
                     t[:length,:] = F.one_hot(seq, num_classes=self.alphabet_size)
