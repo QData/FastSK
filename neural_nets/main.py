@@ -54,7 +54,7 @@ if args.file is None:
     output_file = osp.join(log_dir, output_file)
 
 with open(output_file, 'w+') as f:
-    f.write("{}\ntrn: {} tst: {}, batch: {}, out: {}".format(datetime.now(),
+    f.write("{}\ntrn: {} tst: {}, batch: {}, out: {}\n".format(datetime.now(),
         train_file, test_file, bsz, output_file))
 
 def train_epoch(model, opt, train_loader):
