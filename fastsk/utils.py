@@ -306,6 +306,7 @@ class FastskRunner():
         kernel.compute(self.train_seq, self.test_seq)
         self.Xtrain = kernel.train_kernel()
         self.Xtest = kernel.test_kernel()
+        self.stdevs = kernel.stdevs()
         svm = LinearSVC(C=C, class_weight='balanced')
         self.clf = CalibratedClassifierCV(svm, cv=5).fit(self.Xtrain, self.Ytrain)
         acc, auc = self.evaluate_clf()
@@ -316,6 +317,23 @@ class FastskRunner():
         probs = self.clf.predict_proba(self.Xtest)[:,1]
         auc = metrics.roc_auc_score(self.Ytest, probs)
         return acc, auc
+
+class StdDevFastSKRunner(FastskRunner):
+    def __init__(self, prefix, data_location='/localtmp/dcb7xz/FastSK/data'):
+        super().__init__(prefix, data_location)
+
+    def get_stdevs(self, g, m, t, approx, I, stdev_file, delta=0.025, skip_variance=False, C=1):
+        kernel = Kernel(g=g, m=m, t=t, 
+            approx=approx, 
+            max_iters=I,
+            delta=delta, 
+            skip_variance=skip_variance)
+
+        kernel.compute(self.train_seq, self.test_seq, stdev_file)
+        stdevs = kernel.get_stdevs()
+        
+        return stdevs
+
 
 class GkmRunner():
     def __init__(self, exec_location, data_locaton, dataset, g, k, approx=False, alphabet=None, outdir="./temp"):

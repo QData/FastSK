@@ -11,6 +11,8 @@ from utils import time_fastsk, time_gkm, time_gakco, time_blended, train_and_tes
 import pandas as pd
 import time
 from scipy import special
+from scipy.stats import sem, t
+from scipy import mean
 import multiprocessing
 import subprocess
 
@@ -40,10 +42,13 @@ def get_args():
         help='Run AUC vs delta (convergence algorithm error parameter) experiments')
     parser.add_argument('--g-auc', action='store_true', default=False,
         help='Run AUC vs g experiments')
-    parser.add_argument('--output_dir', type=str, required=True,
+    parser.add_argument('--stdev-I', action='store_true', default=False,
+        help='Vary number of iters and measure the stdev and AUC')
+    parser.add_argument('--output-dir', type=str, required=True,
         help='Directory to save results')
     parser.add_argument('--params-csv', type=str, default='./evaluations/datasets_to_use.csv',
         help='CSV file containing kernel parameters and dataset names')
+
     return parser.parse_args()
 
 
@@ -682,6 +687,123 @@ def fastsk_blended_nlp_kernel_times(params):
 
         count += 1
 
+def get_CI(data, confidence=0.95):
+    n = len(data)
+    mean_ = mean(data)
+    std_err = sem(data)
+    h = std_err * t.ppf((1 + confidence) / 2, n - 1)
+    lower = mean_ - h
+    upper = mean_ + h
+    return mean_, lower, upper
+
+def stdev_and_auc_vs_iters_experiments(params, output_dir):
+    '''Given a dictionary that provide the dataset to use and 
+    the parameter set to use, vary the number of iterations.
+    At each number of iters, get the stdev of the approximated kernel matrix.
+    Then, train and evaluate a model. Obtain the test AUC.
+    '''
+
+    # Get parameters
+    print(params)
+    dataset, type_ = params['Dataset'], params['type']
+    g, m, k, C = params['g'], params['m'], params['k'], params['C']
+    assert k == g - m
+    assert g > 0
+
+    results = {'dataset': dataset, 'g': g, 'k': k, 
+        'm': m, 'C': C, 'iters': []}
+
+    for i in range(5):
+        results['acc sample {}'.format(i + 1)] = []
+    results['mean acc'] = []
+    results['lower acc'] = []
+    results['upper acc'] = []
+    for i in range(5):
+        results['auc sample {}'.format(i + 1)] = []
+    results['mean auc'] = []
+    results['lower auc'] = []
+    results['upper auc'] = []
+    for i in range(5):
+        results['stdev sample {}'.format(i + 1)] = []
+    results['mean stdev'] = []
+    results['lower stdev'] = []
+    results['upper stdev'] = []
+
+    # max iters - capped at 500
+    max_I = min(int(special.comb(g, m)), 500)
+
+    iters = [1]
+
+    if max_I > 1:
+        # increment by 2 for first 10
+        iters += list(range(2, min(max_I, 10), 2))
+        # increment by 5 until 50
+        if max_I >= 10:
+            iters += list(range(10, min(max_I, 50), 5))
+        # increment by 20 until 500
+        if max_I >= 50:
+            iters += list(range(50, max_I, 20))
+        # include max
+        iters += [max_I]
+
+    for I in iters:
+        results['iters'].append(I)
+        sample_accs, sample_aucs, sample_stdevs = [], [], []
+        for i in range(5):
+            fastsk = FastskRunner(dataset)
+            acc, auc = fastsk.train_and_test(g, m, t=1, approx=True, I=I, delta=0.025, C=C)
+            stdevs = fastsk.stdevs
+            assert len(stdevs) == I
+            stdev = stdevs[-1]
+
+            log_str = "{}: I = {}, auc = {}, acc = {}, stdevs = {}"
+            log_str = log_str.format(dataset, I, auc, acc, stdev)
+            print(log_str)
+
+            sample_accs.append(acc)
+            sample_aucs.append(auc)
+            sample_stdevs.append(stdev)
+
+            results['acc sample {}'.format(i + 1)].append(acc)
+            results['auc sample {}'.format(i + 1)].append(auc)
+            results['stdev sample {}'.format(i + 1)].append(stdev)
+
+        confidence = 0.95
+        n = len(sample_accs)
+
+        mean_acc, lower_acc, upper_acc = get_CI(sample_accs, confidence=0.95)
+        mean_auc, lower_auc, upper_auc = get_CI(sample_aucs, confidence=0.95)
+        mean_stdev, lower_stdev, upper_stdev = get_CI(sample_stdevs, confidence=0.95)
+
+        results['mean acc'].append(mean_acc)
+        results['lower acc'].append(lower_acc)
+        results['upper acc'].append(upper_acc)
+        results['mean auc'].append(mean_auc)
+        results['lower auc'].append(lower_auc)
+        results['upper auc'].append(upper_auc)
+        results['mean stdev'].append(mean_stdev)
+        results['lower stdev'].append(lower_stdev)
+        results['upper stdev'].append(upper_stdev)
+
+    df = pd.DataFrame(results)
+    if not osp.exists(output_dir):
+        os.makedirs(output_dir) 
+    output_csv = osp.join(output_dir, '{}_stdev_auc_iters.csv'.format(dataset))
+    df.to_csv(output_csv, index=False)
+
+def run_stdev_and_auc_vs_iters_experiments(params, output_dir):
+    '''Note, these requires require that fastsk.cpp be tweaked
+    such that it records the stdev values; these are not normally
+    saved or provided to the user.
+    '''
+    if not osp.exists(output_dir):
+        os.makedirs(output_dir)
+
+    for p in params:
+        dataset, type_, g, m, k = p['Dataset'], p['type'], p['g'], p['m'], p['k']
+        if type_ == 'protein':
+            stdev_and_auc_vs_iters_experiments(p, output_dir)
+
 def main():
     args = get_args()
     df = pd.read_csv(args.params_csv)
@@ -698,6 +820,8 @@ def main():
         run_g_time_experiments(params, args.output_dir)
     if args.I_auc:
         run_I_experiments(params)
+    if args.stdev_I:
+        run_stdev_and_auc_vs_iters_experiments(params, args.output_dir)
     if args.delta_auc:
         run_delta_experiments(params)
     if args.g_auc:

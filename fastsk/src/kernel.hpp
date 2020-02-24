@@ -5,6 +5,7 @@
 #include <string>
 
 class Kernel {
+
 public:
     int g;
     int m;
@@ -19,6 +20,7 @@ public:
     double delta = 0.025;
     int max_iters = -1;
     bool skip_variance = false;
+    std::vector<double> stdevs;
 
     Kernel(int, int, int, bool, double, int, bool);
     void compute(std::vector<std::vector<int> >, 
@@ -26,6 +28,7 @@ public:
     void compute_train(std::vector<std::vector<int> > Xtrain);
     std::vector<std::vector<double> > train_kernel();
     std::vector<std::vector<double> > test_kernel();
+    std::vector<double> get_stdevs();
     void save_kernel(std::string);
 };
 
