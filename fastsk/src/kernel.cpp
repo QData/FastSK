@@ -103,9 +103,11 @@ void Kernel::compute(std::vector<std::vector<int> > Xtrain,
     params.max_iters = this->max_iters;
     params.skip_variance = this->skip_variance;
 
-    /* Compute the kernel matrix */
-    double *K = construct_kernel(&params);
+    KernelFunction* kernel_function = new KernelFunction(&params);
+    double *K = kernel_function->compute_kernel();
+
     this->kernel = K;
+    this->stdevs = kernel_function->stdevs;
 }
 
 void Kernel::compute_train(std::vector<std::vector<int> > Xtrain) {
@@ -175,9 +177,11 @@ void Kernel::compute_train(std::vector<std::vector<int> > Xtrain) {
     params.max_iters = this->max_iters;
     params.skip_variance = this->skip_variance;
 
-    /* Compute the kernel matrix */
-    double *K = construct_kernel(&params);
+    KernelFunction* kernel_function = new KernelFunction(&params);
+    double *K = kernel_function->compute_kernel();
+
     this->kernel = K;
+    this->stdevs = kernel_function->stdevs;
 }
 
 std::vector<std::vector<double> > Kernel::train_kernel() {
@@ -207,6 +211,10 @@ std::vector<std::vector<double> > Kernel::test_kernel() {
     }
 
     return test_K;
+}
+
+std::vector<double> Kernel::get_stdevs() {
+    return this->stdevs;
 }
 
 void Kernel::save_kernel(std::string kernel_file) {
