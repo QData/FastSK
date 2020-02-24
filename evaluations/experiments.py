@@ -44,7 +44,7 @@ def get_args():
         help='Run AUC vs g experiments')
     parser.add_argument('--stdev-I', action='store_true', default=False,
         help='Vary number of iters and measure the stdev and AUC')
-    parser.add_argument('--output_dir', type=str, required=True,
+    parser.add_argument('--output-dir', type=str, required=True,
         help='Directory to save results')
     parser.add_argument('--params-csv', type=str, default='./evaluations/datasets_to_use.csv',
         help='CSV file containing kernel parameters and dataset names')
@@ -799,7 +799,9 @@ def run_stdev_and_auc_vs_iters_experiments(params, output_dir):
         os.makedirs(output_dir)
 
     for p in params:
-        stdev_and_auc_vs_iters_experiments(p, output_dir)
+        dataset, type_, g, m, k = p['Dataset'], p['type'], p['g'], p['m'], p['k']
+        if type_ == 'protein':
+            stdev_and_auc_vs_iters_experiments(p, output_dir)
 
 def main():
     args = get_args()
