@@ -420,6 +420,7 @@ def check_C_vals(g, m, dataset):
     return best_acc, best_auc, C
 
 def g_auc_experiment(dataset, output_dir, C, type_):
+    print("Running g_auc_experiments on {}".format(dataset))
     assert type_ in ['dna', 'protein']
     output_csv = osp.join(output_dir, dataset + '_dec15_g_auc.csv')
     results = {
@@ -488,7 +489,7 @@ def run_g_auc_experiments(params, output_dir):
         assert k == g - m
         if type_ == 'dna':
             # jan 25: run EP300_47848, Pbde, KAT2B, TP53, ZZZ
-            if dataset in ['EP300_47848', 'Pbde', 'KAT2B', 'TP53', 'ZZZ3']:
+            if dataset == 'EP300_47848':
                 g_auc_experiment(dataset, output_dir, C, type_)
 
 def fastsk_gakco_protein_kernel_times(params):
