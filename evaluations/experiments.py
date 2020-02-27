@@ -14,6 +14,7 @@ from scipy.stats import sem, t
 from scipy import mean
 import multiprocessing
 import subprocess
+from tqdm import tqdm
 
 # Default subprocess timeout (s)
 TIMEOUT = 3600
@@ -746,12 +747,12 @@ def stdev_and_auc_vs_iters_experiments(params, output_dir):
         # include max
         iters += [max_I]
 
-    for I in iters:
+    for I in tqdm(iters):
         results['iters'].append(I)
         sample_accs, sample_aucs, sample_stdevs = [], [], []
         for i in range(5):
             fastsk = FastskRunner(dataset)
-            acc, auc, _ = fastsk.train_and_test(g, m, t=1, approx=True, I=I, delta=0.025, C=C)
+            acc, auc = fastsk.train_and_test(g, m, t=1, approx=True, I=I, delta=0.025, C=C)
             stdevs = fastsk.stdevs
             assert len(stdevs) == I
             stdev = stdevs[-1]
@@ -785,11 +786,11 @@ def stdev_and_auc_vs_iters_experiments(params, output_dir):
         results['lower stdev'].append(lower_stdev)
         results['upper stdev'].append(upper_stdev)
 
-    df = pd.DataFrame(results)
-    if not osp.exists(output_dir):
-        os.makedirs(output_dir) 
-    output_csv = osp.join(output_dir, '{}_stdev_auc_iters.csv'.format(dataset))
-    df.to_csv(output_csv, index=False)
+        df = pd.DataFrame(results)
+        if not osp.exists(output_dir):
+            os.makedirs(output_dir) 
+        output_csv = osp.join(output_dir, '{}_stdev_auc_iters.csv'.format(dataset))
+        df.to_csv(output_csv, index=False)
 
 def run_stdev_and_auc_vs_iters_experiments(params, output_dir):
     '''Note, these requires require that fastsk.cpp be tweaked
@@ -801,8 +802,7 @@ def run_stdev_and_auc_vs_iters_experiments(params, output_dir):
 
     for p in params:
         dataset, type_, g, m, k = p['Dataset'], p['type'], p['g'], p['m'], p['k']
-        if type_ == 'nlp':
-            stdev_and_auc_vs_iters_experiments(p, output_dir)
+        stdev_and_auc_vs_iters_experiments(p, output_dir)
 
 def main():
     args = get_args()
