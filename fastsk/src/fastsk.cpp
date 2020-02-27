@@ -40,13 +40,6 @@ double* KernelFunction::compute_kernel() {
     rng.seed(std::time(0));
     std::shuffle(std::begin(indexes), std::end(indexes), rng);
 
-    // if (numCombinations > 50 & params->m != 0) {
-    //     numCombinations = params->approx ? int((1 - params->epsilon) * numCombinations) : numCombinations;
-    //     auto rng = std::default_random_engine {};
-    //     rng.seed(std::time(0));
-    //     std::shuffle(std::begin(indexes), std::end(indexes), rng);
-    // }
-
     int queueSize = numCombinations;
     WorkItem *workQueue = new WorkItem[queueSize];
     int itemNum = 0;
@@ -55,11 +48,6 @@ double* KernelFunction::compute_kernel() {
         workQueue[i].m = params->m;
         workQueue[i].combo_num = indexes[i];
     }
-
-    // for (int combo_num = 0; combo_num < numCombinations; combo_num++) {
-    //     workQueue[combo_num].m = params->m;
-    //     workQueue[combo_num].combo_num = combo_num;
-    // }
 
     /* Allocate gapped k-mer kernel */
     double *K = (double *) malloc(params->n_str_pairs * sizeof(double));
@@ -106,13 +94,6 @@ double* KernelFunction::compute_kernel() {
     for (auto &t : threads) {
         t.join();
     }
-
-    // for (int i = 0; i < params->total_str; i++) {
-    //     for (int j = 0; j <= i; j++) {
-    //         printf("%f ", tri_access(K, i, j));
-    //     }
-    //     printf("\n");
-    // }
 
     /* Kernel normalization */
     for (int i = 0; i < params->total_str; i++) {
@@ -222,14 +203,14 @@ void KernelFunction::kernel_build_parallel(int tid, WorkItem *workQueue, int que
         (*combinations).k = k;
         (*combinations).num_comb = num_comb;
 
-        // an array of gmer indices associated with group_srt and features_srt
+        // array of gmer indices associated with group_srt and features_srt
         unsigned int *sortIdx = (unsigned int *) malloc(nfeat * sizeof(unsigned int));
         // sorted gmers
         unsigned int *features_srt = (unsigned int *) malloc(nfeat * g * sizeof(unsigned int));
-        // the gmer numbers; associated with features_srt and sortIdx
+        // gmer ids; associated with features_srt and sortIdx
         unsigned int *group_srt = (unsigned int *) malloc(nfeat * sizeof(unsigned int));
         unsigned int *cnt_comb = (unsigned int *) malloc(2 * sizeof(unsigned int)); //
-        // the sorted features once mismatch positions are removed
+        // sorted features once mismatch positions are removed
         unsigned int *feat1 = (unsigned int *) malloc(nfeat * g * sizeof(unsigned int)); 
 
         int *pos = (int *) malloc(nfeat * sizeof(int));
@@ -270,11 +251,10 @@ void KernelFunction::kernel_build_parallel(int tid, WorkItem *workQueue, int que
                 if (tid == 0) {
                     this->stdevs.push_back(sd);
                 }
-                //printf("%d, %f\n", iter, sd);
-                // if (delta / sd > 1.96) {
-                //     printf("thread %d converged in %d iterations...\n", tid, iter);
-                //     working = false;
-                // }
+                if (delta / sd > 1.96) {
+                    printf("thread %d converged in %d iterations...\n", tid, iter);
+                    working = false;
+                }
             }
         }
         if (approx) {
@@ -406,7 +386,6 @@ svm_problem *create_svm_problem(double *K, int *labels, kernel_params *kernel_pa
 
     prob->x = x;
 
-    // if quiet mode, set libsvm's print function to null
     if (kernel_param->quiet) {
         svm_set_print_string_function(&print_null);
     }

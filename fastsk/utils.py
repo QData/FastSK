@@ -49,7 +49,7 @@ def fastsk_wrap(dataset, g, m, t, approx, I, delta, skip_variance, C, return_dic
     return_dict['acc'] = acc
     return_dict['auc'] = auc
 
-def train_and_test_fastsk(dataset, g, m, t, approx, I, delta=0.025, skip_variance=False, C=1, timeout=None):
+def train_and_test_fastsk(dataset, g, m, t, approx, I=50, delta=0.025, skip_variance=False, C=1, timeout=None):
     start = time.time()
     if timeout:
         manager = multiprocessing.Manager()

@@ -430,10 +430,12 @@ def g_auc_experiment(dataset, output_dir, C, type_):
         'g': [],
         'k': [],
         'm': [],
-        'fastsk_approx_i50_acc': [],
-        'fastsk_approx_i50_auc': [],
-        'gkm_approx_acc': [],
-        'gkm_approx_auc': [],
+        'fastsk_approx_conv_acc': [],
+        'fastsk_approx_conv_auc': [],
+        #'fastsk_approx_i50_acc': [],
+        #'fastsk_approx_i50_auc': [],
+        #'gkm_approx_acc': [],
+        #'gkm_approx_auc': [],
     }
 
     train_file = osp.join('/localtmp/dcb7xz/FastSK/data', dataset + '.train.fasta')
@@ -445,7 +447,7 @@ def g_auc_experiment(dataset, output_dir, C, type_):
 
     gkm_alphabet = GKM_PROT_DICT if type_ == 'protein' else None
 
-    skip_fastsk, skip_gkm = False, False
+    skip_fastsk, skip_gkm = False, True
 
     for g in range(k, max_g + 1):
         #### Run experiments
@@ -454,8 +456,8 @@ def g_auc_experiment(dataset, output_dir, C, type_):
         ## FastSK-Approx with up to 50 iterations/mismatch combos
         fastsk = FastskRunner(dataset)
         if not skip_fastsk:
-            fsk_acc, fsk_auc, fsk_time = train_and_test_fastsk(dataset, g, m, t=1, I=50,
-                approx=True, skip_variance=True, C=C, timeout=TIMEOUT)
+            fsk_acc, fsk_auc, fsk_time = train_and_test_fastsk(dataset, g, m, t=1, I=100,
+                approx=True, skip_variance=False, C=C, timeout=TIMEOUT)
             if fsk_time >= TIMEOUT:
                 skip_fastsk = True
         else:
@@ -479,10 +481,10 @@ def g_auc_experiment(dataset, output_dir, C, type_):
         results['g'].append(g)
         results['k'].append(k)
         results['m'].append(m)
-        results['fastsk_approx_i50_acc'].append(fsk_acc)
-        results['fastsk_approx_i50_auc'].append(fsk_auc)
-        results['gkm_approx_acc'].append(gkm_approx_acc)
-        results['gkm_approx_auc'].append(gkm_approx_auc)
+        results['fastsk_approx_conv_acc'].append(fsk_acc)
+        results['fastsk_approx_conv_auc'].append(fsk_auc)
+        #results['gkm_approx_acc'].append(gkm_approx_acc)
+        #results['gkm_approx_auc'].append(gkm_approx_auc)
 
         df = pd.DataFrame(results)
         df.to_csv(output_csv, index=False)
