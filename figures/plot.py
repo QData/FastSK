@@ -24,6 +24,7 @@ nlp_datasets = ['AIMed', 'BioInfer', 'CC1-LLL',
     'CC2-IEPA', 'CC3-HPRD50', 'DrugBank', 'MedLine']
 datasets = prot_datasets + dna_datasets + nlp_datasets
 
+
 def auc_summary_fig(csv='auc_results/acc_auc_summary_results.csv'):
     '''Create a figure summarizing the AUC results. Has 3 subplots:
     DNA, protein, and NLP. The plots each show FastSK-Approx vs
@@ -198,7 +199,6 @@ def vary_I(csv, dataset):
     x_pos = [0.1*i for i in range(6)]
     amounts = [int(max_I * p) for p in x_pos]
     labels = ['{:.1f} ({})'.format(pos, amount) for pos, amount in zip(x_pos, amounts)]
-    print(labels)
     ax.set_xticks(x_pos)
     ax.tick_params(
         axis='x',          # changes apply to the x-axis
@@ -1114,6 +1114,222 @@ def speedup_barchart_avg_g(type_, outfile='speedup_barchart_dna.pdf'):
 
     fig.tight_layout()
     plt.savefig(outfile)
+
+def dna_and_prot_convergence_fig(dna_csv, prot_csv, outfile):
+    '''Figure 13 in arXiv version. Shows DNA iters/convergence on the
+    left and prot iters/convergence on the right.
+    '''
+
+    fig, ax = plt.subplots(1, 2)
+    fig.set_size_inches(15, 5)
+
+    for i in range(0, 2):
+        type_ = 'DNA' if i == 0 else 'Protein'
+        if type_ == 'DNA':
+            df = pd.read_csv(dna_csv)
+        else:
+            df = pd.read_csv(prot_csv)
+
+        dataset = list(df['dataset'])[0]
+        g, m = list(df['g'])[0], list(df['m'])[0]
+        max_I = int(special.comb(g, m))
+        iters = list(df['iters'])
+        iters = [100 * i / max_I for i in iters]
+
+        mean_auc = list(df['mean auc'])
+        lower_auc = list(df['lower auc'])
+        upper_auc = list(df['upper auc'])
+
+        mean_stdev = list(df['mean stdev'])
+        lower_stdev = list(df['lower stdev'])
+        upper_stdev = list(df['upper stdev'])
+
+        auc_handle = ax[i].plot(iters, mean_auc, label='AUC', marker='x', color='r')
+        ax[i].fill_between(iters, lower_auc, upper_auc, color='r', alpha=0.5)
+        
+        ax2 = ax[i].twinx()
+        sd_handle = ax2.plot(iters, mean_stdev, label='Kernel variance', marker='o', color='orange')
+        ax2.fill_between(iters, lower_stdev, upper_stdev, color='orange', alpha=0.5)
+        ax2.grid(None)
+        ax2.tick_params(axis='both', which='major', labelsize=14)
+        if i == 1:
+            ax2.set_ylabel("Kernel Variance", size=axis_font_size, rotation=-90, labelpad=20)
+        ax2.set_ylim(bottom=0, top=1)
+
+        ax[i].set_xlabel(r'Percent (and Number) of Iterations', size=axis_font_size)
+
+        x_pos = [10 * i for i in range(0, 10, 2)]
+        amounts = [int(max_I * p / 100) for p in x_pos]
+        labels = ['{:.1f}% ({})'.format(pos, amount) for pos, amount in zip(x_pos, amounts)]
+        ax[i].set_xticks(x_pos)
+        ax[i].tick_params(
+            axis='x',          # changes apply to the x-axis
+            which='both',      # both major and minor ticks are affected
+            bottom=True,      # ticks along the bottom edge are off
+            top=False,         # ticks along the top edge are off
+            labelbottom=True
+        )
+        ax[i].set_xticklabels(labels, fontdict={'fontsize': 12})
+        ax[i].tick_params(axis='both', which='major', labelsize=12)
+        ax2.tick_params(axis='both', which='major', labelsize=12)
+
+        if i == 0:
+            ax[i].set_ylabel("AUC", size=axis_font_size)
+            ax[i].text(0, 1.1, '(a)', transform=ax[i].transAxes, fontsize=title_font_size, va='top', ha='right')
+        else:
+            ax[i].text(0, 1.1, '(b)', transform=ax[i].transAxes, fontsize=title_font_size, va='top', ha='right')
+    
+        #ax[i].tick_params(axis='both', which='major', labelsize=14)
+        ax[i].set_ylim(bottom=0.50, top=1)
+    
+        lines = auc_handle + sd_handle
+        labels = [l.get_label() for l in lines]
+        ax[i].legend(lines, labels, prop={'size': 10}, loc='lower right')
+
+        ax[i].set_title("Performance vs Iterations - {} ({})".format(dataset, type_))
+    
+    fig.tight_layout()
+    
+    print("Saving figure to ", outfile)
+    plt.savefig(outfile)
+
+
+def stdev_vs_I(csv, outfile):
+    df = pd.read_csv(csv)
+    dataset = list(df['dataset'])[0]
+    g, m = list(df['g'])[0], list(df['m'])[0]
+    max_I = int(special.comb(g, m))
+    iters = list(df['iters'])
+    mean_acc = list(df['mean acc'])
+    lower_acc = list(df['lower acc'])
+    upper_acc = list(df['upper acc'])
+
+    mean_auc = list(df['mean auc'])
+    lower_auc = list(df['lower auc'])
+    upper_auc = list(df['upper auc'])
+
+    mean_stdev = list(df['mean stdev'])
+    lower_stdev = list(df['lower stdev'])
+    upper_stdev = list(df['upper stdev'])
+
+    proportions = [i / max_I for i in iters]
+
+    fig, ax = plt.subplots()
+    acc_handle = ax.plot(iters, mean_acc, label='Accuracy', marker='x', color='b')
+    ax.fill_between(iters, lower_acc, upper_acc, color='b', alpha=0.5)
+    auc_handle = ax.plot(iters, mean_auc, label='AUC', marker='o', color='r')
+    ax.fill_between(iters, lower_auc, upper_auc, color='r', alpha=0.5)
+
+    ax2 = ax.twinx()
+    sd_handle = ax2.plot(iters, mean_stdev, label='Kernel variance', marker='o', color='orange')
+    ax2.fill_between(iters, lower_stdev, upper_stdev, color='orange', alpha=0.5)
+    ax2.grid(None)
+    ax2.tick_params(axis='both', which='major', labelsize=14)
+    ax2.set_ylabel("Kernel Variance", size=axis_font_size, rotation=-90, labelpad=20)
+    ax2.set_ylim(bottom=0, top=1)
+
+    ax.set_xlabel(r'Number of Iterations', size=axis_font_size)
+    ax.set_ylabel("Performance", size=axis_font_size)
+    ax.tick_params(axis='both', which='major', labelsize=14)
+    ax.set_ylim(bottom=0.50, top=1)
+    
+    lines = acc_handle + auc_handle + sd_handle
+    labels = [l.get_label() for l in lines]
+    ax.legend(lines, labels, prop={'size': 10}, loc='lower right')
+
+    ax.set_title("Performance vs Iterations ({})".format(dataset))
+    fig.tight_layout()
+    plt.savefig(outfile)
+
+def bigfig_stdev_I(csv_dir, outfile):
+    files = [f for f in os.listdir(csv_dir) if f.endswith('.csv')]
+
+    dna_files = sorted([f for f in files if f.split('_')[0] in dna_datasets])
+    prot_files = sorted([f for f in files if f.split('_')[0] in prot_datasets])
+    nlp_files = sorted([f for f in files if f.split('_')[0] in nlp_datasets])
+    
+    files = dna_files
+    #files = prot_files
+    #files = nlp_files
+
+    num_files = len(files)
+    rows, cols = 2, 5
+
+    fig, axes = plt.subplots(rows, cols)
+    #fig.set_size_inches(25, 15)
+    fig.set_size_inches(25, 7.5)
+
+    for r in range(rows):
+        for c in range(cols):
+            filenum = r * cols + c
+
+            if (filenum >= num_files):
+                break
+            filename = os.fsdecode(files[filenum])
+
+            print(filename)
+            dataset = filename.split('_')[0]
+            if (dataset == 'EP300'):
+                if filename.split('_')[1] == '47848':
+                    dataset += '_47848'
+            file = osp.join(csv_dir, filename)
+            
+            df = pd.read_csv(file)
+
+            dataset = list(df['dataset'])[0]
+            g, m = list(df['g'])[0], list(df['m'])[0]
+            max_I = int(special.comb(g, m))
+            iters = list(df['iters'])
+            mean_acc = list(df['mean acc'])
+            lower_acc = list(df['lower acc'])
+            upper_acc = list(df['upper acc'])
+
+            mean_auc = list(df['mean auc'])
+            lower_auc = list(df['lower auc'])
+            upper_auc = list(df['upper auc'])
+
+            mean_stdev = list(df['mean stdev'])
+            lower_stdev = list(df['lower stdev'])
+            upper_stdev = list(df['upper stdev'])
+
+            proportions = [i / max_I for i in iters]
+
+            ax = axes[r][c]
+
+            acc_handle = ax.plot(iters, mean_acc, label='Accuracy', marker='x', color='b')
+            ax.fill_between(iters, lower_acc, upper_acc, color='b', alpha=0.5)
+            auc_handle = ax.plot(iters, mean_auc, label='AUC', marker='o', color='r')
+            ax.fill_between(iters, lower_auc, upper_auc, color='r', alpha=0.5)
+
+            ax2 = ax.twinx()
+            sd_handle = ax2.plot(iters, mean_stdev, label='Kernel variance', marker='o', color='orange')
+            ax2.fill_between(iters, lower_stdev, upper_stdev, color='orange', alpha=0.5)
+            ax2.grid(None)
+            ax2.tick_params(axis='both', which='major', labelsize=14)
+            ax2.set_ylim(bottom=0, top=1)
+
+            ax.set_xlabel(r'Number of Iterations', size=axis_font_size)
+            ax.tick_params(axis='both', which='major', labelsize=14)
+            ax.set_ylim(bottom=0.50, top=1)
+
+            ax.set_title(r'{}'.format(dataset), size=title_font_size)
+
+            if (c == 0):
+                lines = acc_handle + auc_handle + sd_handle
+                labels = [l.get_label() for l in lines]
+                ax.legend(lines, labels, prop={'size': 10}, loc='lower right')
+                ax.set_ylabel("Performance", size=axis_font_size)
+                ax2.set_ylabel("Kernel Variance", size=axis_font_size, rotation=-90, labelpad=20)
+            
+            fig.tight_layout()
+    
+    print("Saving figures to {}".format(outfile))
+    plt.savefig(outfile)
+
+bigfig_stdev_I('stdevs_dna', 'dna_stdevs.pdf')
+#dna_and_prot_convergence_fig('stdevs/EP300_stdev_auc_iters.csv', 'stdevs/1.1_stdev_auc_iters.csv', 'dna_prot_iters_stdev.pdf')
+
+#stdev_vs_I('2.19_stdev_auc_iters.csv', '2.19_stdev_auc_iters.pdf')
 
 #fig7('fastsk_summary_perfs_right_datasets.csv', None)
 
