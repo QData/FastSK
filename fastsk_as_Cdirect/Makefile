@@ -1,4 +1,4 @@
-# Makefile for fastsk
+# Makefile for fastsk from C++ files source
 
 # Compiler options
 CXX = g++

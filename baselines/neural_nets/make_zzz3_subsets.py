@@ -1,6 +1,6 @@
 import random
 
-file = 'data/ZZZ3.train.fasta'
+file = 'testdata/ZZZ3.train.fasta'
 labels, sequences = [], []
 
 # load the data
@@ -31,6 +31,6 @@ for i in range(1, 11):
 	assert len(labels_) == len(sequences_)
 	assert len(labels_) <= num_sample
 
-	with open('data/ZZZ3_{}.train.fasta'.format(i), 'w+') as f:
+	with open('testdata/ZZZ3_{}.train.fasta'.format(i), 'w+') as f:
 		for (label, seq) in zip(labels_, sequences_):
 			f.write(label + '\n' + seq + '\n')
