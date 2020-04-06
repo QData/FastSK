@@ -20,10 +20,6 @@ A Python package and string kernel algorithm for training SVM classifiers for se
 
 
 ## Installation (Linux and MacOS)
-**With pip**
-```
-pip install -i https://test.pypi.org/simple/ fastsk-test
-```
 
 **From source**
 
