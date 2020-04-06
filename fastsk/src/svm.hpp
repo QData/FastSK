@@ -1,5 +1,5 @@
-#ifndef GAKCOSVM_H
-#define GAKCOSVM_H
+#ifndef fastskSVM_H
+#define fastskSVM_H
 
 #include "shared.h"
 #include "libsvm-code/libsvm.h"
@@ -15,7 +15,7 @@ public:
 	int num_threads = -1;
 	int num_mutex = -1;
 	int svm_type = C_SVC;
-	int kernel_type = LINEAR; // must be LINEAR, GAKCO, or RBF
+	int kernel_type = LINEAR; // must be LINEAR, fastsk, or RBF
 	std::string kernel_type_name;
 	double C; //C param
 	double nu; //nu for nu-SVC

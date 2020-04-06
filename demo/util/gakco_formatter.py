@@ -66,7 +66,7 @@ def readFile(filename):
 	return data
 
 '''
-Write data out to file in format accepted by Gakco or iGakco
+Write data out to file in format accepted by fastsk or fastsk
 '''
 def writeFile(filename, data_array):
 	with open(filename, 'w+') as f:
@@ -75,12 +75,12 @@ def writeFile(filename, data_array):
 
 if __name__=="__main__":
 	if (len(sys.argv) != 3):
-		print("Usage: python gakco_formatter.py <file.fasta> <gakco_format.fasta>")
+		print("Usage: python fastsk_formatter.py <file.fasta> <fastsk_format.fasta>")
 		print("\n<file.fasta> : fasta file in the following format: class label (-1, 0, or 1) followed by a sequence (which can span any number of lines)")
 		print("For example:\t\n\t1\n\tAAAA\n\tTTTTTTTT\n\t0\n\tAGT\n\tACC\n\tC")
-		print("<gakco_format.fasta> : data from <file.fasta> converted to a form that can be read by GaKCo or iGakco. If this file already exists, it will be overwritten.")
+		print("<fastsk_format.fasta> : data from <file.fasta> converted to a form that can be read by fastsk or fastsk. If this file already exists, it will be overwritten.")
 		exit()
 	old_file = sys.argv[1]
-	gakco_file = sys.argv[2]
-	gakco_data = readFile(old_file)
-	writeFile(gakco_file, gakco_data)
+	fastsk_file = sys.argv[2]
+	fastsk_data = readFile(old_file)
+	writeFile(fastsk_file, fastsk_data)

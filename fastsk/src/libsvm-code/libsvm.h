@@ -8,7 +8,7 @@ extern "C" {
 #endif
 
 extern int libsvm_version;
-//extern double* gakco_kernel_matrix;
+//extern double* fastsk_kernel_matrix;
 
 struct svm_node
 {
@@ -24,7 +24,7 @@ struct svm_problem
 };
 
 enum { C_SVC, NU_SVC, ONE_CLASS, EPSILON_SVR, NU_SVR };	/* svm_type */
-enum { LINEAR, POLY, RBF, SIGMOID, PRECOMPUTED, GAKCO }; /* kernel_type */
+enum { LINEAR, POLY, RBF, SIGMOID, PRECOMPUTED, fastsk }; /* kernel_type */
 
 struct svm_parameter
 {

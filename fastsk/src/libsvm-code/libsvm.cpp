@@ -230,10 +230,10 @@ private:
 	const double gamma;
 	const double coef0;
 
-	//static double gakco_dot(const svm_node *px, const svm_node *py);
+	//static double fastsk_dot(const svm_node *px, const svm_node *py);
 	static double dot(const svm_node *px, const svm_node *py);
 
-	double kernel_gakco(int i, int j) const
+	double kernel_fastsk(int i, int j) const
 	{
     	return x[i][j].value;
 	}
@@ -282,8 +282,8 @@ Kernel::Kernel(int l, svm_node * const * x_, const svm_parameter& param)
 		case PRECOMPUTED:
 			kernel_function = &Kernel::kernel_precomputed;
 			break;
-		case GAKCO:
-			kernel_function = &Kernel::kernel_gakco;
+		case fastsk:
+			kernel_function = &Kernel::kernel_fastsk;
 			break;
 	}
 
@@ -382,7 +382,7 @@ double Kernel::k_function(const svm_node *x, const svm_node *y,
 			return tanh(param.gamma*dot(x,y)+param.coef0);
 		case PRECOMPUTED:  //x: test (validation), y: SV
 			return x[(int)(y->value)].value;
-		case GAKCO:
+		case fastsk:
 			return 0;//*(x).value;
 		default:
 			return 0;  // Unreachable 
@@ -2543,7 +2543,7 @@ double svm_predict_values(const svm_model *model, const svm_node *x, double* dec
 		
 		double *kvalue = Malloc(double,l);
 		for(i=0;i<l;i++)
-			if (model->param.kernel_type == GAKCO){
+			if (model->param.kernel_type == fastsk){
 				kvalue[i] = x[model->sv_indices[i]-1].value;
 			}else{
 				kvalue[i] = Kernel::k_function(x,model->SV[i],model->param);
@@ -2665,7 +2665,7 @@ static const char *svm_type_table[] =
 
 static const char *kernel_type_table[]=
 {
-	"linear","polynomial","rbf","sigmoid","precomputed","gakco",NULL
+	"linear","polynomial","rbf","sigmoid","precomputed","fastsk",NULL
 };
 
 int svm_save_model(const char *model_file_name, const svm_model *model)
@@ -3074,7 +3074,7 @@ const char *svm_check_parameter(const svm_problem *prob, const svm_parameter *pa
 	// kernel_type, degree
 	
 	//int kernel_type = param->kernel_type;
-	// if (kernel_type != GAKCO)
+	// if (kernel_type != fastsk)
 	// 	return "unknown kernel type";
 
 	if(param->gamma < 0)

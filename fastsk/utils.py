@@ -74,13 +74,13 @@ def time_gkm(g, m, t, prefix, gkm_data, gkm_exec, approx=False, timeout=None, al
 
     return end - start
 
-def time_gakco(g, m, type_, prefix, timeout=None):
-    gakco_exec = '/localtmp/dcb7xz/FastSK/baselines/GaKCo-SVM/bin/GaKCo'
+def time_fastsk(g, m, type_, prefix, timeout=None):
+    fastsk_exec = '/localtmp/dcb7xz/FastSK/baselines/fastsk-SVM/bin/fastsk'
     data = './data/'
-    gakco = GaKCoRunner(gakco_exec, data, type_, prefix)
+    fastsk = fastskRunner(fastsk_exec, data, type_, prefix)
 
     start = time.time()
-    gakco.compute_kernel(g, m, mode='train')
+    fastsk.compute_kernel(g, m, mode='train')
     end = time.time()
 
     return end - start
@@ -472,7 +472,7 @@ class GkmRunner():
         return auc
 
 
-class GaKCoRunner():
+class fastskRunner():
     def __init__(self, exec_location, data_locaton, type_, prefix, outdir='./temp'):
         self.exec_location = exec_location
         self.data_locaton = data_locaton

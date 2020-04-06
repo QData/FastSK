@@ -6,7 +6,7 @@ import argparse
 import json
 import numpy as np
 from fastsk import Kernel
-from utils import FastaUtility, GkmRunner, GaKCoRunner, FastskRunner
+from utils import FastaUtility, GkmRunner, fastskRunner, FastskRunner
 import pandas as pd
 import time
 from scipy import special
@@ -14,7 +14,7 @@ import multiprocessing
 import subprocess
 
 def get_args():
-    parser = argparse.ArgumentParser(description='iGakco Evaluations')
+    parser = argparse.ArgumentParser(description='fastsk Evaluations')
     parser.add_argument('--dataset', type=str)
 
     return parser.parse_args()

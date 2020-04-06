@@ -1,10 +1,10 @@
-'''Demo of how to use igakco's kernel function
+'''Demo of how to use fastsk's kernel function
 as an empirical kernel map (EKM) in conjunction
 with scikit-learn's linear SVM classifier. 
 '''
 
 import numpy as np
-from igakco import Kernel
+from fastsk import Kernel
 from utils import FastaUtility
 from sklearn.svm import LinearSVC
 from sklearn.linear_model import LogisticRegression
@@ -12,7 +12,7 @@ from sklearn.calibration import CalibratedClassifierCV
 from sklearn import metrics
 
 '''For a linear kernel, we need the training and
-testing data ahead of time. With igakco, we can use
+testing data ahead of time. With fastsk, we can use
 an empirical kernel map (EKM) as the features to a linear
 classify.
 '''
@@ -29,7 +29,7 @@ Xtrain, Ytrain = reader.read_data('./data/2.19.train.fasta')
 Xtest, Ytest = reader.read_data('./data/2.19.test.fasta')
 Ytest = np.array(Ytest).reshape(-1, 1)
 
-### Compute the igakco kernel
+### Compute the fastsk kernel
 kernel = Kernel(g=6, m=2)
 kernel.compute(Xtrain, Xtest)
 Xtrain = kernel.train_kernel()

@@ -1,2 +1,2 @@
 
-# iGakco-SVM PyPi Package
+# fastsk-SVM PyPi Package

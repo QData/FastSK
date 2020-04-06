@@ -1,5 +1,5 @@
 ### seq_rnn.py
-### RNN baseline models for comparisons with iGakco-SVM
+### RNN baseline models for comparisons with fastsk-SVM
 ### Derrick Blakely, December 2018
 
 ### General Imports

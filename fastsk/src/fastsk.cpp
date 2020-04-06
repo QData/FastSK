@@ -372,7 +372,7 @@ svm_problem *create_svm_problem(double *K, int *labels, kernel_params *kernel_pa
     prob->l = n_str_train;
     prob->y = Malloc(double, prob->l);
     x = Malloc(svm_node*, prob->l);
-    if (svm_param->kernel_type == GAKCO) {
+    if (svm_param->kernel_type == fastsk) {
         x_space = Malloc(struct svm_node, (n_str_train + 1) * n_str_train);
         int totalind = 0;
         for (int i = 0; i < n_str_train; i++) {
@@ -432,7 +432,7 @@ svm_model *train_model(double *K, int *labels, kernel_params *kernel_param, svm_
     prob->l = n_str_train;
     prob->y = Malloc(double, prob->l);
     x = Malloc(svm_node*, prob->l);
-    if (svm_param->kernel_type == GAKCO) {
+    if (svm_param->kernel_type == fastsk) {
         x_space = Malloc(struct svm_node, (n_str_train + 1) * n_str_train);
         int totalind = 0;
         for (int i = 0; i < n_str_train; i++) {

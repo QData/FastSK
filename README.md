@@ -71,7 +71,7 @@ Constructor:
 * `C` (optional, default=1.0)
 * `nu` (optional, default=0.5)
 * `eps` (optional, default = 0.001) - LIBSVM epsilon parameter
-* `kernel` (optional, default = 'linear'). Options: linear, gakco, rbf
+* `kernel` (optional, default = 'linear'). Options: linear, fastsk, rbf
 
 Fit:
 * `train_file` (required)

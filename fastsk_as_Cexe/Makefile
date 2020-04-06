@@ -1,4 +1,4 @@
-# Makefile for GaKCO
+# Makefile for fastsk
 
 # Compiler options
 CXX = g++
@@ -7,24 +7,24 @@ CXXFLAGS = -lpthread -pthread -std=c++11 # openmp and pthread
 
 # To get an o file, we use the cpp file
 .SUFFIXES: .o .cpp
-OFILES = GaKCo.o
+OFILES = fastsk.o
 
 .PHONY: all
-all: gakco
+all: fastsk
 
-.PHONY: gakco
-gakco: $(OFILES)
-	$(CXX) $(CXXFLAGS) $(OFILES) -o GaKCo
-	@echo Produced GaKCo executable
+.PHONY: fastsk
+fastsk: $(OFILES)
+	$(CXX) $(CXXFLAGS) $(OFILES) -o fastsk
+	@echo Produced fastsk executable
 
-install: GaKCo
+install: fastsk
 	mkdir -p ../bin
-	cp $< ../bin/GaKCo
-	rm GaKCo
-	@echo GaKCo executable installed in the GaKCo-SVM/bin directory
+	cp $< ../bin/fastsk
+	rm fastsk
+	@echo fastsk executable installed in the fastsk-SVM/bin directory
 
 clean:
 	$(RM) *.o *~
 
 # Dependency rules for *.o files
-GaKCo.o: GaKCo.cpp shared.h shared.cpp readInput.cpp
+fastsk.o: fastsk.cpp shared.h shared.cpp readInput.cpp

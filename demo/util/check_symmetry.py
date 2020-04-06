@@ -1,5 +1,5 @@
-# Python script to verify that Gakco output kernels are symmetric
-# Run after performing updates as a sanity check or simply validate GaKCo's correctness
+# Python script to verify that fastsk output kernels are symmetric
+# Run after performing updates as a sanity check or simply validate fastsk's correctness
 
 import sys
 import os
@@ -31,7 +31,7 @@ def checkIfSymmetric(matrix, tolerance=1e-8):
 if __name__=="__main__":
 	if (len(sys.argv) != 2):
 		print("Usage: \n\tpython check_symmetry kernel.txt\n")
-		print("\tKernel should be in format outputted by GaKCo. For example:")
+		print("\tKernel should be in format outputted by fastsk. For example:")
 		print("\t1:1.000000e+00 2:0.000000e+00\n\t1:0.000000e+00 2:1.000000e+00")
 		sys.exit()
 	kernel_file = sys.argv[1]

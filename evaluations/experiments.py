@@ -6,8 +6,8 @@ import argparse
 import json
 import numpy as np
 from fastsk import Kernel
-from utils import FastaUtility, GkmRunner, GaKCoRunner, FastskRunner
-from utils import time_fastsk, time_gkm, time_gakco, time_blended, train_and_test_gkm
+from utils import FastaUtility, GkmRunner, fastskRunner, FastskRunner
+from utils import time_fastsk, time_gkm, time_fastsk, time_blended, train_and_test_gkm
 import pandas as pd
 import time
 from scipy import special
@@ -241,7 +241,7 @@ def g_time_experiment(dataset):
         - FastSK-Approx 20 thread (no convergence, 50 iters)
         - gkm-Exact 20 thread
         - gkm-Approx 20 thread
-        - GaKCo (max threads)
+        - fastsk (max threads)
     '''
     output_csv = osp.join(output_dir, dataset + '_g_times_dec14.csv')
     results = {
@@ -252,7 +252,7 @@ def g_time_experiment(dataset):
         'FastSK-Approx 1 thread': [],
         'FastSK-Approx 20 thread no variance 50 iters': [],
         'gkm-Approx 20 thread': [],
-        'GaKCo': []
+        'fastsk': []
     }
 
     train_file = osp.join('./data', dataset + '.train.fasta')
@@ -268,7 +268,7 @@ def g_time_experiment(dataset):
 
     skip_gkm_exact = False
     skip_gkm_approx_t20 = False
-    skip_gakco = False
+    skip_fastsk = False
 
     for g in range(min_g, max_g + 1):
         m = g - k
@@ -279,7 +279,7 @@ def g_time_experiment(dataset):
         fastsk_approx_t20_no_var = 0
         gkm_exact = 0
         gkm_approx_t20 = 0
-        gakco = 0
+        fastsk = 0
 
         ## FastSK-Exact 
         if not skip_fastsk_exact:
@@ -316,11 +316,11 @@ def g_time_experiment(dataset):
             if (gkm_approx_t20 >= MAXTIME and g > 8):
                 skip_gkm_approx_t20 = True
 
-        if not skip_gakco and m > 0:
-            gakco = time_gakco(g, m, type_=type_, 
+        if not skip_fastsk and m > 0:
+            fastsk = time_fastsk(g, m, type_=type_, 
                 prefix=dataset, timeout=None)
-            if gakco >= MAXTIME and g > 8:
-                skip_gakco = True
+            if fastsk >= MAXTIME and g > 8:
+                skip_fastsk = True
 
         ## Save results
         results['g'].append(g)
@@ -330,7 +330,7 @@ def g_time_experiment(dataset):
         results['FastSK-Approx 1 thread'].append(fastsk_approx_t1)
         results['FastSK-Approx 20 thread no variance 50 iters'].append(fastsk_approx_t20_no_var)
         results['gkm-Approx 20 thread'].append(gkm_approx_t20)
-        results['GaKCo'].append(gakco)
+        results['fastsk'].append(fastsk)
 
         print("{} - g = {}, m = {}".format(dataset, g, m))
 
@@ -497,8 +497,8 @@ def run_g_auc_experiments(params, output_dir):
             if dataset == 'EP300_47848':
                 g_auc_experiment(dataset, output_dir, C, type_)
 
-def fastsk_gakco_protein_kernel_times(params):
-    output_csv = 'fastsk_gakco_protein_kernel_times.csv'
+def fastsk_fastsk_protein_kernel_times(params):
+    output_csv = 'fastsk_fastsk_protein_kernel_times.csv'
     results = {
         'dataset': [],
         'g': [],
@@ -507,7 +507,7 @@ def fastsk_gakco_protein_kernel_times(params):
         'fastsk_exact': [],
         'fastsk_approx_t1': [],
         'fastsk_I50': [],
-        'gakco': [],
+        'fastsk': [],
     }
     count = 0
     for p in params:
@@ -534,7 +534,7 @@ def fastsk_gakco_protein_kernel_times(params):
             approx=True, 
             max_iters=50)
 
-        gakco = time_gakco(g, m, 
+        fastsk = time_fastsk(g, m, 
             type_='protein',
             prefix=dataset)
 
@@ -545,7 +545,7 @@ def fastsk_gakco_protein_kernel_times(params):
         results['fastsk_exact'].append(fastsk_exact)
         results['fastsk_approx_t1'].append(fastsk_approx_t1)
         results['fastsk_I50'].append(fastsk_I50)
-        results['gakco'].append(gakco)
+        results['fastsk'].append(fastsk)
 
         for key in results:
             print('{} - {}'.format(key, results[key][count]))

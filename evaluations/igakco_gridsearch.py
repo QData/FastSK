@@ -1,6 +1,6 @@
 '''Grid search for finding best
 parameters to optimize AUC using
-the iGakco kernel
+the fastsk kernel
 '''
 
 import os
@@ -12,7 +12,7 @@ import numpy as np
 from sklearn import metrics
 
 '''For a linear kernel, we need the training and
-testing data ahead of time. With igakco, we can use
+testing data ahead of time. With fastsk, we can use
 an empirical kernel map (EKM) as the features to a linear
 classify.
 '''
@@ -21,7 +21,7 @@ if not osp.exists(RESULTS_DIR):
     os.makedirs(RESULTS_DIR)
 
 def get_args():
-    parser = argparse.ArgumentParser(description='iGakco Evaluations')
+    parser = argparse.ArgumentParser(description='fastsk Evaluations')
     parser.add_argument('--trn', type=str, 
         required=True, help='Training file', metavar='1.1.train.fasta')
     parser.add_argument('--tst', type=str, 
@@ -57,7 +57,7 @@ def grid_search():
     for C in C_vals:
         for g in g_vals:
             for m in range(1, g):
-                ### Compute the igakco kernel
+                ### Compute the fastsk kernel
                 kernel = Kernel(g=g, m=m)
                 kernel.compute(Xtrain_raw, Xtest_raw)
                 Xtrain = kernel.train_kernel()

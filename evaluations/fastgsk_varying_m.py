@@ -1,11 +1,11 @@
 import os
 import os.path as osp
 import sys
-sys.path.append('./igakco')
+sys.path.append('./fastsk')
 import argparse
 import json
 import numpy as np
-from igakco import Kernel
+from fastsk import Kernel
 from utils import FastaUtility
 import time
 
@@ -14,7 +14,7 @@ if not osp.exists(RESULTS_DIR):
     os.makedirs(RESULTS_DIR)
 
 def get_args():
-    parser = argparse.ArgumentParser(description='iGakco Timing Experiments')
+    parser = argparse.ArgumentParser(description='fastsk Timing Experiments')
     parser.add_argument('--datasets', type=str, required=True,
         help="Where to find the datasets")
     parser.add_argument('--prefix', type=str, required=True,
@@ -47,7 +47,7 @@ for m in range(1, g):
     Xtest, Ytest = reader.read_data(test_file)
     Ytest = np.array(Ytest).reshape(-1, 1)
     
-    ### Compute the igakco kernel
+    ### Compute the fastsk kernel
     kernel = Kernel(g=g, m=m, t=args.threads, approx=True, epsilon=0.9)
     start_time = time.time()
     kernel.compute_train(Xtrain)

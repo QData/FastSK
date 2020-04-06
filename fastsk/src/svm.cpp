@@ -30,14 +30,14 @@ SVM::SVM(int g, int m, double C, double nu, double eps,
 		if (kernel == "linear") {
 			this->kernel_type = LINEAR;
 			this->kernel_type_name = "linear";
-		} else if (kernel == "gakco") {
-			this->kernel_type = GAKCO;
-			this->kernel_type_name = "gakco";
+		} else if (kernel == "fastsk") {
+			this->kernel_type = fastsk;
+			this->kernel_type_name = "fastsk";
 		} else if (kernel == "rbf"){
 			this->kernel_type = RBF;
 			this->kernel_type_name = "rbf";
 		} else {
-			printf("Error: kernel must be: 'linear', 'gakco', or 'rbf'\n");
+			printf("Error: kernel must be: 'linear', 'fastsk', or 'rbf'\n");
 			exit(1);
 		}
 	}
@@ -523,7 +523,7 @@ double SVM::score(std::string metric) {
 
 	int svcount = 0;
 	for (int i = 0; i < n_str_test; i++) {
-		if (this->kernel_type == GAKCO) {
+		if (this->kernel_type == fastsk) {
 			for (int j = 0; j < n_str_train; j++){
 				x[j].index = j + 1;
 				x[j].value = 0;
@@ -634,7 +634,7 @@ void SVM::predict(std::string predictions_file) {
 
 	int svcount = 0;
 	for (int i = 0; i < n_str_test; i++) {
-		if (this->kernel_type == GAKCO) {
+		if (this->kernel_type == fastsk) {
 			for (int j = 0; j < n_str_train; j++){
 				x[j].index = j + 1;
 				x[j].value = 0;
