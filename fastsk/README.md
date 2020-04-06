@@ -1,2 +1,2 @@
 
-# fastsk-SVM PyPi Package
+# fastsk PyPi Package

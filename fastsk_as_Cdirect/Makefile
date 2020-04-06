@@ -14,6 +14,7 @@ all: fastsk
 
 .PHONY: fastsk
 fastsk: $(OFILES)
+	cd ./fastsk/src
 	$(CXX) $(CXXFLAGS) $(OFILES) -o fastsk
 	@echo Produced fastsk executable
 
@@ -21,7 +22,7 @@ install: fastsk
 	mkdir -p ../bin
 	cp $< ../bin/fastsk
 	rm fastsk
-	@echo fastsk executable installed in the fastsk-SVM/bin directory
+	@echo fastsk executable installed in the fastsk/bin directory
 
 clean:
 	$(RM) *.o *~
