@@ -2,7 +2,7 @@ import os
 import os.path as osp
 import subprocess
 import numpy as np
-from fastsk import Kernel
+from fastsk import FastSK
 from sklearn.svm import LinearSVC
 from sklearn.linear_model import LogisticRegression
 from sklearn.calibration import CalibratedClassifierCV
@@ -345,7 +345,7 @@ class FastskRunner():
         self.Ytest = Ytest
 
     def compute_train_kernel(self, g, m, t=20, approx=True, I=100, delta=0.025, skip_variance=False):
-        kernel = Kernel(g=g, m=m, t=t, 
+        kernel = FastSK(g=g, m=m, t=t, 
             approx=approx, 
             max_iters=I, 
             delta=delta, 
@@ -353,13 +353,13 @@ class FastskRunner():
         kernel.compute_train(self.train_seq)
 
     def train_and_test(self, g, m, t, approx, I, delta=0.025, skip_variance=False, C=1):
-        kernel = Kernel(g=g, m=m, t=t, 
+        kernel = FastSK(g=g, m=m, t=t, 
             approx=approx, 
             max_iters=I, 
             delta=delta, 
             skip_variance=skip_variance)
 
-        kernel.compute(self.train_seq, self.test_seq)
+        kernel.compute_kernel(self.train_seq, self.test_seq)
         self.Xtrain = kernel.train_kernel()
         self.Xtest = kernel.test_kernel()
         self.stdevs = kernel.stdevs()

@@ -1,6 +1,4 @@
-#include "kernel.hpp"
 #include "fastsk.hpp"
-#include "utils.hpp"
 #include <string>
 
 #include <stdlib.h>
@@ -17,8 +15,8 @@ int main() {
 
 	const string xtrain = "../../data/1.1.train.fasta";
 	const string xtest = "../../data/1.1.test.fasta";
-	Kernel* kernel = new Kernel(g, m, t, approx, delta, max_iters, skip_variance);	
-	kernel->compute_kernel(xtrain, xtest);
+	FastSK* fastsk = new FastSK(g, m, t, approx, delta, max_iters, skip_variance);	
+	fastsk->compute_kernel(xtrain, xtest);
 	
 	// svm parameters
 	double C = 0.01;
@@ -26,6 +24,6 @@ int main() {
 	double eps = 1;
 	const string kernel_type = "linear";
 
-	kernel->fit(C, nu, eps, kernel_type);
+	fastsk->fit(C, nu, eps, kernel_type);
 
 }

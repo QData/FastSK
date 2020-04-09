@@ -2,7 +2,7 @@
 #include <pybind11/stl_bind.h>
 #include <pybind11/stl.h>
 #include <pybind11/numpy.h>
-#include "kernel.hpp"
+#include "fastsk.hpp"
 #include <iostream>
 #include <assert.h>
 #include <string>
@@ -12,7 +12,7 @@ namespace py = pybind11;
 using namespace std;
 
 PYBIND11_MODULE(fastsk, m) {
-    py::class_<Kernel>(m, "Kernel")
+    py::class_<FastSK>(m, "FastSK")
         .def(py::init<int, int, int, bool, double, int, bool>(), 
             py::arg("g"), 
             py::arg("m"),
@@ -23,34 +23,34 @@ PYBIND11_MODULE(fastsk, m) {
             py::arg("skip_variance")=false
         )
         .def("compute_kernel",
-            (void (Kernel::*)(const string, const string)) &Kernel::compute_kernel,
+            (void (FastSK::*)(const string, const string)) &FastSK::compute_kernel,
             py::arg("Xtrain"),
             py::arg("Xtest")
         )
         .def("compute_kernel",
-            (void (Kernel::*)(const string, const string, const string)) &Kernel::compute_kernel,
+            (void (FastSK::*)(const string, const string, const string)) &FastSK::compute_kernel,
             py::arg("Xtrain"),
             py::arg("Xtest"),
             py::arg("dictionary_file")
         )
         .def("compute_kernel",
-            (void (Kernel::*)(vector<string>, vector<string>)) &Kernel::compute_kernel,
+            (void (FastSK::*)(vector<string>, vector<string>)) &FastSK::compute_kernel,
             py::arg("Xtrain"),
             py::arg("Xtest")
         )
         .def("compute_kernel",
-            (void (Kernel::*)(vector<vector<int> >, vector<vector<int> >)) &Kernel::compute_kernel,
+            (void (FastSK::*)(vector<vector<int> >, vector<vector<int> >)) &FastSK::compute_kernel,
             py::arg("Xtrain"),
             py::arg("Xtest")
         )
         .def("compute_train", 
-            &Kernel::compute_train,
+            &FastSK::compute_train,
             py::arg("Xtrain")
         )
-        .def("train_kernel", &Kernel::train_kernel)
-        .def("test_kernel", &Kernel::test_kernel)
-        .def("stdevs", &Kernel::get_stdevs)
-        .def("save_kernel", &Kernel::save_kernel);
+        .def("train_kernel", &FastSK::train_kernel)
+        .def("test_kernel", &FastSK::test_kernel)
+        .def("stdevs", &FastSK::get_stdevs)
+        .def("save_kernel", &FastSK::save_kernel);
 
 #ifdef VERSION_INFO
     m.attr("__version__") = VERSION_INFO;

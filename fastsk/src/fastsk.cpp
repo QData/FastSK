@@ -1,335 +1,297 @@
 #include "fastsk.hpp"
+#include "fastsk_kernel.hpp"
 #include "shared.h"
+#include "utils.hpp"
+#include "svm.hpp"
 #include "libsvm-code/libsvm.h"
-#include <thread>
+#include "libsvm-code/eval.h"
+
 #include <vector>
-#include <stdlib.h>
-#include <cstdlib>
+#include <string>
+#include <set>
 #include <math.h>
 #include <cstring>
-#include <algorithm>
-#include <random>
-#include <ctime>
-#include <cmath>
-#include <string>
 #include <iostream>
-#include <fstream>
 
-#define Malloc(type,n) (type *)malloc((n)*sizeof(type))
+using namespace std;
 
-KernelFunction::KernelFunction(kernel_params* params) {
-    std::cout << "Initializing kernel function" << std::endl;
-    this->params = params;
+FastSK::FastSK(int g, int m, int t, bool approx, double delta, int max_iters, bool skip_variance) {
+    this->g = g;
+    this->m = m;
+    this->k = g - m;
+    this->num_threads = t;
+    this->approx = approx;
+    this->delta = delta;
+    this->max_iters = max_iters;
+    this->skip_variance = skip_variance;
 }
 
-double* KernelFunction::compute_kernel() {
-    kernel_params* params = this->params;
+void FastSK::compute_kernel(const string Xtrain, const string Xtest) {
+    const string dictionary_file = "";
+    this->compute_kernel(Xtrain, Xtest, dictionary_file);
+}
 
-    /* Build work queue - represents the partial kernel computations
-    that need to be completed by the threads */
-    int numCombinations = nchoosek(params->g, params->m);
+void FastSK::compute_kernel(const string Xtrain, const string Xtest, const string dictionary_file) {
+    // Read in the sequences from the two files and convert them vectors
+    DataReader* data_reader = new DataReader(Xtrain, dictionary_file);
+    bool train = true;
+
+    data_reader->read_data(Xtrain, train);
+    data_reader->read_data(Xtest, !train);
+    vector<vector<int> > train_seq = data_reader->train_seq;
+    vector<int> train_labels = data_reader->train_labels;
+    vector<vector<int> > test_seq = data_reader->test_seq;
+    vector<int> test_labels = data_reader->test_labels;
+
+    this->test_labels = test_labels;
+
+    this->compute_kernel(train_seq, test_seq);
+
+}
+
+void FastSK::compute_kernel(vector<string> Xtrain, vector<string> Xtest) {
+    // Convert sequences to numerical form (as vectors)
+
+}
+
+void FastSK::compute_kernel(vector<vector<int> > Xtrain, vector<vector<int> > Xtest) {
+    // Given sequences already in numerical form, compute the kernel matrix
+    vector<int> lengths;
+    int shortest_train = Xtrain[0].size();
+    for (int i = 0; i < Xtrain.size(); i++) {
+        int len = Xtrain[i].size();
+        if (len < shortest_train) {
+            shortest_train = len;
+        }
+        lengths.push_back(len);
+    }
+    int shortest_test = Xtest[0].size();
+    for (int i = 0; i < Xtest.size(); i++) {
+        int len = Xtest[i].size();
+        if (len < shortest_test) {
+            shortest_test = len;
+        }
+        lengths.push_back(len);
+    }
+
+    cout << "Length of shortest train sequence: " << shortest_train << endl;
+    cout << "Length of shortest test sequence: " << shortest_test << endl;
+
+    if (this->g > shortest_train) {
+        g_greater_than_shortest_train(this->g, shortest_train);
+    }
+    if (this->g > shortest_test) {
+        g_greater_than_shortest_test(this->g, shortest_test);
+    }
     
-    std::vector<int> indexes(numCombinations);
-    for (int i = 0; i < numCombinations; i++) {
-        indexes[i] = i;
-    }
+    long int n_str_train = Xtrain.size();
+    long int n_str_test = Xtest.size();
+    long int total_str = n_str_train + n_str_test;
 
-    auto rng = std::default_random_engine {};
-    rng.seed(std::time(0));
-    std::shuffle(std::begin(indexes), std::end(indexes), rng);
+    this->n_str_train = n_str_train;
+    this->n_str_test = n_str_test;
 
-    int queueSize = numCombinations;
-    WorkItem *workQueue = new WorkItem[queueSize];
-    int itemNum = 0;
+    int **S = (int **) malloc(total_str * sizeof(int*));
 
-    for (int i = 0; i < numCombinations; i++) {
-        workQueue[i].m = params->m;
-        workQueue[i].combo_num = indexes[i];
-    }
-
-    /* Allocate gapped k-mer kernel */
-    double *K = (double *) malloc(params->n_str_pairs * sizeof(double));
-    memset(K, 0, params->n_str_pairs * sizeof(double));
-
-    /* Determine how many threads to use */
-    int num_threads = params->num_threads;
-    if (num_threads == -1) {
-        // returns number of processors
-        // int numCores = std::thread::hardware_concurrency();
-        // num_threads = (numCores > 20) ? 20 : numCores;
-        num_threads = 20;
-    }
-    num_threads = (num_threads > queueSize) ? queueSize : num_threads;
-
-    /* Create an array of mutex locks */
-    int num_mutex = params->num_mutex;
-    num_mutex = (num_mutex == -1 || num_mutex > num_threads) ? num_threads : num_mutex; 
-    pthread_mutex_t *mutexes = (pthread_mutex_t*) malloc(num_mutex * sizeof(pthread_mutex_t));
-    for (int i = 0; i < num_mutex; i++) {
-        pthread_mutex_init(&mutexes[i], NULL);
-    }
-
-    params->num_threads = num_threads;
-    params->num_mutex = num_mutex;
-
-    // If central theorem unlikely to apply, compute exact kernel
-    // if (numCombinations / num_threads < 50) {
-    //     params->approx = false;
-    // }
-    if (params->approx) {
-        printf("Computing approximate kernel...\n");
-    } else {
-        printf("Computing exact kernel...\n");
-    }
-
-    /* Multithreaded kernel construction */
-    if (!params->quiet) printf("Computing %d mismatch profiles using %d threads...\n", numCombinations, num_threads);
-    std::vector<std::thread> threads;
-    for (int tid = 0; tid < num_threads; tid++) {
-        threads.push_back(std::thread(&KernelFunction::kernel_build_parallel, this, tid, workQueue, queueSize, mutexes, params, K));
-    }
-
-    for (auto &t : threads) {
-        t.join();
-    }
-
-    /* Kernel normalization */
-    for (int i = 0; i < params->total_str; i++) {
-        for (int j = 0; j < i; j++) {
-            tri_access(K, i, j) = tri_access(K, i, j) / sqrt(tri_access(K, i, i) * tri_access(K, j, j));
+    set<int> dict;
+    dict.insert(0);
+    for (int i = 0; i < n_str_train; i++) {
+        S[i] = Xtrain[i].data();
+        for (int j = 0; j < lengths[i]; j++) {
+            dict.insert(Xtrain[i][j]);
         }
     }
-    for (int i = 0; i < params->total_str; i++) {
-        tri_access(K, i, i) = tri_access(K, i, i) / sqrt(tri_access(K, i, i) * tri_access(K, i, i));
-    }
-
-    return K;
-}
-
-double KernelFunction::get_variance(unsigned int *Ks, double *K_hat, double *variances, int n_str_pairs, int n_train_pairs, int iter) {
-    double max_variance = 0;
-    double avg_variance = 0;
-    int count = 0;
-    double delta;
-    double delta2;
-    double product;
-    
-    for (int i = 0; i < n_str_pairs; i++) {
-        delta = Ks[i] - K_hat[i];
-        K_hat[i] += delta / iter;
-        
-        if (i < n_train_pairs) {
-            delta2 = Ks[i] - K_hat[i];
-            product = delta * delta2;
-            variances[i] += product;
-            avg_variance += product;
-            // variances[i] += std::pow(delta, 2.0) / iter + math.pow(variances[i], 2.0) / (iter - 1);
-            if (variances[i] > max_variance) {
-                max_variance = variances[i];
-            }
-            count++;
+    for (int i = 0; i < n_str_test; i++) {
+        S[n_str_train + i] = Xtest[i].data();
+        for (int j = 0; j < lengths[n_str_train + i]; j++) {
+            dict.insert(Xtest[i][j]);
         }
     }
-
-    avg_variance /= count;
-    if (iter == 1) {
-        avg_variance = 9999999;
-        max_variance = 9999999;
-    } else {
-        avg_variance /= iter - 1;
-        max_variance /= max_variance / (iter - 1);
-    }
-
-    return avg_variance;
-}
-
-void KernelFunction::kernel_build_parallel(int tid, WorkItem *workQueue, int queueSize,
-    pthread_mutex_t *mutexes, kernel_params *params, double *Ksfinal) {
-
-    int itemNum = tid;
-    Feature *features = params->features;
+    int dict_size = dict.size();
+    cout << "Dictionary size = " << dict_size << " (+1 for unknown char)." << endl;
+    
+    /*Extract g-mers*/
+    Features* features = extractFeatures(S, lengths, total_str, g);
     int nfeat = (*features).n;
     int *feat = (*features).features;
-    int g = params->g;
-    int m = params->m;
-    int k = params->k;
-    int n_str_train = params->n_str_train;
-    int n_str_test = params->n_str_test;
-    long int n_str_pairs = params->n_str_pairs;
-    long int total_str = params->total_str;
-    int dict_size = params->dict_size;
-    int num_mutex = params->num_mutex;
-    int num_threads = params->num_threads;
-    double delta = params->delta;
-    bool quiet = params->quiet;
-    bool approx = params->approx;
-    int max_iters = params->max_iters;
-    bool skip_variance = params->skip_variance;
-
-    int num_comb = nchoosek(g, k);
-    long int n_train_pairs = (n_str_train / (double) 2) * (n_str_train + 1);
-    long int n_test_pairs = (n_str_test / (double) 2) * (n_str_test + 1);
-
-    bool working = true;
-    int iter = 1;
-
-    unsigned int* Ks = (unsigned int*) malloc(sizeof(unsigned int) * n_str_pairs);
-    memset(Ks, 0, sizeof(unsigned int) * n_str_pairs);
-    
-    double* K_hat;
-    double* variances;
-
-    if (approx && !skip_variance) {
-        K_hat = (double*) malloc(sizeof(double) * n_str_pairs);
-        variances = (double*) malloc(sizeof(double) * n_train_pairs);
-        memset(K_hat, 0, sizeof(double) * n_str_pairs);
-        memset(variances, 0, sizeof(double) * n_train_pairs);
+    if (!this->quiet) {
+        printf("g = %d, k = %d, %d features\n", this->g, this->k, nfeat);
     }
 
-    while (working) {
-        WorkItem workItem = workQueue[itemNum];
+    kernel_params params;
+    params.g = g;
+    params.k = k;
+    params.m = m;
+    params.n_str_train = n_str_train;
+    params.n_str_test = n_str_test;
+    params.total_str = total_str;
+    params.n_str_pairs = (total_str / (double) 2) * (total_str + 1);
+    params.features = features;
+    params.dict_size = dict_size;
+    params.num_threads = this->num_threads;
+    params.num_mutex = this->num_mutex;
+    params.quiet = this->quiet;
+    params.approx = this->approx;
+    params.delta = this->delta;
+    params.max_iters = this->max_iters;
+    params.skip_variance = this->skip_variance;
 
-        // don't cumulate mismatch profiles if computing partial kernel variances
-        if (approx && !skip_variance) {
-            memset(Ks, 0, sizeof(unsigned int) * n_str_pairs);
-        }
+    KernelFunction* kernel_function = new KernelFunction(&params);
+    double *K = kernel_function->compute_kernel();
 
-        // specifies which partial kernel is to be computed
-        int combo_num = workItem.combo_num;
-        Combinations *combinations = (Combinations *) malloc(sizeof(combinations));
-        (*combinations).n = g;
-        (*combinations).k = k;
-        (*combinations).num_comb = num_comb;
-
-        // array of gmer indices associated with group_srt and features_srt
-        unsigned int *sortIdx = (unsigned int *) malloc(nfeat * sizeof(unsigned int));
-        // sorted gmers
-        unsigned int *features_srt = (unsigned int *) malloc(nfeat * g * sizeof(unsigned int));
-        // gmer ids; associated with features_srt and sortIdx
-        unsigned int *group_srt = (unsigned int *) malloc(nfeat * sizeof(unsigned int));
-        unsigned int *cnt_comb = (unsigned int *) malloc(2 * sizeof(unsigned int)); //
-        // sorted features once mismatch positions are removed
-        unsigned int *feat1 = (unsigned int *) malloc(nfeat * g * sizeof(unsigned int)); 
-
-        int *pos = (int *) malloc(nfeat * sizeof(int));
-        memset(pos, 0, sizeof(int) * nfeat);
-
-        unsigned int *out = (unsigned int *) malloc(k * num_comb * sizeof(unsigned int));
-        unsigned int *cnt_m = (unsigned int *) malloc(g * sizeof(unsigned int));
-        cnt_comb[0] = 0;
-        getCombinations((*combinations).n, (*combinations).k, pos, 0, 0, cnt_comb, out, num_comb);
-        cnt_m[m] = cnt_comb[0];
-        cnt_comb[0] += ((*combinations).k * num_comb);
-
-        // remove mismatch positions
-        for (int j1 = 0; j1 < nfeat; ++j1) {
-            for (int j2 = 0; j2 < k; ++j2) {
-                feat1[j1 + j2 * nfeat] = feat[j1 + (out[(cnt_m[m] - num_comb + combo_num) + j2 * num_comb]) * nfeat];
-            }
-        }
-
-        // sort the g-mers (this is relatively fast)
-        cntsrtna(sortIdx, feat1, k, nfeat, dict_size);
-
-        for (int j1 = 0; j1 < nfeat; ++j1) {
-            for (int j2 = 0; j2 <  k; ++j2) {
-                features_srt[j1 + j2*nfeat] = feat1[(sortIdx[j1]) + j2*nfeat];
-            }
-            group_srt[j1] = (*features).group[sortIdx[j1]];
-        }
-
-        // compute partial mismatch profile for these mismatch positions (slow)
-        countAndUpdateTri(Ks, features_srt, group_srt, k, nfeat, total_str);
-
-        if (approx && !skip_variance) {
-            double sd = this->get_variance(Ks, K_hat, variances, n_str_pairs, n_train_pairs, iter);
-
-            if (iter >= 1) {
-                sd = std::sqrt(sd / iter);
-                if (tid == 0) {
-                    this->stdevs.push_back(sd);
-                }
-                if (delta / sd > 1.96) {
-                    printf("thread %d converged in %d iterations...\n", tid, iter);
-                    working = false;
-                }
-            }
-        }
-        if (approx) {
-            if (max_iters != -1 && iter >= max_iters) {
-                printf("thread %d reached max iterations...\n", tid);
-                working = false;
-            }
-        }
-
-        free(cnt_m);
-        free(out);
-        free(sortIdx);
-        free(features_srt);
-        free(group_srt);
-        free(feat1);
-        free(cnt_comb);
-        free(pos);
-        free(combinations);
-
-        // Check if the thread needs to handle more mismatch profiles
-        itemNum += num_threads;
-        if (itemNum >= queueSize) {
-            working = false;
-        }
-
-        iter++;
-    }
-
-    printf("Thread %d finished in %d iterations...\n", tid, iter - 1);
-
-    // set up the mutexes to lock as you go through the matrix
-    int cusps[num_mutex];
-    for (int i = 0; i < num_mutex; i++) {
-        cusps[i] = (int) (i * ((double) n_str_pairs) / num_mutex);
-    }
-
-    /* the feared kernel update step, locking is necessary to keep it thread-safe.
-    current locking strategy involves splitting the array rows into groups and locking per group.
-    also tried going top->bottom or bottom->top dependent on work order to split
-    contention among the locks, seemed to split up contention but made it slightly slower?
-    */
-    int count = 0;
-    if (num_threads > 1) {
-        for (int j1 = 0; j1 < n_str_pairs; ++j1) {
-            if (j1 == cusps[count]) {
-                if (count != 0) {
-                    pthread_mutex_unlock(&mutexes[count - 1]);
-                }
-                pthread_mutex_lock(&mutexes[count]);
-                if (count + 1 < num_mutex) count++;
-            }
-            double val = (approx && !skip_variance) ? K_hat[j1] : Ks[j1];
-            if (val != 0) Ksfinal[j1] += val;
-        }
-        pthread_mutex_unlock(&mutexes[num_mutex - 1]);
-    } else {
-        for (int i = 0; i < n_str_pairs; i++) {
-            double val = (approx && !skip_variance) ? K_hat[i] : Ks[i];
-            if (val != 0) Ksfinal[i] += val;
-        }
-    }
-
-    free(Ks);
-    if (approx && !skip_variance) {
-        free(K_hat);
-        free(variances);
-    }
+    this->kernel = K;
+    this->stdevs = kernel_function->stdevs;
 }
 
-double *construct_test_kernel(int n_str_train, int n_str_test, double *K) {
-    double* test_K = (double*) malloc(n_str_test * n_str_train * sizeof(double));
-    int total_str = n_str_train + n_str_test;
-    for (int i = n_str_train; i < total_str; i++){
-        for (int j = 0; j < n_str_train; j++){
-            test_K[(i - n_str_train) * n_str_train + j] 
-                = tri_access(K, i, j) / sqrt(tri_access(K, i, i) * tri_access(K, j, j));
+void FastSK::fit(double C, double nu, double eps, const string kernel_type) {
+    cout << "Creating SVM with params: " << endl;
+    cout << "\tC = " << C << endl;
+    cout << "\tnu = " << nu << endl;
+    cout << "\teps = " << eps << endl;
+    cout << "\tkernel_type = " << kernel_type << endl;
+
+    //SVM* svm = new SVM(this->g, this->m, C, nu, eps, kernel_type);
+
+    int g = this->g;
+    int m = this->m;
+    bool quiet = false;
+    int n_str_train = this->n_str_train;
+    int n_str_test = this->n_str_test;
+    int* test_labels = this->test_labels.data();
+    int nfeat = this->nfeat;
+
+    SVM* svm = new SVM(g, 
+        m,
+        C, 
+        nu, 
+        eps, 
+        kernel_type, 
+        quiet, 
+        this->kernel, 
+        n_str_train,
+        n_str_test, 
+        test_labels,
+        nfeat
+    );
+
+    svm->fit();
+}
+
+void FastSK::compute_train(vector<vector<int> > Xtrain) {
+    vector<int> lengths;
+    int shortest_train = Xtrain[0].size();
+    for (int i = 0; i < Xtrain.size(); i++) {
+        int len = Xtrain[i].size();
+        if (len < shortest_train) {
+            shortest_train = len;
+        }
+        lengths.push_back(len);
+    }
+
+    if (this->g > shortest_train) {
+        g_greater_than_shortest_train(this->g, shortest_train);
+    }
+    
+    long int n_str_train = Xtrain.size();
+    long int n_str_test = 0;
+    long int total_str = n_str_train + n_str_test;
+
+    this->n_str_train = n_str_train;
+    this->n_str_test = n_str_test;
+
+    int **S = (int **) malloc(total_str * sizeof(int*));
+
+    set<int> dict;
+    dict.insert(0);
+    for (int i = 0; i < n_str_train; i++) {
+        S[i] = Xtrain[i].data();
+        for (int j = 0; j < lengths[i]; j++) {
+            dict.insert(Xtrain[i][j]);
         }
     }
+
+    int dict_size = dict.size();
+    cout << "Dictionary size = " << dict_size << " (+1 for unknown char)." << endl;
+    
+    /*Extract g-mers*/
+    Features* features = extractFeatures(S, lengths, total_str, g);
+    int nfeat = (*features).n;
+    int *feat = (*features).features;
+    if (!this->quiet) {
+        printf("g = %d, k = %d, %d features\n", this->g, this->k, nfeat);
+    }
+
+    kernel_params params;
+    params.g = g;
+    params.k = k;
+    params.m = m;
+    params.n_str_train = n_str_train;
+    params.n_str_test = n_str_test;
+    params.total_str = total_str;
+    params.n_str_pairs = (total_str / (double) 2) * (total_str + 1);
+    params.features = features;
+    params.dict_size = dict_size;
+    params.num_threads = this->num_threads;
+    params.num_mutex = this->num_mutex;
+    params.quiet = this->quiet;
+    params.approx = this->approx;
+    params.delta = this->delta;
+    params.max_iters = this->max_iters;
+    params.skip_variance = this->skip_variance;
+
+    KernelFunction* kernel_function = new KernelFunction(&params);
+    double *K = kernel_function->compute_kernel();
+
+    this->kernel = K;
+    this->stdevs = kernel_function->stdevs;
+    this->nfeat = nfeat;
+}
+
+vector<vector<double> > FastSK::train_kernel() {
+    double *K = this->kernel;
+    int n_str_rain = this->n_str_train;
+    vector<vector<double> > train_K(n_str_train, vector<double>(n_str_train, 0));
+    for (int i = 0; i < n_str_train; i++) {
+        for (int j = 0; j < n_str_train; j++) {
+            train_K[i][j] = tri_access(K, i, j);
+        }
+    }
+    return train_K;
+}
+
+vector<vector<double> > FastSK::test_kernel() {
+    double *K = this->kernel;
+    int n_str_train = this->n_str_train;
+    int n_str_test = this->n_str_test;
+    int total_str = this->n_str_train + this->n_str_test;
+
+    vector<vector<double> > test_K(n_str_test, vector<double>(n_str_train, 0));
+
+    for (int i = n_str_train; i < total_str; i++){
+        for (int j = 0; j < n_str_train; j++){
+            test_K[i - n_str_train][j]  = tri_access(K, i, j);
+        }
+    }
+
     return test_K;
+}
+
+vector<double> FastSK::get_stdevs() {
+    return this->stdevs;
+}
+
+void FastSK::save_kernel(string kernel_file) {
+    double *K = this->kernel;
+    int total_str = this->n_str_train + this->n_str_test;
+    if (!kernel_file.empty()) {
+        printf("Writing kernel to %s...\n", kernel_file.c_str());
+        FILE *kernelfile = fopen(kernel_file.c_str(), "w");
+        for (int i = 0; i < total_str; ++i) {
+            for (int j = 0; j < total_str; ++j) {
+                fprintf(kernelfile, "%d:%e ", j + 1, tri_access(K,i,j));
+            }
+            fprintf(kernelfile, "\n");
+        }
+        fclose(kernelfile);
+    }
 }

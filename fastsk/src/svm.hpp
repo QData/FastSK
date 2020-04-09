@@ -1,9 +1,10 @@
 #ifndef SVM_H
 #define SVM_H
 
-#include "fastsk.hpp"
+#include "fastsk_kernel.hpp"
 #include "shared.h"
 #include "libsvm-code/libsvm.h"
+#include "libsvm-code/eval.h"
 #include <string>
 #include <cstdlib>
 #include <vector>

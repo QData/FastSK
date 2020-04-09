@@ -1,46 +1,44 @@
 #ifndef FASTSK_H
 #define FASTSK_H
 
-#include "shared.h"
-#include "libsvm-code/libsvm.h"
-#include <thread>
+#include <vector>
+#include <string>
 
-typedef struct kernel_params {
-    int g;
-    int k;
-    int m;
-    long int n_str_train;
-    long int n_str_test;
-    long int total_str;
-    long int n_str_pairs;
-    Feature *features;
-    int dict_size;
-    int num_threads;
-    int num_mutex;
-    WorkItem *workQueue;
-    int queueSize;
-    bool quiet;
-    bool approx;
-    double delta;
-    int max_iters;
-    bool skip_variance;
+using namespace std;
 
-} kernel_params;
-
-class KernelFunction {
-    kernel_params* params;
+class FastSK {
 
 public:
-    std::vector<double> stdevs;
-    KernelFunction(kernel_params*);
-    double* compute_kernel();
-    void kernel_build_parallel(int, WorkItem*, int, pthread_mutex_t*, kernel_params*, double*);
-    double get_variance(unsigned int*, double*, double *, int, int, int);
-};
+    int g;
+    int m;
+    int k;
+    int num_threads = -1;
+    int num_mutex = -1;
+    int n_str_train;
+    int n_str_test;
+    vector<vector<int> > Xtrain;
+    vector<vector<int> > Xtest;
+    vector<int> test_labels;
+    double* kernel = NULL;
+    bool quiet = false;
+    bool approx = false;
+    double delta = 0.025;
+    int max_iters = -1;
+    bool skip_variance = false;
+    vector<double> stdevs;
+    int nfeat;
 
-svm_model *train_model(double *K, int *labels, kernel_params *kernel_param, svm_parameter *svm_param);
-double *construct_test_kernel(int n_str_train, int n_str_test, double *K);
-double *run_cross_validation(double *K, std::string metric, int k);
-svm_problem *create_svm_problem(double *K, int *labels, kernel_params *kernel_param, svm_parameter *svm_param);
+    FastSK(int, int, int, bool, double, int, bool);
+    void compute_kernel(const string, const string, const string);
+    void compute_kernel(const string, const string);
+    void compute_kernel(vector<string>, vector<string>);
+    void compute_kernel(vector<vector<int> >, vector<vector<int> >);
+    void compute_train(vector<vector<int> > Xtrain);
+    void fit(double, double, double, const string);
+    vector<vector<double> > train_kernel();
+    vector<vector<double> > test_kernel();
+    vector<double> get_stdevs();
+    void save_kernel(string);
+};
 
 #endif

@@ -1,5 +1,5 @@
 #include "svm.hpp"
-#include "fastsk.hpp"
+#include "fastsk_kernel.hpp"
 #include "shared.h"
 #include "libsvm-code/libsvm.h"
 #include "libsvm-code/eval.h"
@@ -73,12 +73,12 @@ void SVM::fit() {
     struct svm_model *model;
 
     int folds = 5;
-    double cv_auc = binary_class_cross_validation(prob, svm_param, folds);
-    cout << "cv_auc = " << cv_auc << endl;
+    //double cv_auc = binary_class_cross_validation(prob, svm_param, folds);
+    //cout << "cv_auc = " << cv_auc << endl;
     //return cv_auc;
 
-    //model = this->train_model(this->K, this->test_labels, svm_param);
-    //this->model = model;
+    model = this->train_model(this->K, this->test_labels, svm_param);
+    this->model = model;
 }
 
 svm_problem* SVM::create_svm_problem(double *K, int *labels, svm_parameter *svm_param) {
