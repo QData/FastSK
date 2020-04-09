@@ -4,6 +4,8 @@
 #include <vector>
 #include <string>
 
+using namespace std;
+
 class Kernel {
 
 public:
@@ -14,22 +16,29 @@ public:
     int num_mutex = -1;
     int n_str_train;
     int n_str_test;
+    vector<vector<int> > Xtrain;
+    vector<vector<int> > Xtest;
+    vector<int> test_labels;
     double* kernel = NULL;
     bool quiet = false;
     bool approx = false;
     double delta = 0.025;
     int max_iters = -1;
     bool skip_variance = false;
-    std::vector<double> stdevs;
+    vector<double> stdevs;
+    int nfeat;
 
     Kernel(int, int, int, bool, double, int, bool);
-    void compute(std::vector<std::vector<int> >, 
-        std::vector<std::vector<int> >);
-    void compute_train(std::vector<std::vector<int> > Xtrain);
-    std::vector<std::vector<double> > train_kernel();
-    std::vector<std::vector<double> > test_kernel();
-    std::vector<double> get_stdevs();
-    void save_kernel(std::string);
+    void compute_kernel(const string, const string, const string);
+    void compute_kernel(const string, const string);
+    void compute_kernel(vector<string>, vector<string>);
+    void compute_kernel(vector<vector<int> >, vector<vector<int> >);
+    void compute_train(vector<vector<int> > Xtrain);
+    void fit(double, double, double, const string);
+    vector<vector<double> > train_kernel();
+    vector<vector<double> > test_kernel();
+    vector<double> get_stdevs();
+    void save_kernel(string);
 };
 
 #endif

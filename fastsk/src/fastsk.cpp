@@ -1,7 +1,6 @@
 #include "fastsk.hpp"
 #include "shared.h"
 #include "libsvm-code/libsvm.h"
-
 #include <thread>
 #include <vector>
 #include <stdlib.h>
@@ -12,7 +11,6 @@
 #include <random>
 #include <ctime>
 #include <cmath>
-
 #include <string>
 #include <iostream>
 #include <fstream>
@@ -334,134 +332,4 @@ double *construct_test_kernel(int n_str_train, int n_str_test, double *K) {
         }
     }
     return test_K;
-}
-
-double *run_cross_validation(double *K, std::string metric, int k) {
-    return 0;
-}
-
-svm_problem *create_svm_problem(double *K, int *labels, kernel_params *kernel_param, svm_parameter *svm_param) {
-    long int n_str = kernel_param->total_str;
-    long int n_str_train = kernel_param->n_str_train;
-
-    struct svm_problem* prob = Malloc(svm_problem, 1);
-    const char* error_msg;
-
-    svm_node** x;
-    svm_node* x_space;
-    prob->l = n_str_train;
-    prob->y = Malloc(double, prob->l);
-    x = Malloc(svm_node*, prob->l);
-    if (svm_param->kernel_type == GAKCO) {
-        x_space = Malloc(struct svm_node, (n_str_train + 1) * n_str_train);
-        int totalind = 0;
-        for (int i = 0; i < n_str_train; i++) {
-            x[i] = &x_space[totalind];
-            for (int j = 0; j < n_str_train; j++) {
-                x_space[j + i * (n_str_train + 1)].index = j + 1; 
-                x_space[j + i * (n_str_train + 1)].value = tri_access(K, i, j);
-            }
-            totalind += n_str_train;
-            x_space[totalind].index = -1;
-            totalind++;
-            prob->y[i] = labels[i];
-        }
-        //this->x_space = x_space;
-    } else if (svm_param->kernel_type == LINEAR || svm_param->kernel_type == RBF) {
-        x_space = Malloc(struct svm_node, (n_str_train + 1) * n_str_train);
-        int totalind = 0;
-        for (int i = 0; i < n_str_train; i++) {
-            x[i] = &x_space[totalind];
-            for (int j = 0; j < n_str_train; j++) {
-                x_space[j + i * (n_str_train + 1)].index = j + 1; 
-                x_space[j + i * (n_str_train + 1)].value = tri_access(K, i, j);
-            }
-            totalind += n_str_train;
-            x_space[totalind].index = -1;
-            totalind++;
-            prob->y[i] = labels[i];
-        }
-        //this->x_space = x_space;
-    }
-
-    prob->x = x;
-
-    if (kernel_param->quiet) {
-        svm_set_print_string_function(&print_null);
-    }
-
-    error_msg = svm_check_parameter(prob, svm_param);
-
-    if (error_msg) {
-        fprintf(stderr, "ERROR: %s\n", error_msg);
-        exit(1);
-    }
-
-    return prob;
-}
-
-svm_model *train_model(double *K, int *labels, kernel_params *kernel_param, svm_parameter *svm_param) {
-    long int n_str = kernel_param->total_str;
-    long int n_str_train = kernel_param->n_str_train;
-    struct svm_problem* prob = Malloc(svm_problem, 1);
-    const char* error_msg;
-
-    svm_node** x;
-    svm_node* x_space;
-    prob->l = n_str_train;
-    prob->y = Malloc(double, prob->l);
-    x = Malloc(svm_node*, prob->l);
-    if (svm_param->kernel_type == GAKCO) {
-        x_space = Malloc(struct svm_node, (n_str_train + 1) * n_str_train);
-        int totalind = 0;
-        for (int i = 0; i < n_str_train; i++) {
-            x[i] = &x_space[totalind];
-            for (int j = 0; j < n_str_train; j++) {
-                x_space[j + i * (n_str_train + 1)].index = j + 1; 
-                x_space[j + i * (n_str_train + 1)].value = tri_access(K, i, j);
-            }
-            totalind += n_str_train;
-            x_space[totalind].index = -1;
-            totalind++;
-            prob->y[i] = labels[i];
-        }
-        //this->x_space = x_space;
-    } else if (svm_param->kernel_type == LINEAR || svm_param->kernel_type == RBF) {
-        x_space = Malloc(struct svm_node, (n_str_train + 1) * n_str_train);
-        int totalind = 0;
-        for (int i = 0; i < n_str_train; i++) {
-            x[i] = &x_space[totalind];
-            for (int j = 0; j < n_str_train; j++) {
-                x_space[j + i * (n_str_train + 1)].index = j + 1; 
-                x_space[j + i * (n_str_train + 1)].value = tri_access(K, i, j);
-            }
-            totalind += n_str_train;
-            x_space[totalind].index = -1;
-            totalind++;
-            prob->y[i] = labels[i];
-        }
-        //this->x_space = x_space;
-    }
-
-    prob->x = x;
-
-    // if quiet mode, set libsvm's print function to null
-    if (kernel_param->quiet) {
-        svm_set_print_string_function(&print_null);
-    }
-
-    error_msg = svm_check_parameter(prob, svm_param);
-
-    if (error_msg) {
-        fprintf(stderr, "ERROR: %s\n", error_msg);
-        exit(1);
-    }
-
-    // train that ish
-    struct svm_model* model;
-    model = svm_train(prob, svm_param);
-
-    free(svm_param);
-
-    return model;
 }

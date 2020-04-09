@@ -65,9 +65,9 @@ kernel = Kernel(g=g, m=m, t=t,
     delta=d,
     skip_variance=skip_variance)
 
-kernel.compute(Xtrain, Xtest)
+kernel.compute_kernel(Xtrain, Xtest)
 end = time.time()
-print("Kernl computation time:", end - start)
+print("Kernl computation time: ", end - start)
 Xtrain = kernel.train_kernel()
 Xtest = kernel.test_kernel()
 

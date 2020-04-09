@@ -1,12 +1,19 @@
 #include "kernel.hpp"
 #include "fastsk.hpp"
 #include "shared.h"
+#include "utils.hpp"
+#include "svm.hpp"
+#include "libsvm-code/libsvm.h"
+#include "libsvm-code/eval.h"
+
 #include <vector>
-#include <array>
 #include <string>
 #include <set>
 #include <math.h>
 #include <cstring>
+#include <iostream>
+
+using namespace std;
 
 Kernel::Kernel(int g, int m, int t, bool approx, double delta, int max_iters, bool skip_variance) {
     this->g = g;
@@ -19,10 +26,37 @@ Kernel::Kernel(int g, int m, int t, bool approx, double delta, int max_iters, bo
     this->skip_variance = skip_variance;
 }
 
-void Kernel::compute(std::vector<std::vector<int> > Xtrain, 
-    std::vector<std::vector<int> > Xtest) {
+void Kernel::compute_kernel(const string Xtrain, const string Xtest) {
+    const string dictionary_file = "";
+    this->compute_kernel(Xtrain, Xtest, dictionary_file);
+}
 
-    std::vector<int> lengths;
+void Kernel::compute_kernel(const string Xtrain, const string Xtest, const string dictionary_file) {
+    // Read in the sequences from the two files and convert them vectors
+    DataReader* data_reader = new DataReader(Xtrain, dictionary_file);
+    bool train = true;
+
+    data_reader->read_data(Xtrain, train);
+    data_reader->read_data(Xtest, !train);
+    vector<vector<int> > train_seq = data_reader->train_seq;
+    vector<int> train_labels = data_reader->train_labels;
+    vector<vector<int> > test_seq = data_reader->test_seq;
+    vector<int> test_labels = data_reader->test_labels;
+
+    this->test_labels = test_labels;
+
+    this->compute_kernel(train_seq, test_seq);
+
+}
+
+void Kernel::compute_kernel(vector<string> Xtrain, vector<string> Xtest) {
+    // Convert sequences to numerical form (as vectors)
+
+}
+
+void Kernel::compute_kernel(vector<vector<int> > Xtrain, vector<vector<int> > Xtest) {
+    // Given sequences already in numerical form, compute the kernel matrix
+    vector<int> lengths;
     int shortest_train = Xtrain[0].size();
     for (int i = 0; i < Xtrain.size(); i++) {
         int len = Xtrain[i].size();
@@ -39,7 +73,10 @@ void Kernel::compute(std::vector<std::vector<int> > Xtrain,
         }
         lengths.push_back(len);
     }
-    printf("shortest train sequence: %d, shortest test sequence: %d\n", shortest_train, shortest_test);
+
+    cout << "Length of shortest train sequence: " << shortest_train << endl;
+    cout << "Length of shortest test sequence: " << shortest_test << endl;
+
     if (this->g > shortest_train) {
         g_greater_than_shortest_train(this->g, shortest_train);
     }
@@ -56,7 +93,7 @@ void Kernel::compute(std::vector<std::vector<int> > Xtrain,
 
     int **S = (int **) malloc(total_str * sizeof(int*));
 
-    std::set<int> dict;
+    set<int> dict;
     dict.insert(0);
     for (int i = 0; i < n_str_train; i++) {
         S[i] = Xtrain[i].data();
@@ -70,12 +107,8 @@ void Kernel::compute(std::vector<std::vector<int> > Xtrain,
             dict.insert(Xtest[i][j]);
         }
     }
-    int dictionarySize = dict.size();
-    for (int d : dict) {
-        printf("%d,", d);
-    }
-    printf("\n");
-    printf("dictionarySize = %d\n", dictionarySize);
+    int dict_size = dict.size();
+    cout << "Dictionary size = " << dict_size << " (+1 for unknown char)." << endl;
     
     /*Extract g-mers*/
     Features* features = extractFeatures(S, lengths, total_str, g);
@@ -94,7 +127,7 @@ void Kernel::compute(std::vector<std::vector<int> > Xtrain,
     params.total_str = total_str;
     params.n_str_pairs = (total_str / (double) 2) * (total_str + 1);
     params.features = features;
-    params.dict_size = dictionarySize;
+    params.dict_size = dict_size;
     params.num_threads = this->num_threads;
     params.num_mutex = this->num_mutex;
     params.quiet = this->quiet;
@@ -110,9 +143,42 @@ void Kernel::compute(std::vector<std::vector<int> > Xtrain,
     this->stdevs = kernel_function->stdevs;
 }
 
-void Kernel::compute_train(std::vector<std::vector<int> > Xtrain) {
+void Kernel::fit(double C, double nu, double eps, const string kernel_type) {
+    cout << "Creating SVM with params: " << endl;
+    cout << "\tC = " << C << endl;
+    cout << "\tnu = " << nu << endl;
+    cout << "\teps = " << eps << endl;
+    cout << "\tkernel_type = " << kernel_type << endl;
 
-    std::vector<int> lengths;
+    //SVM* svm = new SVM(this->g, this->m, C, nu, eps, kernel_type);
+
+    int g = this->g;
+    int m = this->m;
+    bool quiet = false;
+    int n_str_train = this->n_str_train;
+    int n_str_test = this->n_str_test;
+    int* test_labels = this->test_labels.data();
+    int nfeat = this->nfeat;
+
+    SVM* svm = new SVM(g, 
+        m,
+        C, 
+        nu, 
+        eps, 
+        kernel_type, 
+        quiet, 
+        this->kernel, 
+        n_str_train,
+        n_str_test, 
+        test_labels,
+        nfeat
+    );
+    
+    svm->fit();
+}
+
+void Kernel::compute_train(vector<vector<int> > Xtrain) {
+    vector<int> lengths;
     int shortest_train = Xtrain[0].size();
     for (int i = 0; i < Xtrain.size(); i++) {
         int len = Xtrain[i].size();
@@ -135,7 +201,7 @@ void Kernel::compute_train(std::vector<std::vector<int> > Xtrain) {
 
     int **S = (int **) malloc(total_str * sizeof(int*));
 
-    std::set<int> dict;
+    set<int> dict;
     dict.insert(0);
     for (int i = 0; i < n_str_train; i++) {
         S[i] = Xtrain[i].data();
@@ -144,12 +210,8 @@ void Kernel::compute_train(std::vector<std::vector<int> > Xtrain) {
         }
     }
 
-    int dictionarySize = dict.size();
-    for (int d : dict) {
-        printf("%d,", d);
-    }
-    printf("\n");
-    printf("dictionarySize = %d\n", dictionarySize);
+    int dict_size = dict.size();
+    cout << "Dictionary size = " << dict_size << " (+1 for unknown char)." << endl;
     
     /*Extract g-mers*/
     Features* features = extractFeatures(S, lengths, total_str, g);
@@ -168,7 +230,7 @@ void Kernel::compute_train(std::vector<std::vector<int> > Xtrain) {
     params.total_str = total_str;
     params.n_str_pairs = (total_str / (double) 2) * (total_str + 1);
     params.features = features;
-    params.dict_size = dictionarySize;
+    params.dict_size = dict_size;
     params.num_threads = this->num_threads;
     params.num_mutex = this->num_mutex;
     params.quiet = this->quiet;
@@ -182,12 +244,13 @@ void Kernel::compute_train(std::vector<std::vector<int> > Xtrain) {
 
     this->kernel = K;
     this->stdevs = kernel_function->stdevs;
+    this->nfeat = nfeat;
 }
 
-std::vector<std::vector<double> > Kernel::train_kernel() {
+vector<vector<double> > Kernel::train_kernel() {
     double *K = this->kernel;
     int n_str_rain = this->n_str_train;
-    std::vector<std::vector<double> > train_K(n_str_train, std::vector<double>(n_str_train, 0));
+    vector<vector<double> > train_K(n_str_train, vector<double>(n_str_train, 0));
     for (int i = 0; i < n_str_train; i++) {
         for (int j = 0; j < n_str_train; j++) {
             train_K[i][j] = tri_access(K, i, j);
@@ -196,13 +259,13 @@ std::vector<std::vector<double> > Kernel::train_kernel() {
     return train_K;
 }
 
-std::vector<std::vector<double> > Kernel::test_kernel() {
+vector<vector<double> > Kernel::test_kernel() {
     double *K = this->kernel;
     int n_str_train = this->n_str_train;
     int n_str_test = this->n_str_test;
     int total_str = this->n_str_train + this->n_str_test;
 
-    std::vector<std::vector<double> > test_K(n_str_test, std::vector<double>(n_str_train, 0));
+    vector<vector<double> > test_K(n_str_test, vector<double>(n_str_train, 0));
 
     for (int i = n_str_train; i < total_str; i++){
         for (int j = 0; j < n_str_train; j++){
@@ -213,11 +276,11 @@ std::vector<std::vector<double> > Kernel::test_kernel() {
     return test_K;
 }
 
-std::vector<double> Kernel::get_stdevs() {
+vector<double> Kernel::get_stdevs() {
     return this->stdevs;
 }
 
-void Kernel::save_kernel(std::string kernel_file) {
+void Kernel::save_kernel(string kernel_file) {
     double *K = this->kernel;
     int total_str = this->n_str_train + this->n_str_test;
     if (!kernel_file.empty()) {

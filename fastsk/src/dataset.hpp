@@ -2,7 +2,6 @@
 #define DATASET_H
 
 #include "shared.h"
-
 #include <string>
 #include <vector>
 
