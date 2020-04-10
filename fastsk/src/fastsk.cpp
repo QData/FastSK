@@ -2,9 +2,7 @@
 #include "fastsk_kernel.hpp"
 #include "shared.h"
 #include "utils.hpp"
-#include "svm.hpp"
-#include "libsvm-code/libsvm.h"
-#include "libsvm-code/eval.h"
+#include "fastsk_svm.hpp"
 
 #include <vector>
 #include <string>
@@ -150,7 +148,7 @@ void FastSK::fit(double C, double nu, double eps, const string kernel_type) {
     cout << "\teps = " << eps << endl;
     cout << "\tkernel_type = " << kernel_type << endl;
 
-    //SVM* svm = new SVM(this->g, this->m, C, nu, eps, kernel_type);
+    //SVM* svm = new FastSK_SVM(this->g, this->m, C, nu, eps, kernel_type);
 
     int g = this->g;
     int m = this->m;
@@ -160,7 +158,7 @@ void FastSK::fit(double C, double nu, double eps, const string kernel_type) {
     int* test_labels = this->test_labels.data();
     int nfeat = this->nfeat;
 
-    SVM* svm = new SVM(g, 
+    FastSK_SVM* svm = new FastSK_SVM(g, 
         m,
         C, 
         nu, 

@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <errno.h>
 #include <cstring>
-#include "libsvm.h"
+#include "svm.h"
 #include "eval.h"
 
 #define Malloc(type,n) (type *)malloc((n)*sizeof(type))
@@ -28,6 +28,11 @@ double (*validation_function)(const dvec_t&, const ivec_t&) = auc;
 static char *line = NULL;
 static int max_line_len;
 
+void exit_input_error(int line_num)
+{
+	fprintf(stderr,"Wrong input format at line %d\n", line_num);
+	exit(1);
+}
 
 static char* readline(FILE *input)
 {

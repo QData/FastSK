@@ -1,9 +1,9 @@
-#ifndef SVM_H
-#define SVM_H
+#ifndef FASTSK_SVM_H
+#define FASTSK_SVM_H
 
 #include "fastsk_kernel.hpp"
 #include "shared.h"
-#include "libsvm-code/libsvm.h"
+#include "libsvm-code/svm.h"
 #include "libsvm-code/eval.h"
 #include <string>
 #include <cstdlib>
@@ -11,7 +11,7 @@
 
 using namespace std;
 
-class SVM {
+class FastSK_SVM {
 public:
     int g;
     int m;
@@ -43,7 +43,7 @@ public:
     double* K;
     int nfeat;
 
-    SVM(int, int, double, double, double, const string, bool, double*, int, int, int*, int);
+    FastSK_SVM(int, int, double, double, double, const string, bool, double*, int, int, int*, int);
     void fit();
     void predict(string predictions_file);
     double score(string metric);

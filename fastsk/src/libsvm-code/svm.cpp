@@ -7,7 +7,8 @@
 #include <stdarg.h>
 #include <limits.h>
 #include <locale.h>
-#include "libsvm.h"
+#include "svm.h"
+#include "eval.h"
 #include "../fastsk_kernel.hpp"
 
 int libsvm_version = LIBSVM_VERSION;

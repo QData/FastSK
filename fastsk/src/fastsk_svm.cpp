@@ -1,7 +1,7 @@
-#include "svm.hpp"
+#include "fastsk_svm.hpp"
 #include "fastsk_kernel.hpp"
 #include "shared.h"
-#include "libsvm-code/libsvm.h"
+#include "libsvm-code/svm.h"
 #include "libsvm-code/eval.h"
 
 #include <string>
@@ -12,7 +12,7 @@
 
 using namespace std;
 
-SVM::SVM(int g, int m, double C, double nu, double eps, const string kernel_type, 
+FastSK_SVM::FastSK_SVM(int g, int m, double C, double nu, double eps, const string kernel_type, 
     bool quiet, double* K, int n_str_train, int n_str_test, int* test_labels, int nfeat) {
 
     this->g = g;
@@ -46,7 +46,7 @@ SVM::SVM(int g, int m, double C, double nu, double eps, const string kernel_type
     this->nfeat = nfeat;
 }
 
-void SVM::fit() {
+void FastSK_SVM::fit() {
 
     // if ((this->kernel_type == LINEAR || this->kernel_type == RBF) && test_file.empty()) {
     //     printf("A test file must be provided for kernel type '%s'\n", this->kernel_type_name.c_str());
@@ -73,15 +73,15 @@ void SVM::fit() {
     struct svm_model *model;
 
     int folds = 5;
-    //double cv_auc = binary_class_cross_validation(prob, svm_param, folds);
-    //cout << "cv_auc = " << cv_auc << endl;
+    double cv_auc = binary_class_cross_validation(prob, svm_param, folds);
+    cout << "cv_auc = " << cv_auc << endl;
     //return cv_auc;
 
-    model = this->train_model(this->K, this->test_labels, svm_param);
-    this->model = model;
+    //model = this->train_model(this->K, this->test_labels, svm_param);
+    //this->model = model;
 }
 
-svm_problem* SVM::create_svm_problem(double *K, int *labels, svm_parameter *svm_param) {
+svm_problem* FastSK_SVM::create_svm_problem(double *K, int *labels, svm_parameter *svm_param) {
     int n_str = this->total_str;
     int n_str_train = this->n_str_train;
 
@@ -141,7 +141,7 @@ svm_problem* SVM::create_svm_problem(double *K, int *labels, svm_parameter *svm_
     return prob;
 }
 
-svm_model* SVM::train_model(double *K, int *labels, svm_parameter *svm_param) {
+svm_model* FastSK_SVM::train_model(double *K, int *labels, svm_parameter *svm_param) {
     int n_str = this->total_str;
     int n_str_train = this->n_str_train;
     struct svm_problem* prob = Malloc(svm_problem, 1);

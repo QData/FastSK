@@ -2,7 +2,7 @@
 #define _EVAL_H
 
 #include <stdio.h>
-#include "libsvm.h"
+#include "svm.h"
 
 #ifdef __cplusplus
 extern "C" {

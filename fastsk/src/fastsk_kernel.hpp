@@ -2,7 +2,7 @@
 #define FASTSK_KERNEL_H
 
 #include "shared.h"
-#include "libsvm-code/libsvm.h"
+#include "libsvm-code/svm.h"
 #include <thread>
 
 typedef struct kernel_params {

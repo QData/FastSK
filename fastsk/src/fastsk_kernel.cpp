@@ -1,6 +1,5 @@
 #include "fastsk_kernel.hpp"
 #include "shared.h"
-#include "libsvm-code/libsvm.h"
 #include <thread>
 #include <vector>
 #include <stdlib.h>
