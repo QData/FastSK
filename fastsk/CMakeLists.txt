@@ -6,9 +6,8 @@ pybind11_add_module(fastsk
     src/bindings.cpp
     src/fastsk.cpp
     src/fastsk_kernel.cpp
-    src/svm.cpp
     src/shared.cpp
     src/utils.cpp
-    src/libsvm-code/libsvm.cpp
+    src/libsvm-code/svm.cpp
     src/libsvm-code/eval.cpp
 )

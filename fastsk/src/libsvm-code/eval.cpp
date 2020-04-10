@@ -28,12 +28,6 @@ double (*validation_function)(const dvec_t&, const ivec_t&) = auc;
 static char *line = NULL;
 static int max_line_len;
 
-void exit_input_error(int line_num)
-{
-	fprintf(stderr,"Wrong input format at line %d\n", line_num);
-	exit(1);
-}
-
 static char* readline(FILE *input)
 {
 	int len;
@@ -335,6 +329,7 @@ double binary_class_cross_validation(const svm_problem *prob, const svm_paramete
 
 		if(svm_get_nr_class(submodel) > 2) 
 		{
+			printf("svm_get_nr_class(submodel) = %d\n", svm_get_nr_class(submodel));
 			fprintf(stderr,"Error: the number of class is not equal to 2\n");
 			exit(-1);
 		}

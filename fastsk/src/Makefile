@@ -1,23 +1,18 @@
-# Makefile for fastsk-asC
+CXX = g++
+CXXFLAGS = -lpthread -pthread -std=c++11 -O3 -Wno-write-strings -D_GNU_SOURCE
 
-# Compiler options
-CXX = g++ # use g++ compiler
-CXXFLAGS = -lpthread -pthread -std=c++11 -O3 -Wno-write-strings -D_GNU_SOURCE # pthread, g for debugging
-#INCLUDE=-I/usr/include/libsvm-code
-
-# To get an o file, we use the cpp file
 .SUFFIXES: .o .cpp
-OFILES = main.o fastsk.o fastsk_kernel.o fastsk_svm.o shared.o utils.o libsvm-code/eval.o libsvm-code/svm.o
+OFILES = main.o fastsk.o fastsk_kernel.o shared.o utils.o libsvm-code/eval.o libsvm-code/svm.o libsvm-code/svm-predict.o
 
-fastsk: $(OFILES)
-	$(CXX) $(CXXFLAGS) $(OFILES) -o main
-	@echo Produced fastsk executable 
+main: $(OFILES)
+	$(CXX) $(CXXFLAGS) $(OFILES) -o fastsk
+	@echo Produced fastsk executable
 
 clean:
-	$(RM) *.o *~
+	$(RM) *.o *~ fastsk
 
 .PHONY: all
-all: fastsk
+all: main
 
 install: 
 	mkdir -p ../bin
@@ -25,13 +20,10 @@ install:
 	rm fastsk
 	@echo fastsk executable installed in the fastsk-asC/bin directory
 
-
-# Dependency rules for *.o files
-svm.o: ./libsvm-code/svm.cpp ./libsvm-code/eval.cpp
-eval.o: ./libsvm-code/eval.cpp
-fastsk.o: fastsk.cpp fastsk_kernel.cpp utils.cpp shared.cpp fastsk_svm.cpp
+main: main.cpp fastsk.cpp
+fastsk.o: fastsk.cpp shared.cpp utils.cpp fastsk_kernel.cpp libsvm-code/svm.cpp libsvm-code/eval.cpp
 shared.o: shared.cpp
 utils.o: utils.cpp
 fastsk_kernel.o: fastsk_kernel.cpp shared.cpp 
-fastsk_svm.o: libsvm-code/svm.cpp libsvm-code/eval.cpp
-main.o: main.cpp fastsk.cpp
+libsvm-code/svm.o: libsvm-code/svm.cpp
+libsvm-code/eval.o: libsvm-code/eval.cpp libsvm-code/svm.cpp libsvm-code/svm-predict.c 

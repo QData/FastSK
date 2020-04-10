@@ -8,6 +8,7 @@
 #include <map>
 #include <assert.h>
 #include <stdexcept>
+#include <algorithm>
 
 using namespace std;
 

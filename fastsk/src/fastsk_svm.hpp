@@ -19,7 +19,7 @@ public:
     int num_threads = -1;
     int svm_type = C_SVC;
     int kernel_type = LINEAR;       // must be LINEAR, fastsk, or RBF
-    std::string kernel_type_name;   
+    string kernel_type_name;   
     double C;                       //C param
     double nu;                      //nu for nu-SVC
     double cache_size = 100;        // cache size
@@ -35,6 +35,7 @@ public:
     long int total_str;
     long int n_str_train;
     long int n_str_test;
+    int *train_labels;
     int *test_labels;
     int numClasses = -1;
     char *dictionary;
@@ -43,11 +44,11 @@ public:
     double* K;
     int nfeat;
 
-    FastSK_SVM(int, int, double, double, double, const string, bool, double*, int, int, int*, int);
+    FastSK_SVM(int, int, double, double, double, const string, bool, double*, int, int, int*, int*, int);
     void fit();
-    void predict(string predictions_file);
-    double score(string metric);
-    double cv(vector<vector<int> > X, vector<int> Y, int num_folds);
+    void predict(string);
+    double score(string);
+    double cv(int);
     svm_problem* create_svm_problem(double *, int*, svm_parameter*);
     svm_model* train_model(double*, int*, svm_parameter*);
 };
