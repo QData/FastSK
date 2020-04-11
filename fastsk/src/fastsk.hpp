@@ -9,6 +9,8 @@
 
 using namespace std;
 
+
+
 class FastSK {
     int g;
     int m;
@@ -16,7 +18,7 @@ class FastSK {
     int num_threads = -1;
     int num_mutex = -1;
     int svm_type = C_SVC;
-    int kernel_type = LINEAR;       // must be LINEAR, fastsk, or RBF
+    int kernel_type = LINEAR;       // must be LINEAR, FASTSK, or RBF
     string kernel_type_name;   
     double C;                       //C param
     double nu;                      //nu for nu-SVC

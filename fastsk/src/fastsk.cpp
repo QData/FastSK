@@ -2,6 +2,7 @@
 #include "fastsk_kernel.hpp"
 #include "shared.h"
 #include "utils.hpp"
+#include "libsvm-code/svm.h"
 
 #include <vector>
 #include <string>
@@ -387,7 +388,7 @@ svm_problem* FastSK::create_svm_problem(double* K, int* labels, svm_parameter* s
     const char* error_msg;
     svm_node** x;
     svm_node* x_space;
-    
+
     prob->l = n_str_train;
     prob->y = Malloc(double, prob->l);
     x = Malloc(svm_node*, prob->l);

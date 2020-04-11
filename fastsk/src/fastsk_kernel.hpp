@@ -24,7 +24,6 @@ typedef struct kernel_params {
     double delta;
     int max_iters;
     bool skip_variance;
-
 } kernel_params;
 
 class KernelFunction {
@@ -38,9 +37,7 @@ public:
     double get_variance(unsigned int*, double*, double *, int, int, int);
 };
 
-svm_model *train_model(double *K, int *labels, kernel_params *kernel_param, svm_parameter *svm_param);
-double *construct_test_kernel(int n_str_train, int n_str_test, double *K);
-double *run_cross_validation(double *K, std::string metric, int k);
-svm_problem *create_svm_problem(double *K, int *labels, kernel_params *kernel_param, svm_parameter *svm_param);
+svm_model* train_model(double*, int*, kernel_params*, svm_parameter*);
+double* construct_test_kernel(int, int, double*);
 
 #endif

@@ -14,12 +14,6 @@ clean:
 .PHONY: all
 all: main
 
-install: 
-	mkdir -p ../bin
-	cp $< ../bin/fastsk
-	rm fastsk
-	@echo fastsk executable installed in the fastsk-asC/bin directory
-
 main: main.cpp fastsk.cpp
 fastsk.o: fastsk.cpp shared.cpp utils.cpp fastsk_kernel.cpp libsvm-code/svm.cpp libsvm-code/eval.cpp
 shared.o: shared.cpp
