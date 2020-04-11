@@ -1,3 +1,10 @@
+"""experiments.py
+"""
+
+__author__ = "Derrick Blakely"
+__email__ = "dcb7xz@virginia.edu"
+__date__ = "December 2019"
+
 import os
 import os.path as osp
 import sys
@@ -30,26 +37,66 @@ GKM_PROT_DICT = '/localtmp/dcb7xz/FastSK/baselines/gkm_data/protein.dictionary.t
 
 def get_args():
     parser = argparse.ArgumentParser(description='FastSK Experiments')
-    parser.add_argument('--threads', action='store_true', default=False,
-        help='Run time vs number of threads experiments')
-    parser.add_argument('--m-time', action='store_true', default=False,
-        help='Run kernel time vs g')
-    parser.add_argument('--g-time', action='store_true', default=False,
-        help='Run kernel time vs g experiments')
-    parser.add_argument('--I-auc', action='store_true', default=False,
-        help='Run AUC vs I (max number of iterations) experiments')
-    parser.add_argument('--delta-auc', action='store_true', default=False,
-        help='Run AUC vs delta (convergence algorithm error parameter) experiments')
-    parser.add_argument('--g-auc', action='store_true', default=False,
-        help='Run AUC vs g experiments')
-    parser.add_argument('--stdev-I', action='store_true', default=False,
-        help='Vary number of iters and measure the stdev and AUC')
-    parser.add_argument('--output-dir', type=str, required=True,
-        help='Directory to save results')
-    parser.add_argument('--params-csv', type=str, default='./evaluations/datasets_to_use.csv',
-        help='CSV file containing kernel parameters and dataset names')
+    parser.add_argument('--threads', 
+        action='store_true', 
+        default=False,
+        help='Run time vs number of threads experiments'
+    )
+    parser.add_argument('--m-time', 
+        action='store_true', 
+        default=False,
+        help='Run kernel time vs g'
+    )
+    parser.add_argument('--g-time', 
+        action='store_true', 
+        default=False,
+        help='Run kernel time vs g experiments'
+    )
+    parser.add_argument('--I-auc',
+        action='store_true',
+        default=False,
+        help='Run AUC vs I (max number of iterations) experiments'
+    )
+    parser.add_argument('--delta-auc',
+        action='store_true', 
+        default=False,
+        help='Run AUC vs delta (convergence algorithm error parameter) experiments'
+    )
+    parser.add_argument('--g-auc',
+        action='store_true',
+        default=False,
+        help='Run AUC vs g experiments'
+    )
+    parser.add_argument('--stdev-I', 
+        action='store_true', 
+        default=False,
+        help='Vary number of iters and measure the stdev and AUC'
+    )
+    parser.add_argument('--output-dir', 
+        type=str, 
+        required=True,
+        help='Directory to save results'
+    )
+    parser.add_argument('--params-csv', 
+        type=str,
+        default='./evaluations/datasets_to_use.csv',
+        help='CSV file containing kernel parameters and dataset names'
+    )
+    parser.add_argument('--gkm-mode', 
+        type=str,
+        choices=['dna', 'protein']
+        default='dna',
+        help='Whether gkm is currently compiled for protein or dna'
+    )
 
     return parser.parse_args()
+
+args = get_args()
+df = pd.read_csv(args.params_csv)
+params = df.to_dict('records')
+
+if not osp.exists(args.output_dir):
+    os.makedirs(args.output_dir)   
 
 
 def thread_experiment(dataset, g, m, k):
@@ -802,30 +849,20 @@ def run_stdev_and_auc_vs_iters_experiments(params, output_dir):
 
     for p in params:
         dataset, type_, g, m, k = p['Dataset'], p['type'], p['g'], p['m'], p['k']
-        stdev_and_auc_vs_iters_experiments(p, output_dir)
+        if type_ == args.gkm_mode:
+            stdev_and_auc_vs_iters_experiments(p, output_dir) 
 
-def main():
-    args = get_args()
-    df = pd.read_csv(args.params_csv)
-    params = df.to_dict('records')
-
-    if not osp.exists(args.output_dir):
-        os.makedirs(args.output_dir)    
-
-    if args.threads:
-        run_thread_experiments(params)
-    if args.m_time:
-        run_m_time_experiments(params, args.output_dir)
-    if args.g_time:
-        run_g_time_experiments(params, args.output_dir)
-    if args.I_auc:
-        run_I_experiments(params)
-    if args.stdev_I:
-        run_stdev_and_auc_vs_iters_experiments(params, args.output_dir)
-    if args.delta_auc:
-        run_delta_experiments(params)
-    if args.g_auc:
-        run_g_auc_experiments(params, args.output_dir)
-
-if __name__ == '__main__':
-    main()
+if args.threads:
+    run_thread_experiments(params)
+if args.m_time:
+    run_m_time_experiments(params, args.output_dir)
+if args.g_time:
+    run_g_time_experiments(params, args.output_dir)
+if args.I_auc:
+    run_I_experiments(params)
+if args.stdev_I:
+    run_stdev_and_auc_vs_iters_experiments(params, args.output_dir)
+if args.delta_auc:
+    run_delta_experiments(params)
+if args.g_auc:
+    run_g_auc_experiments(params, args.output_dir)

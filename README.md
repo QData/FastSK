@@ -23,6 +23,7 @@ A Python package and string kernel algorithm for training SVM classifiers for se
 ### With pip
 
 **From source**
+
 We recommend using a virtual environment when using this project from Python:
 ```
 python3 -m pip install --user --upgrade pip
