@@ -21,8 +21,15 @@ A Python package and string kernel algorithm for training SVM classifiers for se
 
 ## Installation (Linux and MacOS)
 ### With pip
+
+Simply having Python 3, virtualenv is the simplest way to start this project. Start a new virtual environment and then install all the packages in the "requirements.txt" document in the main directory of this project. 
+
+Setting Up Virtual Env:
 ```
-pip install -i https://test.pypi.org/simple/ fastsk-test
+python3 -m pip install --user --upgrade pip
+python3 -m pip install --user virtualenv
+python3 -m virtualenv env
+source env/bin/activate
 ```
 
 **From source**
