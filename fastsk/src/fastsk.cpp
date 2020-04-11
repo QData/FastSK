@@ -537,7 +537,7 @@ double FastSK::score(const string metric) {
     double fnr = fn / (double) pagg;
     double fpr = fp / (double) nagg;
     double auc = calculate_auc(pos, neg, pagg, nagg);
-    double acc = correct / (double)  n_str_test;
+    double acc = 100 * correct / (double)  n_str_test;
     if (!this->quiet) {
         printf("Num sequences: %d\n", nagg + pagg);
         printf("Num positive: %d, Num negative: %d\n", pagg, nagg);

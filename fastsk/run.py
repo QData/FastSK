@@ -68,8 +68,8 @@ fastsk = FastSK(g=g, m=m, t=t,
 fastsk.compute_kernel(Xtrain, Xtest)
 end = time.time()
 print("Kernl computation time: ", end - start)
-Xtrain = fastsk.train_kernel()
-Xtest = fastsk.test_kernel()
+Xtrain = fastsk.get_train_kernel()
+Xtest = fastsk.get_test_kernel()
 
 ### Use linear SVM
 svm = LinearSVC(C=C)

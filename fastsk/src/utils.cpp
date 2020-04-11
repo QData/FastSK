@@ -103,10 +103,8 @@ map<char, int> infer_dict(const string train_file) {
 DataReader::DataReader(const string train_file, const string dictionary_file) {
     if (dictionary_file.empty()) {
         this->dictmap = infer_dict(train_file);
-        cout << "Created dictionary of size " << this->dictmap.size() << "..." << endl;
     } else {
         this->dictmap = read_dict(dictionary_file);
-        cout << "Read dictionary of size " << this->dictmap.size() << "..." << endl;
     }
 }
 
