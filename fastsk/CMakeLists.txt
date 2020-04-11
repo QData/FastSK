@@ -3,8 +3,11 @@ project(fastsk)
 
 add_subdirectory(pybind11)
 pybind11_add_module(fastsk
-	src/bindings.cpp
-	src/kernel.cpp
-	src/shared.cpp
-	src/fastsk.cpp
-	src/dataset.cpp)
+    src/bindings.cpp
+    src/fastsk.cpp
+    src/fastsk_kernel.cpp
+    src/shared.cpp
+    src/utils.cpp
+    src/libsvm-code/svm.cpp
+    src/libsvm-code/eval.cpp
+)

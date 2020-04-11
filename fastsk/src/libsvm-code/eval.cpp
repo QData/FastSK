@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <errno.h>
 #include <cstring>
-#include "libsvm.h"
+#include "svm.h"
 #include "eval.h"
 
 #define Malloc(type,n) (type *)malloc((n)*sizeof(type))
@@ -27,7 +27,6 @@ double (*validation_function)(const dvec_t&, const ivec_t&) = auc;
 
 static char *line = NULL;
 static int max_line_len;
-
 
 static char* readline(FILE *input)
 {
@@ -330,6 +329,7 @@ double binary_class_cross_validation(const svm_problem *prob, const svm_paramete
 
 		if(svm_get_nr_class(submodel) > 2) 
 		{
+			printf("svm_get_nr_class(submodel) = %d\n", svm_get_nr_class(submodel));
 			fprintf(stderr,"Error: the number of class is not equal to 2\n");
 			exit(-1);
 		}

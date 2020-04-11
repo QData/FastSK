@@ -2,7 +2,7 @@ import os
 import os.path as osp
 import subprocess
 import numpy as np
-from fastsk import Kernel
+from fastsk import FastSK
 from sklearn.svm import LinearSVC
 from sklearn.linear_model import LogisticRegression
 from sklearn.calibration import CalibratedClassifierCV
@@ -43,11 +43,67 @@ def time_fastsk(g, m, t, data_location, prefix, approx=False, max_iters=None, ti
     
     return end - start
 
-def train_and_test_gkm(g, m, t, prefix, gkm_data, gkm_exec, approx=False, timeout=None, alphabet=None):
+def fastsk_wrap(dataset, g, m, t, approx, I, delta, skip_variance, C, return_dict):
+    fastsk = FastskRunner(dataset)
+    acc, auc = fastsk.train_and_test(g, m, t, I, approx, skip_variance, C)
+    return_dict['acc'] = acc
+    return_dict['auc'] = auc
+
+def train_and_test_fastsk(dataset, g, m, t, approx, I=50, delta=0.025, skip_variance=False, C=1, timeout=None):
+    start = time.time()
+    if timeout:
+        manager = multiprocessing.Manager()
+        return_dict = manager.dict()
+        p = multiprocessing.Process(target=fastsk_wrap,
+            name='Train and test FastSK',
+            args=(dataset, g, m, t, approx, I, delta, skip_variance, C, return_dict))
+        p.start()
+        p.join(timeout)
+        if p.is_alive():
+            p.terminate()
+            p.join()
+
+        if return_dict.values() == []:
+            acc, auc = 0, 0
+        else:
+            acc, auc = return_dict['acc'], return_dict['auc']
+    else:
+        acc, auc = fastsk.train_and_test(g, m, t=t, I=I, 
+            approx=approx, skip_variance=skip_variance, C=C)
+    end = time.time()
+
+    return acc, auc, end - start
+
+def gkm_wrap(g, m, t, prefix, gkm_data, gkm_exec, approx, timeout, alphabet, return_dict):
     k = g - m
     gkm = GkmRunner(gkm_exec, gkm_data, prefix, g, k, approx, alphabet, './temp')
     acc, auc = gkm.train_and_test(t)
-    return acc, auc
+    return_dict['acc'] = acc
+    return_dict['auc'] = auc
+
+def train_and_test_gkm(g, m, t, prefix, gkm_data, gkm_exec, approx=False, timeout=None, alphabet=None):
+    start = time.time()
+    if timeout:
+        manager = multiprocessing.Manager()
+        return_dict = manager.dict()
+        p = multiprocessing.Process(target=gkm_wrap, 
+            name='Train and test Gkm',
+            args=(g, m, t, prefix, gkm_data, gkm_exec, approx, timeout, alphabet, return_dict))
+        p.start()
+        p.join(timeout)
+        if p.is_alive():
+            p.terminate()
+            p.join()
+        if return_dict.values() == []:
+            acc, auc = 0, 0
+        else:
+            acc, auc = return_dict['acc'], return_dict['auc']
+    else:
+        k = g - m
+        gkm = GkmRunner(gkm_exec, gkm_data, prefix, g, k, approx, alphabet, './temp')
+        acc, auc = gkm.train_and_test(t)
+    end = time.time()
+    return acc, auc, end - start
 
 def time_gkm(g, m, t, prefix, gkm_data, gkm_exec, approx=False, timeout=None, alphabet=None):
     '''Run gkm-SVM2.0 kernel computation. If a timeout is provided,
@@ -289,7 +345,7 @@ class FastskRunner():
         self.Ytest = Ytest
 
     def compute_train_kernel(self, g, m, t=20, approx=True, I=100, delta=0.025, skip_variance=False):
-        kernel = Kernel(g=g, m=m, t=t, 
+        kernel = FastSK(g=g, m=m, t=t, 
             approx=approx, 
             max_iters=I, 
             delta=delta, 
@@ -297,13 +353,13 @@ class FastskRunner():
         kernel.compute_train(self.train_seq)
 
     def train_and_test(self, g, m, t, approx, I, delta=0.025, skip_variance=False, C=1):
-        kernel = Kernel(g=g, m=m, t=t, 
+        kernel = FastSK(g=g, m=m, t=t, 
             approx=approx, 
             max_iters=I, 
             delta=delta, 
             skip_variance=skip_variance)
 
-        kernel.compute(self.train_seq, self.test_seq)
+        kernel.compute_kernel(self.train_seq, self.test_seq)
         self.Xtrain = kernel.train_kernel()
         self.Xtest = kernel.test_kernel()
         self.stdevs = kernel.stdevs()
@@ -317,22 +373,6 @@ class FastskRunner():
         probs = self.clf.predict_proba(self.Xtest)[:,1]
         auc = metrics.roc_auc_score(self.Ytest, probs)
         return acc, auc
-
-class StdDevFastSKRunner(FastskRunner):
-    def __init__(self, prefix, data_location='/localtmp/dcb7xz/FastSK/data'):
-        super().__init__(prefix, data_location)
-
-    def get_stdevs(self, g, m, t, approx, I, stdev_file, delta=0.025, skip_variance=False, C=1):
-        kernel = Kernel(g=g, m=m, t=t, 
-            approx=approx, 
-            max_iters=I,
-            delta=delta, 
-            skip_variance=skip_variance)
-
-        kernel.compute(self.train_seq, self.test_seq, stdev_file)
-        stdevs = kernel.get_stdevs()
-        
-        return stdevs
 
 
 class GkmRunner():

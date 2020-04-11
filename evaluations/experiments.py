@@ -6,8 +6,7 @@ import argparse
 import json
 import numpy as np
 from fastsk import Kernel
-from utils import FastaUtility, GkmRunner, fastskRunner, FastskRunner
-from utils import time_fastsk, time_gkm, time_fastsk, time_blended, train_and_test_gkm
+from utils import *
 import pandas as pd
 import time
 from scipy import special
@@ -15,6 +14,7 @@ from scipy.stats import sem, t
 from scipy import mean
 import multiprocessing
 import subprocess
+from tqdm import tqdm
 
 # Default subprocess timeout (s)
 TIMEOUT = 3600
@@ -365,7 +365,7 @@ def I_experiment(dataset, g, m, k, C):
 
     for I in iter_vals:
         fastsk = FastskRunner(dataset)
-        acc, auc = fastsk.train_and_test(g, m, t=1, approx=True, I=I, delta=0.025, C=C)
+        acc, auc, _ = fastsk.train_and_test(g, m, t=1, approx=True, I=I, delta=0.025, C=C)
         log_str = "{}: I = {}, auc = {}, acc = {}".format(dataset, I, auc, acc)
         print(log_str)
         results['I'].append(I)
@@ -395,7 +395,7 @@ def delta_experiment(dataset, g, m, k, C):
     delta_vals = [0.005 * i for i in range(20)] + [0.1 * i for i in range(1, 11)]
     for d in delta_vals:
         fastsk = FastskRunner(dataset)
-        acc, auc = fastsk.train_and_test(g, m, t=1, approx=True, I=max_I, delta=d, C=C)
+        acc, auc, _ = fastsk.train_and_test(g, m, t=1, approx=True, I=max_I, delta=d, C=C)
         log_str = "{}: d = {}, acc = {}, auc = {}".format(dataset, d, acc, auc)
         print(log_str)
         results['delta'].append(d)
@@ -419,7 +419,7 @@ def check_C_vals(g, m, dataset):
     max_I = max_I = min(int(special.comb(g, m)), 100)
     for C in C_vals:
         fastsk = FastskRunner(dataset)
-        acc, auc = fastsk.train_and_test(g, m, t=1, I=max_I, approx=True, C=C)
+        acc, auc, _ = fastsk.train_and_test(g, m, t=1, I=max_I, approx=True, C=C)
         if auc > best_auc:
             best_acc, best_auc = acc, auc
     return best_acc, best_auc, C
@@ -432,12 +432,12 @@ def g_auc_experiment(dataset, output_dir, C, type_):
         'g': [],
         'k': [],
         'm': [],
-        'fastsk_approx_i50_acc': [],
-        'fastsk_approx_i50_auc': [],
         'fastsk_approx_conv_acc': [],
         'fastsk_approx_conv_auc': [],
-        'gkm_approx_acc': [],
-        'gkm_approx_auc': [],
+        #'fastsk_approx_i50_acc': [],
+        #'fastsk_approx_i50_auc': [],
+        #'gkm_approx_acc': [],
+        #'gkm_approx_auc': [],
     }
 
     train_file = osp.join('/localtmp/dcb7xz/FastSK/data', dataset + '.train.fasta')
@@ -447,43 +447,46 @@ def g_auc_experiment(dataset, output_dir, C, type_):
     max_g = min(fasta_util.shortest_seq(train_file), fasta_util.shortest_seq(test_file), 20)
     k = 6
 
-    for g in range(k, max_g + 1):
-        m = g - k
+    gkm_alphabet = GKM_PROT_DICT if type_ == 'protein' else None
 
+    skip_fastsk, skip_gkm = False, True
+
+    for g in range(k, max_g + 1):
         #### Run experiments
+        m = g - k
         
         ## FastSK-Approx with up to 50 iterations/mismatch combos
         fastsk = FastskRunner(dataset)
-        fastsk_approx_i50_acc, fastsk_approx_i50_auc = fastsk.train_and_test(g, m, t=1, I=50,
-            approx=True, skip_variance=True, C=C)
-
-
-        ## FastSK-Approx that just runs until convergence (no max iters)
-        #fastsk = FastskRunner(dataset)
-        max_I = int(special.comb(g, m))
-        fastsk_approx_conv_acc, fastsk_approx_conv_auc = fastsk.train_and_test(g, m, t=1, I=max_I,
-            approx=True, skip_variance=True, C=C)
+        if not skip_fastsk:
+            fsk_acc, fsk_auc, fsk_time = train_and_test_fastsk(dataset, g, m, t=1, I=100,
+                approx=True, skip_variance=False, C=C, timeout=TIMEOUT)
+            if fsk_time >= TIMEOUT:
+                skip_fastsk = True
+        else:
+            fsk_acc, fsk_auc = 0, 0
 
         ## gkm-Approx (m_max = 3)
-        gkm_alphabet = GKM_PROT_DICT if type_ == 'protein' else None
-        gkm_approx_acc, gkm_approx_auc = train_and_test_gkm(g=g, m=m, t=20, 
-            prefix=dataset, gkm_data=GKM_DATA, gkm_exec=GKM_EXEC, 
-            approx=True, timeout=None, alphabet=gkm_alphabet)
+        if not skip_gkm:
+            gkm_approx_acc, gkm_approx_auc, gkmtime = train_and_test_gkm(g=g, m=m, t=20, 
+                prefix=dataset, gkm_data=GKM_DATA, gkm_exec=GKM_EXEC, 
+                approx=True, timeout=TIMEOUT, alphabet=gkm_alphabet)
+            if gkmtime >= TIMEOUT:
+                skip_gkm = True
+        else:
+            gkm_approx_acc, gkm_approx_auc = 0, 0
 
         #### Log results
 
-        log_str = "g = {}, fastsk conv auc = {}, fastsk i=50 auc = {}, gkm approx auc = {}"
-        print(log_str.format(g, fastsk_approx_conv_auc, fastsk_approx_i50_auc, gkm_approx_auc))
+        log_str = "\n\ng = {}, m = {}, fastsk auc = {}, gkm approx auc = {}\n\n"
+        print(log_str.format(g, m, fsk_auc, gkm_approx_auc))
 
         results['g'].append(g)
         results['k'].append(k)
         results['m'].append(m)
-        results['fastsk_approx_i50_acc'].append(fastsk_approx_i50_acc)
-        results['fastsk_approx_i50_auc'].append(fastsk_approx_i50_auc)
-        results['fastsk_approx_conv_acc'].append(fastsk_approx_conv_acc)
-        results['fastsk_approx_conv_auc'].append(fastsk_approx_conv_auc)
-        results['gkm_approx_acc'].append(gkm_approx_acc)
-        results['gkm_approx_auc'].append(gkm_approx_auc)
+        results['fastsk_approx_conv_acc'].append(fsk_acc)
+        results['fastsk_approx_conv_auc'].append(fsk_auc)
+        #results['gkm_approx_acc'].append(gkm_approx_acc)
+        #results['gkm_approx_auc'].append(gkm_approx_auc)
 
         df = pd.DataFrame(results)
         df.to_csv(output_csv, index=False)
@@ -493,9 +496,7 @@ def run_g_auc_experiments(params, output_dir):
         dataset, type_, g, m, k, C = p['Dataset'], p['type'], p['g'], p['m'], p['k'], p['C']
         assert k == g - m
         if type_ == 'dna':
-            # jan 25: run EP300_47848, Pbde, KAT2B, TP53, ZZZ
-            if dataset == 'EP300_47848':
-                g_auc_experiment(dataset, output_dir, C, type_)
+            g_auc_experiment(dataset, output_dir, C, type_)
 
 def fastsk_fastsk_protein_kernel_times(params):
     output_csv = 'fastsk_fastsk_protein_kernel_times.csv'
@@ -746,7 +747,7 @@ def stdev_and_auc_vs_iters_experiments(params, output_dir):
         # include max
         iters += [max_I]
 
-    for I in iters:
+    for I in tqdm(iters):
         results['iters'].append(I)
         sample_accs, sample_aucs, sample_stdevs = [], [], []
         for i in range(5):
@@ -785,11 +786,11 @@ def stdev_and_auc_vs_iters_experiments(params, output_dir):
         results['lower stdev'].append(lower_stdev)
         results['upper stdev'].append(upper_stdev)
 
-    df = pd.DataFrame(results)
-    if not osp.exists(output_dir):
-        os.makedirs(output_dir) 
-    output_csv = osp.join(output_dir, '{}_stdev_auc_iters.csv'.format(dataset))
-    df.to_csv(output_csv, index=False)
+        df = pd.DataFrame(results)
+        if not osp.exists(output_dir):
+            os.makedirs(output_dir) 
+        output_csv = osp.join(output_dir, '{}_stdev_auc_iters.csv'.format(dataset))
+        df.to_csv(output_csv, index=False)
 
 def run_stdev_and_auc_vs_iters_experiments(params, output_dir):
     '''Note, these requires require that fastsk.cpp be tweaked
@@ -801,8 +802,7 @@ def run_stdev_and_auc_vs_iters_experiments(params, output_dir):
 
     for p in params:
         dataset, type_, g, m, k = p['Dataset'], p['type'], p['g'], p['m'], p['k']
-        if type_ == 'protein':
-            stdev_and_auc_vs_iters_experiments(p, output_dir)
+        stdev_and_auc_vs_iters_experiments(p, output_dir)
 
 def main():
     args = get_args()

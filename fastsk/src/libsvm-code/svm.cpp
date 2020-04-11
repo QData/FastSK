@@ -7,8 +7,9 @@
 #include <stdarg.h>
 #include <limits.h>
 #include <locale.h>
-#include "libsvm.h"
-#include "../fastsk.hpp"
+#include "svm.h"
+#include "eval.h"
+#include "../fastsk_kernel.hpp"
 
 int libsvm_version = LIBSVM_VERSION;
 typedef float Qfloat;
@@ -282,7 +283,7 @@ Kernel::Kernel(int l, svm_node * const * x_, const svm_parameter& param)
 		case PRECOMPUTED:
 			kernel_function = &Kernel::kernel_precomputed;
 			break;
-		case fastsk:
+		case FASTSK:
 			kernel_function = &Kernel::kernel_fastsk;
 			break;
 	}
@@ -382,7 +383,7 @@ double Kernel::k_function(const svm_node *x, const svm_node *y,
 			return tanh(param.gamma*dot(x,y)+param.coef0);
 		case PRECOMPUTED:  //x: test (validation), y: SV
 			return x[(int)(y->value)].value;
-		case fastsk:
+		case FASTSK:
 			return 0;//*(x).value;
 		default:
 			return 0;  // Unreachable 
@@ -2543,7 +2544,7 @@ double svm_predict_values(const svm_model *model, const svm_node *x, double* dec
 		
 		double *kvalue = Malloc(double,l);
 		for(i=0;i<l;i++)
-			if (model->param.kernel_type == fastsk){
+			if (model->param.kernel_type == FASTSK){
 				kvalue[i] = x[model->sv_indices[i]-1].value;
 			}else{
 				kvalue[i] = Kernel::k_function(x,model->SV[i],model->param);
@@ -3074,7 +3075,7 @@ const char *svm_check_parameter(const svm_problem *prob, const svm_parameter *pa
 	// kernel_type, degree
 	
 	//int kernel_type = param->kernel_type;
-	// if (kernel_type != fastsk)
+	// if (kernel_type != FASTSK)
 	// 	return "unknown kernel type";
 
 	if(param->gamma < 0)

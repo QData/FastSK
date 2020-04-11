@@ -20,68 +20,61 @@ A Python package and string kernel algorithm for training SVM classifiers for se
 
 
 ## Installation (Linux and MacOS)
-
+### With pip
 **From source**
-
-Clone this repository:
+We recommend using a virtual environment when using this project from Python. Then clone this repository:
 ```
 git clone --recursive https://github.com/QData/FastSK.git
 ```
-The `--recursive` flag is to make sure the Pybind11 library is cloned as well. Then run:
-
+and run:
 ```
 cd FastSK
+pip install -r requirements.txt
 pip install ./fastsk
 ```
 
-or
-
+### Pure C++ Version
+If you prefer to use pure C++ instead of Python, you can clone this repository:
 ```
-pip3 install ./fastsk
+git clone --recursive https://github.com/QData/FastSK.git
 ```
-
-## Tutorial
-Example usage:
+then run
 ```
-from fastsk import SVM
-svm = SVM(g=7, m=2, C=0.7)
-svm.fit(train_file="1.1.train.fasta", test_file="1.1.test.fasta", quiet=False, kernel_file="output.txt")
-svm.predict("predictions.txt")
+cd FastSK
+make
 ```
-This will use the provided parameters to build train and test kernel matrices and train an SVM classifier. The `predict` call will write the predicted labels of the provided `test_file` to `predictions.txt`.
-
-Alternatively, we can train by feeding in arrays of sequences and labels:
+A `fastsk` executable will be installed to the `bin` directory, which you can use for kernel computation and inference. For example:
 ```
-from fastsk import SVM
-
-xtrain = ["ACACA", "AAACA"]
-ytrain = [1, 0]
-xtest = ["AAAAA", "ACACA"]
-ytest = [1, 0]
-
-svm = SVM(g=3, m=2, C=0.7)
-svm.fit_from_arrays(xtrain, ytrain, xtest, ytest, "kernel.txt")
-svm.predict("preds.txt")
+./bin/fastsk -g 10 -m 6 -C 1 -t 1 -a data/EP300.train.fasta data/EP300.test.fasta
 ```
+This will run the approximate kernel algorithm on the EP300 TFBS dataset using a feature length of `g = 10` with up to `m = 6` mismatches. It will then train and evaluate an SVM classifier with the SVM parameter `C = 1`.
 
-## Documentation
-Constructor:
-* `g` (required)
-* `m` (required)
-* `C` (optional, default=1.0)
-* `nu` (optional, default=0.5)
-* `eps` (optional, default = 0.001) - LIBSVM epsilon parameter
-* `kernel` (optional, default = 'linear'). Options: linear, fastsk, rbf
+## Python Tutorial
+Example:
+```
+from fastsk import FastSK
+from sklearn.svm import LinearSVC
+from sklearn.calibration import CalibratedClassifierCV
+import numpy as np
 
-Fit:
-* `train_file` (required)
-* `test_file` (required)
-* `dict` (optional). A dictionary file for the sequences in the train and test files. Default behavior is to infer the dictionary from the files.
-* `quiet` (optional, default=false). Whether to be verbose.
-* `kernel_file` (optional). If provided, the kernel matrix will be printed to the provided file. Otherwise, kernel matrix will not be saved.
+## Compute kernel matrix
+fastsk = FastSK(g=10, m=6, t=1, approx=True)
+fastsk.compute_kernel('data/EP300.train.fasta', 'data/EP300.test.fasta')
 
-Predict:
-* `predictions_file` (required). File where predictions will be written. Format is one prediction, a single number, per line.
+Xtrain = fastsk.get_train_kernel()
+Xtest = fastsk.get_test_kernel()
+
+## Use linear SVM
+svm = LinearSVC(C=C)
+clf = CalibratedClassifierCV(svm, cv=5).fit(Xtrain, Ytrain)
+
+## Evaluate
+acc = clf.score(Xtest, Ytest)
+probs = clf.predict_proba(Xtest)[:,1]
+auc = metrics.roc_auc_score(Ytest, probs)
+
+print("Linear SVM:\n\tAcc = {}, AUC = {}".format(acc, auc))
+```
 
 ## Special notes for Windows
 **Compiler requirements**

@@ -4,7 +4,7 @@ with scikit-learn's linear SVM classifier.
 '''
 import numpy as np
 import argparse
-from fastsk import Kernel
+from fastsk import FastSK
 from utils import FastaUtility
 from sklearn.svm import LinearSVC
 from sklearn.linear_model import LogisticRegression
@@ -59,17 +59,17 @@ Ytest = np.array(Ytest).reshape(-1, 1)
 
 ### Compute the fastsk kernel
 start = time.time()
-kernel = Kernel(g=g, m=m, t=t, 
+fastsk = FastSK(g=g, m=m, t=t, 
     approx=approx, 
     max_iters=I, 
     delta=d,
     skip_variance=skip_variance)
 
-kernel.compute(Xtrain, Xtest)
+fastsk.compute_kernel(Xtrain, Xtest)
 end = time.time()
-print("Kernl computation time:", end - start)
-Xtrain = kernel.train_kernel()
-Xtest = kernel.test_kernel()
+print("Kernl computation time: ", end - start)
+Xtrain = fastsk.get_train_kernel()
+Xtest = fastsk.get_test_kernel()
 
 ### Use linear SVM
 svm = LinearSVC(C=C)
