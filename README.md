@@ -20,7 +20,7 @@ A Python package and string kernel algorithm for training SVM classifiers for se
 
 
 ## Installation (Linux and MacOS)
-**With pip**
+### With pip
 ```
 pip install -i https://test.pypi.org/simple/ fastsk-test
 ```
@@ -45,7 +45,8 @@ or
 pip3 install ./fastsk
 ```
 
-**C++ Version**
+### Pure C++ Version
+
 Clone this repository:
 ```
 git clone --recursive https://github.com/QData/FastSK.git
