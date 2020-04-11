@@ -21,8 +21,17 @@ A Python package and string kernel algorithm for training SVM classifiers for se
 
 ## Installation (Linux and MacOS)
 ### With pip
+
 **From source**
-We recommend using a virtual environment when using this project from Python. Then clone this repository:
+We recommend using a virtual environment when using this project from Python:
+```
+python3 -m pip install --user --upgrade pip
+python3 -m pip install --user virtualenv
+python3 -m virtualenv env
+source env/bin/activate
+```
+
+Then clone this repository:
 ```
 git clone --recursive https://github.com/QData/FastSK.git
 ```
