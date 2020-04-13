@@ -28,12 +28,12 @@ TIMEOUT = 3600
 MAXTIME = 1800
 
 # Default locations for finding baseline programs
-GKM_DATA = '/localtmp/dcb7xz/FastSK/baselines/gkm_data'
-GKM_EXEC = '/localtmp/dcb7xz/FastSK/baselines/gkmsvm'
-FASTSK_DATA = '/localtmp/dcb7xz/FastSK/data/'
-BLENDED_EXEC = '/localtmp/dcb7xz/FastSK/baselines/String_Kernel_Package/code/'
-PROT_DICT = '/localtmp/dcb7xz/FastSK/data/full_prot.dict.txt'
-GKM_PROT_DICT = '/localtmp/dcb7xz/FastSK/baselines/gkm_data/protein.dictionary.txt'
+GKM_DATA = './baselines/gkm_data'
+GKM_EXEC = './baselines/gkmsvm'
+FASTSK_DATA = '../data/'
+BLENDED_EXEC = './baselines/String_Kernel_Package/code/'
+PROT_DICT = '../data/full_prot.dict.txt'
+GKM_PROT_DICT = './baselines/gkm_data/protein.dictionary.txt'
 
 def get_args():
     parser = argparse.ArgumentParser(description='FastSK Experiments')
@@ -79,7 +79,7 @@ def get_args():
     )
     parser.add_argument('--params-csv', 
         type=str,
-        default='./evaluations/datasets_to_use.csv',
+        default='./spreadsheets/parameters.csv',
         help='CSV file containing kernel parameters and dataset names'
     )
     parser.add_argument('--gkm-mode', 
@@ -487,8 +487,8 @@ def g_auc_experiment(dataset, output_dir, C, type_):
         #'gkm_approx_auc': [],
     }
 
-    train_file = osp.join('/localtmp/dcb7xz/FastSK/data', dataset + '.train.fasta')
-    test_file = osp.join('/localtmp/dcb7xz/FastSK/data', dataset + '.test.fasta')
+    train_file = osp.join('../data', dataset + '.train.fasta')
+    test_file = osp.join('../data', dataset + '.test.fasta')
 
     fasta_util = FastaUtility()
     max_g = min(fasta_util.shortest_seq(train_file), fasta_util.shortest_seq(test_file), 20)

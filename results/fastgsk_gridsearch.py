@@ -12,8 +12,6 @@ from tqdm import tqdm
 
 from utils import FastskRunner
 
-import random
-
 min_g, max_g = 4, 15
 G_VALS = list(range(min_g, max_g + 1))
 C_VALS = [10 ** i for i in range(-3, 3)]
@@ -26,9 +24,8 @@ for C in C_VALS:
                 'C': C, 'g': g, 'm': m
             })
 
-DATASETS_CSV = 'datasets_to_use.csv'
-OUTPUT_CSV = 'deleteme.csv'
-#OUTPUT_CSV = 'gridsearch_results.csv'
+DATASETS_CSV = 'spreadsheets/datasets_to_use.csv'
+OUTPUT_CSV = 'gridsearch_results.csv'
 
 def run_gridsearch(dataset):
     best_auc, best_params = 0, {}

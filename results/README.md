@@ -6,6 +6,10 @@ The string kernel baseline models are in the `baselines` folder. Unzip and build
 
 ## Grid Search
 To run a grid search over the hyperparameter space (g, m, and C) to find the optimal parameters, run:
+```
+python fastsk_gridsearch.py
+```
+This will store the grid search results in the file `gridsearch_results.csv`.
 
 ## AUC Experiments
 
@@ -31,7 +35,7 @@ All timing results were completed on a server with the following specs:
 -   15,360 KB cache
 -   132 GB RAM
 
-(for members of QData: the qcuda3 and 4 servers have these specs, as of January 2020)
+(for members of QData: as of January 2020, the qcuda3 and 4 servers have these specs)
 
 ### Multithreading Experiments
 
