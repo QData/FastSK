@@ -49,7 +49,7 @@ PYBIND11_MODULE(fastsk, m) {
         )
         .def("get_train_kernel", &FastSK::get_train_kernel)
         .def("get_test_kernel", &FastSK::get_test_kernel)
-        .def("stdevs", &FastSK::get_stdevs)
+        .def("get_stdevs", &FastSK::get_stdevs)
         .def("save_kernel", &FastSK::save_kernel);
 
 #ifdef VERSION_INFO

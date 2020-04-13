@@ -1,67 +1,89 @@
+"""fastsk_gridsearch.py
+
+Run a grid search over g, m, and C values to find optimal
+hyper-parameters for each dataset.
+"""
+
 import os
 import os.path as osp
 import sys
-sys.path.append('./fastsk')
-import argparse
-import json
-import numpy as np
-from fastsk import Kernel
-from utils import FastaUtility, GkmRunner, fastskRunner, FastskRunner
 import pandas as pd
-import time
-from scipy import special
-import multiprocessing
-import subprocess
+from tqdm import tqdm
 
-def get_args():
-    parser = argparse.ArgumentParser(description='fastsk Evaluations')
-    parser.add_argument('--dataset', type=str)
+from utils import FastskRunner
 
-    return parser.parse_args()
+import random
 
-args = get_args()
-dataset = args.dataset
-log_file = dataset + '_gridsearch.out'
+min_g, max_g = 4, 15
+G_VALS = list(range(min_g, max_g + 1))
+C_VALS = [10 ** i for i in range(-3, 3)]
+GRID = []
+for C in C_VALS:
+    for g in G_VALS:
+        for m in range(0, g - 2):
+            k = g - m
+            GRID.append({
+                'C': C, 'g': g, 'm': m
+            })
 
-def evaluate_clf(clf, Xtest, Ytest):
-    acc = clf.score(Xtest, Ytest)
-    probs = clf.predict_proba(Xtest)[:,1]
-    auc = metrics.roc_auc_score(Ytest, probs)
-    return acc, auc
+DATASETS_CSV = 'datasets_to_use.csv'
+OUTPUT_CSV = 'deleteme.csv'
+#OUTPUT_CSV = 'gridsearch_results.csv'
 
-### Run gridsearch
-def grid_search():
+def run_gridsearch(dataset):
     best_auc, best_params = 0, {}
-    min_g, max_g = 4, 15
-    g_vals = list(range(min_g, max_g + 1))
-    C_vals = [10 ** i for i in range(-3, 3)]
-    for C in C_vals:
-        for g in g_vals:
-            for m in range(0, g - 2):
-                k = g - m
-                
-                fastsk = FastskRunner(dataset)
-                acc, auc = fastsk.train_and_test(g, m, t=1, approx=True, C=C)
 
-                log = {
-                    "dataset": dataset,
-                    "C": C,
-                    "g": g,
-                    "k": k,
-                    "m": m,
-                    "acc": acc,
-                    "auc": auc
-                }
-                print(log)
-                if auc > best_auc:
-                    best_auc = auc
-                    best_params = log
+    iterator = tqdm(GRID, 
+        desc="{} grid search".format(dataset),
+        total=len(GRID)
+    )
 
-                with open(log_file, 'a+') as f:
-                    f.write(str(log) + '\n')
+    for param_vals in iterator:
+        C, g, m = param_vals['C'], param_vals['g'], param_vals['m']
+        k = g - m
+    
+        fastsk = FastskRunner(dataset)
+        acc, auc = fastsk.train_and_test(g, m, t=1, approx=True, C=C)
 
+        params = {
+            "dataset": dataset,
+            "g": g,
+            "m": m,
+            "k": k,
+            "C": C,
+            "delta": 0.025,
+            "acc": acc,
+            "auc": auc
+        }
+
+        if auc > best_auc:
+            best_auc = auc
+            best_params = params
+
+    print(best_params)
     return best_params
 
-best_params = grid_search()
-with open(log_file, 'a+') as f:
-    f.write("Best params:\n" + str(best_params) + '\n')
+def run_gridsearches(datasets):
+    df = pd.DataFrame(columns=[
+        'dataset',
+        'g',
+        'm',
+        'k',
+        'C',
+        'delta',
+        'acc',
+        'auc',
+    ])
+
+    iterator = tqdm(datasets, 
+        desc="Grid Searches",
+        total=len(datasets)
+    )
+
+    for dataset in iterator:
+        best_params = run_gridsearch(dataset)
+        df = df.append(best_params, ignore_index=True)
+        df.to_csv(OUTPUT_CSV, index=False)
+
+datasets = pd.read_csv(DATASETS_CSV)['dataset'].tolist()
+run_gridsearches(datasets)
