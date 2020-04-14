@@ -36,6 +36,13 @@ Then clone this repository:
 git clone --recursive https://github.com/QData/FastSK.git
 ```
 and run:
+
+```
+cd FastSK
+pip install -e .
+```
+
+OR run: 
 ```
 cd FastSK
 pip install -r requirements.txt
