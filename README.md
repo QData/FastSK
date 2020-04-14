@@ -42,12 +42,6 @@ cd FastSK
 pip install -e .
 ```
 
-OR run: 
-```
-cd FastSK
-pip install -r requirements.txt
-pip install ./fastsk
-```
 
 ### Pure C++ Version
 If you prefer to use pure C++ instead of Python, you can clone this repository:
