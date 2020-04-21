@@ -20,6 +20,25 @@ A Python package and string kernel algorithm for training SVM classifiers for se
 
 
 ## Installation (Linux and MacOS)
+
+
+### With Pure C++ Version
+If you prefer to use pure C++ instead of Python, you can clone this repository:
+```
+git clone --recursive https://github.com/QData/FastSK.git
+```
+then run
+```
+cd FastSK
+make
+```
+A `fastsk` executable will be installed to the `bin` directory, which you can use for kernel computation and inference. For example:
+```
+./bin/fastsk -g 10 -m 6 -C 1 -t 1 -a data/EP300.train.fasta data/EP300.test.fasta
+```
+This will run the approximate kernel algorithm on the EP300 TFBS dataset using a feature length of `g = 10` with up to `m = 6` mismatches. It will then train and evaluate an SVM classifier with the SVM parameter `C = 1`.
+
+
 ### With pip
 
 **From source**
@@ -43,23 +62,8 @@ pip install -e .
 ```
 
 
-### Pure C++ Version
-If you prefer to use pure C++ instead of Python, you can clone this repository:
-```
-git clone --recursive https://github.com/QData/FastSK.git
-```
-then run
-```
-cd FastSK
-make
-```
-A `fastsk` executable will be installed to the `bin` directory, which you can use for kernel computation and inference. For example:
-```
-./bin/fastsk -g 10 -m 6 -C 1 -t 1 -a data/EP300.train.fasta data/EP300.test.fasta
-```
-This will run the approximate kernel algorithm on the EP300 TFBS dataset using a feature length of `g = 10` with up to `m = 6` mismatches. It will then train and evaluate an SVM classifier with the SVM parameter `C = 1`.
 
-## Python Tutorial
+## Python Version Tutorial
 Example:
 ```
 from fastsk import FastSK

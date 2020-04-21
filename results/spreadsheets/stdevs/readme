@@ -1,0 +1,10 @@
+This folder contains results from experiments for accuracy/AUC and kernel variance vs number of iterations. 
+
+The code that produced these results is the "run_stdev_and_auc_vs_iters_experiments" method in the "evaluations/experiments/py" file.
+
+Experiment details:
+* for each dataset, construct the kernel matrix for a fixed number of iterations
+* once the max number of iterations is reached, check the average variance of the kernel matrix
+* then train a linear SVM on the test set and obtain the AUC and accuracy
+* run the above steps 5 times for each number of iterations
+* compute confidence intervals for each set of 5 experiments
