@@ -3,8 +3,8 @@ import os.path as osp
 import subprocess
 
 train_sets = ['ZZZ3_{}.train.fasta'.format(i) for i in range(1, 11)]
-train_sets = [osp.join('./data', t) for t in train_sets]
-tst = osp.join('./data', 'ZZZ3.test.fasta')
+train_sets = [osp.join('./testdata', t) for t in train_sets]
+tst = osp.join('./testdata', 'ZZZ3.test.fasta')
 
 for i in range(0, 10):
         trn, outfile = train_sets[i], 'results_{}_4.out'.format(i + 1)

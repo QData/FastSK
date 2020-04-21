@@ -3,7 +3,7 @@ A DNA and protein sequence LSTM classifier implemented with PyTorch. Originally 
 
 Usage:
 ```
-python main.py --trn data/1.1.test.fasta --tst data/1.1.test.fasta --batch 64 --file results.txt
+python main.py --trn ../../data/1.1.test.fasta --tst ../../data/1.1.test.fasta --batch 64 --file results.txt --log_dir ./log
 ```
 
 + You need to have pytorch for running the above command. If you don't, please check out [URL](https://pytorch.org/get-started/locally/)
