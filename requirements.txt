@@ -1,5 +1,4 @@
 certifi==2020.4.5.1
-fastsk-test==1.0.0
 joblib==0.14.1
 numpy==1.18.2
 pandas==1.0.3
