@@ -26,27 +26,28 @@ Creating the plots:
 ```
 ```
 
-## Impact of g parameter
-
-
-## Timing Experiments
+## Timing Setup
 All timing results were completed on a server with the following specs:
 -   12 Intel Core i7-6850K CPU @ 3.60GHz
 -   15,360 KB cache
 -   132 GB RAM
 
 ### Multithreading Experiments
-
 ### AUC vs Time Figures
+## Impact of g parameter
+
 
 ## Deep Neural Network Baselines
+
+The DNN string classification baseline models are in the `neural_nets` folder.
+
 ### Character-Level CNN
 ### LSTM / please install pytorch before running the following command: 
 Usage:
 ```
 python neural_nets/run_dnn.py --trn ../data/1.1.test.fasta --tst ../data/1.1.test.fasta --batch 64 --file results.txt
 ```
-+ You need to have pytorch installed for running the above command. If you don't, please run the following or check out [URL](https://pytorch.org/get-started/locally/)
++ You need to have pytorch installed for running the above command. If you don't, please run the following or check  [URL](https://pytorch.org/get-started/locally/)
 ```
 pip3 install torch torchvision
 ```
