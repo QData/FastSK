@@ -64,7 +64,16 @@ pip install ./fastsk
 
 
 ## Python Version Tutorial
-Example:
+
+#### Example script:
+```
+cd FastSK
+pip install ./fastsk
+```
+
+
+#### OR in python shell run:  
+
 ```
 from fastsk import FastSK
 from sklearn.svm import LinearSVC
@@ -80,14 +89,6 @@ Xtest = fastsk.get_test_kernel()
 
 ## Use linear SVM
 svm = LinearSVC(C=1)
-clf = CalibratedClassifierCV(svm, cv=5).fit(Xtrain, Ytrain)
-
-## Evaluate
-acc = clf.score(Xtest, Ytest)
-probs = clf.predict_proba(Xtest)[:,1]
-auc = metrics.roc_auc_score(Ytest, probs)
-
-print("Linear SVM:\n\tAcc = {}, AUC = {}".format(acc, auc))
 ```
 
 ## Special notes for Windows
