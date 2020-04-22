@@ -67,8 +67,8 @@ pip install ./fastsk
 
 #### Example script:
 ```
-cd FastSK
-pip install ./fastsk
+cd results
+python run_check.py 
 ```
 
 
