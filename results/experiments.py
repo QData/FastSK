@@ -12,7 +12,7 @@ sys.path.append('./fastsk')
 import argparse
 import json
 import numpy as np
-from fastsk import Kernel
+from fastsk import FastSK
 from utils import *
 import pandas as pd
 import time
@@ -84,7 +84,7 @@ def get_args():
     )
     parser.add_argument('--gkm-mode', 
         type=str,
-        choices=['dna', 'protein']
+        choices=['dna', 'protein'],
         default='dna',
         help='Whether gkm is currently compiled for protein or dna'
     )
