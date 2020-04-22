@@ -58,7 +58,7 @@ and run:
 
 ```
 cd FastSK
-pip install -e .
+pip install ./fastsk
 ```
 
 
