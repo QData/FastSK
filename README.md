@@ -79,7 +79,7 @@ Xtrain = fastsk.get_train_kernel()
 Xtest = fastsk.get_test_kernel()
 
 ## Use linear SVM
-svm = LinearSVC(C=C)
+svm = LinearSVC(C=1)
 clf = CalibratedClassifierCV(svm, cv=5).fit(Xtrain, Ytrain)
 
 ## Evaluate

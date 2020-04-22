@@ -2,6 +2,8 @@ from fastsk import FastSK
 from sklearn.svm import LinearSVC
 from sklearn.calibration import CalibratedClassifierCV
 import numpy as np
+from utils import *
+
 
 if __name__ == '__main__':
 	## Compute kernel matrix
@@ -11,11 +13,17 @@ if __name__ == '__main__':
 	Xtrain = fastsk.get_train_kernel()
 	Xtest = fastsk.get_test_kernel()
 
+    reader = FastaUtility()
+    Xseq, Ytrain = reader.read_data('data/EP300.train.fasta')
+
 	## Use linear SVM
 	svm = LinearSVC(C=1)
 	clf = CalibratedClassifierCV(svm, cv=5).fit(Xtrain, Ytrain)
 
 	## Evaluate
+    reader = FastaUtility()
+    Xseq, Ytest = reader.read_data('data/EP300.test.fasta')
+
 	acc = clf.score(Xtest, Ytest)
 	probs = clf.predict_proba(Xtest)[:,1]
 	auc = metrics.roc_auc_score(Ytest, probs)
