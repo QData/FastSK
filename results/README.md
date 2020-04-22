@@ -7,7 +7,7 @@ The string kernel baseline models are in the `baselines` folder. Unzip and build
 ## Grid Search
 To run a grid search over the hyperparameter space (g, m, and C) to find the optimal parameters, run:
 ```
-python fastsk_gridsearch.py
+python run_gridsearch.py
 ```
 This will store the grid search results in the file `gridsearch_results.csv`.
 
@@ -16,11 +16,11 @@ This will store the grid search results in the file `gridsearch_results.csv`.
 ## AUC and Approx Algo Variance vs Number of Iterations
 Running the DNA experiments (this will take a while):
 ```
-python experiments.py --output-dir ./stdevs --stdev-I
+python run_experiments.py --output-dir ./stdevs --stdev-I
 ```
 Then recompile gkmsvm for protein and now run:
 ```
-python experiments.py --output-dir ./stdevs --stdev-I --gkm-mode prot
+python run_experiments.py --output-dir ./stdevs --stdev-I --gkm-mode prot
 ```
 Creating the plots:
 ```
@@ -39,11 +39,14 @@ All timing results were completed on a server with the following specs:
 
 ### AUC vs Time Figures
 
-## Neural Network Baselines
+## Deep Neural Network Baselines
 ### Character-Level CNN
 ### LSTM / please install pytorch before running the following command: 
 Usage:
 ```
 python neural_nets/main.py --trn ../data/1.1.test.fasta --tst ../data/1.1.test.fasta --batch 64 --file results.txt
 ```
-+ You need to have pytorch installed for running the above command. If you don't, please check out [URL](https://pytorch.org/get-started/locally/)
++ You need to have pytorch installed for running the above command. If you don't, please run the following or check out [URL](https://pytorch.org/get-started/locally/)
+```
+pip3 install torch torchvision
+```
