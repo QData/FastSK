@@ -44,7 +44,7 @@ All timing results were completed on a server with the following specs:
 ### LSTM / please install pytorch before running the following command: 
 Usage:
 ```
-python neural_nets/main.py --trn ../data/1.1.test.fasta --tst ../data/1.1.test.fasta --batch 64 --file results.txt
+python neural_nets/run_dnn.py --trn ../data/1.1.test.fasta --tst ../data/1.1.test.fasta --batch 64 --file results.txt
 ```
 + You need to have pytorch installed for running the above command. If you don't, please run the following or check out [URL](https://pytorch.org/get-started/locally/)
 ```
