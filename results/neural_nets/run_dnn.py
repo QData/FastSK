@@ -1,4 +1,4 @@
-### main.py
+### run_dnn.py
 from datetime import datetime, date
 import os
 import os.path as osp
