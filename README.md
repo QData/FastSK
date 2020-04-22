@@ -67,12 +67,12 @@ pip install ./fastsk
 
 #### Example script:
 ```
-cd results
+cd demo
 python run_check.py 
 ```
 
 
-#### OR in python shell run:  
+#### You can check if fastsk library is installed in python shell:
 
 ```
 from fastsk import FastSK
