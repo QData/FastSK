@@ -36,10 +36,7 @@ We perform 19 different classification tasks to evaluate the performance of GaKC
 * CMake >= 3.1
 
 
-## Installation (Linux and MacOS)
-
-
-### With Pure C++ Version
+## Installation and Use via Make from the Pure C++ Version
 If you prefer to use pure C++ instead of Python, you can clone this repository:
 ```
 git clone --recursive https://github.com/QData/FastSK.git
@@ -55,6 +52,10 @@ A `fastsk` executable will be installed to the `bin` directory, which you can us
 ```
 This will run the approximate kernel algorithm on the EP300 TFBS dataset using a feature length of `g = 10` with up to `m = 6` mismatches. It will then train and evaluate an SVM classifier with the SVM parameter `C = 1`.
 
+
+
+
+## Installation via Pip Install (Linux and MacOS)
 
 ### With pip
 
@@ -80,15 +81,16 @@ pip install ./fastsk
 ```
 
 
-
 ## Python Version Tutorial
+
+#### Example Jupyter notebook  
+- 'demo' folder / FastSK_Demo.ipynb
 
 #### Example script:
 ```
 cd demo
 python run_check.py 
 ```
-
 
 #### You can check if fastsk library is installed in python shell:
 
