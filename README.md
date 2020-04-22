@@ -58,6 +58,7 @@ and run:
 
 ```
 cd FastSK
+pip install -r requirements.txt
 pip install ./fastsk
 ```
 
