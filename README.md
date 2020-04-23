@@ -60,12 +60,13 @@ This will run the approximate kernel algorithm on the EP300 TFBS dataset using a
 ### With pip
 
 **From source**
+
 We recommend using a virtual environment when using this project from Python:
+
+For example via conda 
 ```
-python3 -m pip install --user --upgrade pip
-python3 -m pip install --user virtualenv
-python3 -m virtualenv env
-source env/bin/activate
+conda create -n fastskenv python=3.7
+conda activate fastskenv
 ```
 
 Then clone this repository:
