@@ -29,7 +29,7 @@ def get_args():
     parser.add_argument('--no-cuda', action='store_true', default=False, help='disables CUDA')
     parser.add_argument('--num-folds', type=int, default=5, help='Number of folds for CV')
     parser.add_argument('--epochs', type=int, default=20, help='Maximum number of epochs')
-    parser.add_argument('--log_dir', type=str,
+    parser.add_argument('--log_dir', type=str, default='./', 
         help='Directory for storing logs, results, and checkpoints')
 
     return parser.parse_args()
