@@ -49,6 +49,7 @@ log_dir = args.log_dir
 if not osp.exists(log_dir):
     os.makedirs(log_dir)
 
+output_file = args.file
 if args.file is None:
     output_file = "charcnn_results_{}.out".format(str(date.today()))
     output_file = osp.join(log_dir, output_file)
