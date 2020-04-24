@@ -18,6 +18,21 @@ Running the DNA experiments (this will take a while):
 python run_experiments.py --output-dir ./stdevs --stdev-I
 ```
 
+## Runing gkmsvm on protein or DNA:
+
+#### Please first go to baselines folder, decompress gkmsvm-2.0.tar, then make compile, Then run the following commands: 
+
+```
+cd baselines/
+tar -xvf gkmsvmd-2.0.tar.gz
+cd gkmsvm
+make
+cd ../../
+python run_experiments.py --output-dir ./stdevs --stdev-I --gkm-mode protein
+python run_experiments.py --output-dir ./stdevs --stdev-I --gkm-mode dna
+```
+
+
 ###### Our Timing Setup was as follows 
 All timing results were completed on a server with the following specs:
 -   12 Intel Core i7-6850K CPU @ 3.60GHz
@@ -29,13 +44,15 @@ All timing results were completed on a server with the following specs:
 
 The DNN string classification baseline models are in the `neural_nets` folder.
 
-### Character-Level CNN
-### LSTM / please install pytorch before running the following command: 
-Usage:
++ On DNA and protein sequences, we tried two types of DNN based sequence  classifier implemented with PyTorch: LSTM and CharCNN
+
++ Please install pytorch before running the following command: 
+
++ Usage:
 ```
 python neural_nets/run_dnn.py --trn ../data/1.1.test.fasta --tst ../data/1.1.test.fasta --batch 64 --file results.txt
 ```
-+ You need to have pytorch installed for running the above command. If you don't, please run the following or check  [URL](https://pytorch.org/get-started/locally/)
++ You do need to have pytorch installed for running the above command. If you don't, please run the following or check  [URL](https://pytorch.org/get-started/locally/)
 ```
 pip install torch torchvision
 ```
