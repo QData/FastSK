@@ -49,10 +49,10 @@ void FastSK::compute_kernel(const string Xtrain, const string Xtest, const strin
 
 }
 
-void FastSK::compute_kernel(vector<string> Xtrain, vector<string> Xtest) {
-    // Convert sequences to numerical form (as vectors)
+// void FastSK::compute_kernel(vector<string> Xtrain, vector<string> Xtest) {
+//     // Convert sequences to numerical form (as vectors)
 
-}
+// }
 
 void FastSK::compute_kernel(vector<vector<int> > Xtrain, vector<vector<int> > Xtest) {
     // Given sequences already in numerical form, compute the kernel matrix
