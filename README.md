@@ -20,7 +20,7 @@ A Python package and string kernel algorithm for training SVM classifiers for se
 		 on modestly-sized training sets. However, existing gkm-SVM algorithms 
 		 suffer from the slow kernel computation time, as they depend 
 		 exponentially on the sub-sequence feature-length, number of mismatch 
-		 positions, and the task{\textquoteright}s alphabet size. 
+		 positions, and the task's alphabet size. 
 		 In this work, we introduce a fast and scalable algorithm for 
 		 calculating gapped k-mer string kernels. Our method, named FastSK,
 		  uses a simplified kernel formulation that decomposes the kernel 
@@ -38,9 +38,10 @@ A Python package and string kernel algorithm for training SVM classifiers for se
 		    networks across all 10 TFBS tasks. We then extend FastSK to 7 
 		    English medical named entity recognition datasets and 10 protein 
 		    remote homology detection datasets. FastSK consistently matches or 
-		    outperforms these baselines. Our algorithm is available as a Python 
-		    package and as C++ source code. 
-		    (Available for download at https://github.com/Qdata/FastSK/. Install with the command make or pip install) },
+		    outperforms these baselines. 
+		    Our algorithm is available as a Python  package and as C++ source code. 
+		    (Available for download at https://github.com/Qdata/FastSK/. 
+		    Install with the command make or pip install) },
 	URL = {https://www.biorxiv.org/content/early/2020/04/23/2020.04.21.053975},
 	eprint = {https://www.biorxiv.org/content/early/2020/04/23/2020.04.21.053975.full.pdf},
 	journal = {bioRxiv}
