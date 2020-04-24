@@ -8,20 +8,23 @@ import numpy as np
 from sklearn.metrics import roc_auc_score
 import time
 
+GKM_DIR = osp.join('baselines', 'gkmsvm')
+GKM_KERNEL = osp.join(GKM_DIR, 'gkmsvm_kernel')
+GKM_TRAIN = osp.join(GKM_DIR, 'gkmsvm_train')
+GKM_CLASSIFY = osp.join(GKM_DIR, 'gkmsvm_classify')
+
 def get_args():
     parser = argparse.ArgumentParser(description='Analyze gkm results data')
-    parser.add_argument('--dir', type=str, required=True, 
-        help='Dataset directory', metavar='./data')
+    parser.add_argument('--data_dir', type=str, default='./baselines/gkm_data', 
+        help='Dataset directory', metavar='DATA_DIR')
     parser.add_argument('--prefix', type=str, required=True, 
-        help='Dataset prefix', metavar='EP300')
-    parser.add_argument('--outdir', type=str, required=False, metavar='./temp',
+        help='Dataset prefix', metavar='PREFIX')
+    parser.add_argument('--outdir', type=str, default='./temp', metavar='NAME',
         help='Directory to store intermediate and output files')
     parser.add_argument('-g', type=int, required=True)
     parser.add_argument('-m', type=int, required=True)
     parser.add_argument('--dict', type=str, required=False, 
         help='Dictionary file name (not needed for DNA datasets)')
-    parser.add_argument('--results', type=str, required=False,
-        help='File to log accuracy and auc')
 
     return parser.parse_args()
 
@@ -56,7 +59,7 @@ args = get_args()
 g, m = args.g, args.m
 k = g - m
 # input files
-dir, prefix = args.dir, args.prefix
+dir, prefix = args.data_dir, args.prefix
 train_pos_file = osp.join(dir, prefix + '.train.pos.fasta')
 train_neg_file = osp.join(dir, prefix + '.train.neg.fasta')
 test_pos_file = osp.join(dir, prefix + '.test.pos.fasta')
@@ -74,7 +77,7 @@ neg_pred_file = osp.join(outdir, prefix + '.preds.neg.out')
 
 ### compute kernel ###
 print("Computing kernel...")
-command = ["./gkmsvm_kernel",
+command = [GKM_KERNEL,
     '-a', str(2),
     '-l', str(g), 
     '-k', str(k), 
@@ -88,9 +91,11 @@ start_time = time.time()
 output = subprocess.check_output(command)
 exec_time = time.time() - start_time
 
+print("Train kernel time: ", exec_time)
+
 ### train SVM ###
 print("Training model...")
-command = ["./gkmsvm_train", kernel_file, train_pos_file, 
+command = [GKM_TRAIN, kernel_file, train_pos_file, 
     train_neg_file, svm_file_prefix]
 print(' '.join(command))
 output = subprocess.check_output(command)
@@ -98,7 +103,7 @@ output = subprocess.check_output(command)
 ### test ###
 print("Getting predictions...")
 # get pos preds
-command = ["./gkmsvm_classify",
+command = [GKM_CLASSIFY,
     "-l", str(g), 
     "-k", str(k), 
     "-d", str(m),
@@ -109,7 +114,7 @@ command += [test_pos_file, svseq, svmalpha, pos_pred_file]
 print(' '.join(command))
 subprocess.check_output(command)
 # get neg preds
-command = ["./gkmsvm_classify",
+command = [GKM_CLASSIFY,
     "-l", str(g), 
     "-k", str(k), 
     "-d", str(m),
@@ -130,16 +135,3 @@ accuracy = get_accuracy(pos_preds, neg_preds)
 print("Computing AUC...")
 auc = get_auc(pos_preds, neg_preds)
 print("Accuracy = {}, AUC = {}".format(accuracy, auc))
-
-if (args.results is not None):
-    log = {
-        "dataset": prefix,
-        "g": g,
-        "k": k,
-        "m": m,
-        "acc": accuracy,
-        "auc": auc,
-        "time": exec_time
-    }
-    with open(args.results, 'a+') as f:
-        f.write(str(log) + '\n')

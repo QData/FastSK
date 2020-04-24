@@ -67,7 +67,7 @@ fastsk = FastSK(g=g, m=m, t=t,
 
 fastsk.compute_kernel(Xtrain, Xtest)
 end = time.time()
-print("Kernl computation time: ", end - start)
+print("Kernel computation time: ", end - start)
 Xtrain = fastsk.get_train_kernel()
 Xtest = fastsk.get_test_kernel()
 
