@@ -17,10 +17,16 @@ Running the DNA experiments (this will take a while):
 ```
 python run_experiments.py --output-dir ./stdevs --stdev-I
 ```
+###### Our Timing Setup was as follows 
+All timing results were completed on a server with the following specs:
+-   12 Intel Core i7-6850K CPU @ 3.60GHz
+-   15,360 KB cache
+-   132 GB RAM
 
-## Runing gkmsvm on protein or DNA:
 
-#### Please first go to baselines folder, decompress gkmsvm-2.0.tar, then make compile, Then run the following commands: 
+## Runing gkmsvm2:
+
+#### Please first go to baselines folder, decompress gkmsvm-2.0.tar, then make compile, Then can run gkmsvm wrapper script we wrote: 
 
 ```
 cd baselines/
@@ -32,12 +38,6 @@ python run_experiments.py --output-dir ./stdevs --stdev-I --gkm-mode protein
 python run_experiments.py --output-dir ./stdevs --stdev-I --gkm-mode dna
 ```
 
-
-###### Our Timing Setup was as follows 
-All timing results were completed on a server with the following specs:
--   12 Intel Core i7-6850K CPU @ 3.60GHz
--   15,360 KB cache
--   132 GB RAM
 
 
 ## Running Deep Neural Network Baselines
