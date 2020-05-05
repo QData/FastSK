@@ -16,7 +16,6 @@ if __name__ == '__main__':
 		help='test sequences file')
 
 	args = parser.parse_args()
-	print(args.accumulate(args.integers))
 
 	## Compute kernel matrix
 	fastsk = FastSK(g=10, m=6, t=1, approx=True)
