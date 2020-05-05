@@ -1,0 +1,11 @@
+language: python
+python: '3.7'
+before_install:
+  - python --version
+  - pip install -U pip
+install:
+  - pip install -r requirements.txt
+  - pip install ./fastsk
+script: pytest tests # run tests
+
+

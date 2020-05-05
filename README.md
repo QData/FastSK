@@ -113,13 +113,13 @@ pip install ./fastsk
 #### Example Jupyter notebook  
 - 'demo' folder / FastSK_Demo.ipynb
 
-#### Example script:
+#### Example python usage script:
 ```
-cd demo
+cd test
 python run_check.py 
 ```
 
-#### You can check if fastsk library is installed in python shell:
+#### You can check if fastsk library is installed correctly in python shell:
 
 ```
 from fastsk import FastSK
