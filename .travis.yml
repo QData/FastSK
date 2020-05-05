@@ -6,6 +6,6 @@ before_install:
 install:
   - pip install -r requirements.txt
   - pip install ./fastsk
-script:  python ./test/run_check.py
+script:  python ./test/run_check.py --train data/EP300.train.fasta --test data/EP300.test.fasta
 
 
