@@ -6,8 +6,6 @@ before_install:
 install:
   - pip install -r requirements.txt
   - pip install ./fastsk
-script:  
-  - cd test
-  - python ./test/run_check.py
+script:  python ./test/run_check.py
 
 
