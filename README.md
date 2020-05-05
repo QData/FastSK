@@ -1,7 +1,10 @@
 # FastSK: Fast and Accurate Sequence Classification using Support Vector Machines
 
-[![Build Status](https://travis-ci.org/QData/FastSK.svg?branch=master)
-[![Build status](https://ci.appveyor.com/api/projects/status/57nnxfm4subeug43/branch/master?svg=true)](https://ci.appveyor.com/project/dean0x7d/cmake-example/branch/master)
+[![Travis CI Build Status](https://travis-ci.org/QData/FastSK.svg?branch=master)](https://travis-ci.org/QData/FastSK)
+
+
+
+[![appveyor CI Build status](https://ci.appveyor.com/api/projects/status/57nnxfm4subeug43/branch/master?svg=true)](https://ci.appveyor.com/project/dean0x7d/cmake-example/branch/master)
 
 A Python package and string kernel algorithm for training SVM classifiers for sequence analysis. Built with the FastSK gapped k-mer algorithm, [pybind11](https://github.com/pybind/pybind11), and [LIBSVM](https://github.com/cjlin1/libsvm).
 
