@@ -40,3 +40,4 @@ if __name__ == '__main__':
 	auc = metrics.roc_auc_score(Ytest, probs)
 
 	print("Linear SVM:\n\tAcc = {}, AUC = {}".format(acc, auc))
+	assert auc >= 0.9, 'AUC is not correct.'
