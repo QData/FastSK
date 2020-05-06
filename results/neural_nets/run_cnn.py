@@ -20,7 +20,7 @@ from utils import AverageMeter, FastaReader
 from models import SeqLSTM, CharacterLevelCNN
 
 def get_args():
-    parser = argparse.ArgumentParser(description='Bio-Sequence RNN Baselines')
+    parser = argparse.ArgumentParser(description='Bio-Sequence char-CNN Baselines')
     parser.add_argument('-b', '--batch', type=int, default=64, metavar='N',
         help='input batch size for training (default: 64)')
     parser.add_argument('--trn', type=str, required=True, help='Training file', metavar='1.1.train.fasta')

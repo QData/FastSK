@@ -24,7 +24,7 @@ for dataset in datasets:
     log_dir = '{}_cnn_results'.format(dataset)
     epochs = 200
 
-    command = ['python', 'main.py', '--trn', train_file,
+    command = ['python', 'run_cnn.py', '--trn', train_file,
     '--tst', test_file, '--log_dir', log_dir, '--epochs', str(epochs)]
     print(' '.join(command))
     output = subprocess.check_output(command)
