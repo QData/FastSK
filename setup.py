@@ -9,7 +9,7 @@ from setuptools.command.build_ext import build_ext
 from distutils.version import LooseVersion
 
 with open('README.md') as f:
-    long_description = f.read()
+    readme = f.read()
 
 
 class CMakeExtension(Extension):
@@ -68,12 +68,12 @@ class CMakeBuild(build_ext):
         )
 
 setup(
-    name='fastsk',
-    version='1.0.0',
+    name='fastsk-test',
+    version='1.0.1',
     author='Derrick Blakely',
     author_email='dcb7xz@virginia.edu',
     description='FastSK PyPi Package',
-    long_description=long_description,
+    long_description=readme,
     long_description_content_type='text/markdown',
     url='https://github.com/qdata/fastsk',
     package_dir={'': 'src'},
@@ -83,7 +83,7 @@ setup(
     zip_safe=False,
     install_requires=[
         'numpy',
-        'sklearn',
+        'scikit-learn',
         'pandas',
         'tqdm',
     ]

@@ -4,7 +4,7 @@
 
 
 
-A Python package and string kernel algorithm for training SVM classifiers for sequence analysis. Built with the FastSK gapped k-mer algorithm, [pybind11](https://github.com/pybind/pybind11), and [LIBSVM](https://github.com/cjlin1/libsvm).
+A Python package and string kernel algorithm for training SVM classifiers for sequence analysis. Built with the FastSK gapped k-mer algorithm, [pybind11](https://github.com/pybind/pybind11), [scikit-learn](https://scikit-learn.org/) and [LIBSVM](https://github.com/cjlin1/libsvm).
 
 ### Citations
 
