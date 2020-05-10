@@ -1,4 +1,4 @@
-SRC_DIR = ./fastsk/src
+SRC_DIR = ./src/fastsk
 BIN_DIR = ./bin
 
 all:

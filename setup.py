@@ -4,12 +4,13 @@ import sys
 import platform
 import subprocess
 
-from setuptools import setup, Extension
+from setuptools import setup, Extension, find_packages
 from setuptools.command.build_ext import build_ext
 from distutils.version import LooseVersion
 
 with open('README.md') as f:
     long_description = f.read()
+
 
 class CMakeExtension(Extension):
     def __init__(self, name, sourcedir=''):
@@ -55,18 +56,35 @@ class CMakeBuild(build_ext):
                                                               self.distribution.get_version())
         if not os.path.exists(self.build_temp):
             os.makedirs(self.build_temp)
-        subprocess.check_call(['cmake', ext.sourcedir] + cmake_args, cwd=self.build_temp, env=env)
-        subprocess.check_call(['cmake', '--build', '.'] + build_args, cwd=self.build_temp)
+        
+        subprocess.check_call(
+            ['cmake', ext.sourcedir] + cmake_args, 
+            cwd=self.build_temp, 
+            env=env
+        )
+        subprocess.check_call(
+            ['cmake', '--build', '.'] + build_args, 
+            cwd=self.build_temp
+        )
 
 setup(
-    name='fastsk-test',
+    name='fastsk',
     version='1.0.0',
     author='Derrick Blakely',
     author_email='dcb7xz@virginia.edu',
     description='FastSK PyPi Package',
     long_description=long_description,
     long_description_content_type='text/markdown',
-    ext_modules=[CMakeExtension('fastsk')],
+    url='https://github.com/qdata/fastsk',
+    package_dir={'': 'src'},
+    packages=find_packages(where='src'),
+    ext_modules=[CMakeExtension(name='fastsk', sourcedir='./src/')],
     cmdclass=dict(build_ext=CMakeBuild),
     zip_safe=False,
+    install_requires=[
+        numpy,
+        sklearn,
+        pandas,
+        tqdm,
+    ]
 )
