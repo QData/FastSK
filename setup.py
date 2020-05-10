@@ -82,9 +82,9 @@ setup(
     cmdclass=dict(build_ext=CMakeBuild),
     zip_safe=False,
     install_requires=[
-        numpy,
-        sklearn,
-        pandas,
-        tqdm,
+        'numpy',
+        'sklearn',
+        'pandas',
+        'tqdm',
     ]
 )
