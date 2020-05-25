@@ -69,7 +69,7 @@ class CMakeBuild(build_ext):
 
 setup(
     name='fastsk-test',
-    version='1.0.1',
+    version='1.0.2',
     author='Derrick Blakely',
     author_email='dcb7xz@virginia.edu',
     description='FastSK PyPi Package',

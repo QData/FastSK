@@ -6,6 +6,11 @@
 
 A Python package and string kernel algorithm for training SVM classifiers for sequence analysis. Built with the FastSK gapped k-mer algorithm, [pybind11](https://github.com/pybind/pybind11), [scikit-learn](https://scikit-learn.org/) and [LIBSVM](https://github.com/cjlin1/libsvm).
 
+## Downloading this branch
+```
+git clone --recursive -b pypi_repo https://github.com/QData/FastSK.git
+```
+
 ### Citations
 
 ```
