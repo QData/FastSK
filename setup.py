@@ -77,8 +77,8 @@ setup(
     long_description_content_type='text/markdown',
     url='https://github.com/qdata/fastsk',
     package_dir={'': 'src'},
-    packages=find_packages(where='src'),
-    ext_modules=[CMakeExtension(name='fastsk-test', sourcedir='./src/')],
+    packages=['fastsk'],
+    ext_modules=[CMakeExtension('_fastsk')],
     cmdclass=dict(build_ext=CMakeBuild),
     zip_safe=False,
     install_requires=[
