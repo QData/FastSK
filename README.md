@@ -108,8 +108,8 @@ pip install -r requirements.txt
 pip install ./fastsk
 ```
 
-** The pip intallation of FastSK has been successful on CentOS, Red Hat and WindowsXP. **
-** On some Mac versions, the installation met issues. We are working on fixing this issue now **
+###### The pip intallation of FastSK has been tested successfully on CentOS, Red Hat and WindowsXP.
+On some Mac versions, the installation met issues. We are working on fixing this issue now 
 
 ## Python Version Tutorial
 
