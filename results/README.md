@@ -60,8 +60,8 @@ pip install torch torchvision
 #### Experimental results comparing FastSK and CharCNN when varying training size 
 
 
-![Image of ](https://github.com/QData/FastSK/tree/master/results/neural_nets/trainsize_varyresults/dna.png)
+<img src="neural_nets/trainsize_varyresults/dna.png?raw=true" width="800">
 
-![Image of ](https://github.com/QData/FastSK/tree/master/results/neural_nets/trainsize_varyresults/protein.png)
+<img src="neural_nets/trainsize_varyresults/protein.png" width="800">
 
-![Image of ](https://github.com/QData/FastSK/tree/master/results/neural_nets/trainsize_varyresults/nlp.png)
+<img src="neural_nets/trainsize_varyresults/nlp.png" width="800">
