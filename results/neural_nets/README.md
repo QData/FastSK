@@ -13,10 +13,8 @@
 
 ## Experimental results comparing FastSK and CharCNN when varying training size 
 
-![](/trainsize_varyresults/dna.png )
+<img src="trainsize_varyresults/dna.png?raw=true" width="800">
 
-<img src="trainsize_varyresults/dna.png?raw=true" width="300">
+<img src="trainsize_varyresults/protein.png" width="800">
 
-<img src="trainsize_varyresults/protein.png" width="300">
-
-<img src="trainsize_varyresults/nlp.png" width="300">
+<img src="trainsize_varyresults/nlp.png" width="800">
