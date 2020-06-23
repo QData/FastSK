@@ -1,8 +1,5 @@
 # FastSK: Fast and Accurate Sequence Classification using Support Vector 
 
-[![Build Status](https://travis-ci.org/QData/FastSK.svg?branch=master)](https://travis-ci.org/QData/FastSK)
-
-
 
 A Python package and string kernel algorithm for training SVM classifiers for sequence analysis. Built with the FastSK gapped k-mer algorithm, [pybind11](https://github.com/pybind/pybind11), and [LIBSVM](https://github.com/cjlin1/libsvm).
 
@@ -49,6 +46,7 @@ A Python package and string kernel algorithm for training SVM classifiers for se
 }
 ```
 
+#### More details of algorithms and results now in: [https://www.biorxiv.org/content/10.1101/2020.04.21.053975v1](https://www.biorxiv.org/content/10.1101/2020.04.21.053975v1)
 
 ## Prerequisites
 
@@ -162,5 +160,10 @@ This applies to all Python versions, including 2.7. Unlike regular C extension
 modules, it's perfectly fine to compile a pybind11 module with a VS version newer
 than the target Python's VS version.
 
+
+
 ## License
 See the LICENSE file.
+
+
+[![Build Status](https://travis-ci.org/QData/FastSK.svg?branch=master)](https://travis-ci.org/QData/FastSK)
