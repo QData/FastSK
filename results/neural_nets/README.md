@@ -8,5 +8,14 @@
 
 + run_charcnn_experiments.py is a script for running the charcnn on all 27 datasets.
 + run_cnn.py runs the charcnn on just one dataset
++ run_rnn.py runs the lstm  on just one dataset
 
-+ run_rnn.py runs the lstm and does a grid search on just one dataset
+
+## Experimental results comparing FastSK and CharCNN when varying training size 
+
+
+![Image of ](https://github.com/QData/FastSK/tree/master/results/neural_nets/trainsize_varyresults/dna.png)
+
+![Image of ](https://github.com/QData/FastSK/tree/master/results/neural_nets/trainsize_varyresults/protein.png)
+
+![Image of ](https://github.com/QData/FastSK/tree/master/results/neural_nets/trainsize_varyresults/nlp.png)

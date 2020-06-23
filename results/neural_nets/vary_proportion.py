@@ -10,7 +10,7 @@ for i in range(0, 10):
         trn, outfile = train_sets[i], 'results_{}_4.out'.format(i + 1)
         env = os.environ.copy()
         env["CUDA_VISIBLE_DEVICES"] = "3"
-        command = ['python', 'main.py',
+        command = ['python', 'run_cnn.py',
             '-b', str(64),
             '--trn', trn, 
             '--tst', tst, 

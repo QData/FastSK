@@ -56,3 +56,12 @@ python neural_nets/run_cnn.py --trn ../data/1.1.test.fasta --tst ../data/1.1.tes
 ```
 pip install torch torchvision
 ```
+
+#### Experimental results comparing FastSK and CharCNN when varying training size 
+
+
+![Image of ](https://github.com/QData/FastSK/tree/master/results/neural_nets/trainsize_varyresults/dna.png)
+
+![Image of ](https://github.com/QData/FastSK/tree/master/results/neural_nets/trainsize_varyresults/protein.png)
+
+![Image of ](https://github.com/QData/FastSK/tree/master/results/neural_nets/trainsize_varyresults/nlp.png)

@@ -141,6 +141,15 @@ Xtest = fastsk.get_test_kernel()
 svm = LinearSVC(C=1)
 ```
 
+
+#### We compared FastSK and CharCNN with varying training size. 
+
+![Image of ](https://github.com/QData/FastSK/tree/master/results/neural_nets/trainsize_varyresults/dna.png)
+
+![Image of ](https://github.com/QData/FastSK/tree/master/results/neural_nets/trainsize_varyresults/protein.png)
+
+![Image of ](https://github.com/QData/FastSK/tree/master/results/neural_nets/trainsize_varyresults/nlp.png)
+
 ## Special notes for Windows
 **Compiler requirements**
 
