@@ -144,11 +144,15 @@ svm = LinearSVC(C=1)
 
 #### We compared FastSK and CharCNN with varying training size. 
 
-![Image of ](https://github.com/QData/FastSK/tree/master/results/neural_nets/trainsize_varyresults/dna.png)
 
-![Image of ](https://github.com/QData/FastSK/tree/master/results/neural_nets/trainsize_varyresults/protein.png)
 
-![Image of ](https://github.com/QData/FastSK/tree/master/results/neural_nets/trainsize_varyresults/nlp.png)
+<img src="results/neural_nets/trainsize_varyresults/dna.png?raw=true" width="800">
+
+<img src="results/neural_nets/trainsize_varyresults/protein.png" width="800">
+
+<img src="results/neural_nets/trainsize_varyresults/nlp.png" width="800">
+
+
 
 ## Special notes for Windows
 **Compiler requirements**
