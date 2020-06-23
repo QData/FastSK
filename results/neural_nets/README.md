@@ -13,8 +13,8 @@
 
 ## Experimental results comparing FastSK and CharCNN when varying training size 
 
+<img src="https://github.com/QData/FastSK/tree/master/results/neural_nets/trainsize_varyresults/dna.png" width="50%" height="50%">
 
-![Image of ](https://github.com/QData/FastSK/tree/master/results/neural_nets/trainsize_varyresults/dna.png)
 
 ![Image of ](https://github.com/QData/FastSK/tree/master/results/neural_nets/trainsize_varyresults/protein.png)
 
