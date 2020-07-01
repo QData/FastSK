@@ -152,6 +152,10 @@ python run_gridsearch.py
 ```
 
 #### When compared with Deep Learning baselines
++ You do need to have pytorch installed
+```
+pip install torch torchvision
+```
 + One usage: all datasets with hyperparameter tuning:
 ```
 cd results/neural_nets

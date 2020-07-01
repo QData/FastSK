@@ -46,7 +46,11 @@ The DNN string classification baseline models are in the `neural_nets` folder.
 
 + We tried two types of DNN based sequence  classifier implemented with PyTorch: LSTM and CharCNN
 
-+ Please install pytorch before running the following command: 
++ You do need to have pytorch installed for running the DNN codes. If you don't, please run the following or check  [URL](https://pytorch.org/get-started/locally/)
+```
+pip install torch torchvision
+```
++ Please install pytorch before running the following : 
 
 + Usage:
 ```
@@ -65,10 +69,7 @@ cd neural_nets
 python run_cnn_hyperTrTune.py 
 ```
 
-+ You do need to have pytorch installed for running the above command. If you don't, please run the following or check  [URL](https://pytorch.org/get-started/locally/)
-```
-pip install torch torchvision
-```
+
 
 #### Some experimental results comparing FastSK and CharCNN when varying training size 
 
