@@ -1,3 +1,5 @@
+import os.path as osp
+import subprocess
 from cnn_hyperTrTune import hyper
 
 
