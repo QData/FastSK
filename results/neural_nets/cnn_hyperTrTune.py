@@ -26,7 +26,7 @@ def hyper(opt_method, lr, trn_size, train_file, test_file, datasetTag):
         parser.add_argument('--trn', type=str, help='Training file', default='./testdata/ZZZ3.train.fasta')
         parser.add_argument('--tst', type=str, help='Test file', default='./testdata/ZZZ3.test.fasta')
         parser.add_argument('--file', type=str, required=False, help='File to grid search results to')
-        parser.add_argument('--no-cuda', action='store_true', default=False, help='disables CUDA')
+        parser.add_argument('--no_cuda', action='store_true', default=False, help='disables CUDA')
         parser.add_argument('--num-folds', type=int, default=5, help='Number of folds for CV')
         parser.add_argument('--epochs', type=int, default=20, help='Maximum number of epochs')
         parser.add_argument('--log_dir', type=str, default='./results', 
@@ -34,10 +34,24 @@ def hyper(opt_method, lr, trn_size, train_file, test_file, datasetTag):
         parser.add_argument('--trn_size', type=float, choices=[0.2, 0.4, 0.6, 0.8, 1.], default=trn_size)
         parser.add_argument('--opt_mtd', type=str, choices=['sgd', 'adam'], default=opt_method)
         parser.add_argument('--lr', type=float, choices=[1e-2, 3e-2], default=lr)
-        return parser.parse_args(['--opt_mtd', opt_method, '--lr', lr, '--trn_size', trn_size, '--trn', trn, '--tst',  tst])
+        parser.add_argument('--datasetTag', type=str, default='ZZZ3', help='which data')
+        return parser.parse_args()
 
-    args = get_args(opt_method, lr, trn_size, train_file, test_file)
-    use_cuda = not args.no_cuda and torch.cuda.is_available()
+    #args = get_args(opt_method, lr, trn_size, train_file, test_file)
+    args = {
+        "batch":64,
+        'trn':train_file, 
+        'tst':test_file,
+        'no_cuda': False,
+        'num_folds': 5,
+        'epochs': 20,
+        'log_dir': './results', 
+        'trn_size':trn_size, 
+        'opt_mtd':opt_method, 
+        'lr':lr, 
+        'datasetTag':datasetTag         
+        }
+
     bsz = args.batch
     train_file = args.trn
     test_file = args.tst
@@ -46,14 +60,17 @@ def hyper(opt_method, lr, trn_size, train_file, test_file, datasetTag):
     log_dir = args.log_dir
     output_file = args.file
     epochs = args.epochs
+    datasetTag = args.datasetTag
 
-    device = torch.device('cuda' if use_cuda else 'cpu')
-    print("device = ", device)
     print("train_file = ", train_file)
     print("test_file = ", test_file)
     print("trn_size = ", trn_size)
     print("opt_method = ", args.opt_mtd)
     print("lr = ", args.lr)
+
+    use_cuda = not args.no_cuda and torch.cuda.is_available()
+    device = torch.device('cuda' if use_cuda else 'cpu')
+    print("device = ", device)
 
     highest_auc = 0
     best_params = {}
