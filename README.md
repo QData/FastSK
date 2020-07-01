@@ -163,10 +163,19 @@ python run_cnn_hyperTrTune.py
 ```
 + We have many other utility codes helping users to run CNN and RNN baselines
 
-#### Some results we obtained comparing FastSK and CharCNN with varying training size. 
+#### Some of our exprimental results comparing FastSK with baselines wrt performance and speed
 
 
-<img src="results/neural_nets/trainsize_varyresults/dna.png?raw=true" width="800">
+<img src="results/spreadsheets/Figure5.png" width="800">
+
+<img src="results/spreadsheets/Table1.png" width="800">
+
+<img src="results/spreadsheets/Table2.png" width="800">
+
+
+#### Some of our exprimental results comparing FastSK with CharCNN when varying training size. 
+
+<img src="results/neural_nets/trainsize_varyresults/dna.png" width="800">
 
 <img src="results/neural_nets/trainsize_varyresults/protein.png" width="800">
 
