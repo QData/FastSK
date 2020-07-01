@@ -34,6 +34,6 @@ for dataset in datasets:
                 command = ['python', 'cnn_hyperTrTune.py', '--trn', str(train_file),
                            '--tst', str(test_file), '--trn_size', str(trn_size), '--lr', str(lr),
                            '--datasetTag', str(dataset), '--log_dir', log_dir,
-                           '--opt_mtd', str(opt), '--epochs', str(20)]                print(' '.join(command))
+                           '--opt_mtd', str(opt), '--epochs', str(20)]                
                 print(' '.join(command))
                 output = subprocess.check_output(command)
