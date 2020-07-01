@@ -419,7 +419,7 @@ def run_main():
                 opt.state_dict()['param_groups'][0]['lr'],
                 args.trn_size)
 
-            torch.save(model.state_dict(), osp.join(log_dir, datasetTag, model_name))
+            torch.save(model.state_dict(), osp.join(log_dir, model_name))
 
     print("Best AUC = {}, Best Epoch = {}".format(best_auc, best_epoch))
 
