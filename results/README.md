@@ -70,7 +70,7 @@ python run_cnn_hyperTrTune.py
 pip install torch torchvision
 ```
 
-#### Experimental results comparing FastSK and CharCNN when varying training size 
+#### Some experimental results comparing FastSK and CharCNN when varying training size 
 
 
 <img src="neural_nets/trainsize_varyresults/dna.png?raw=true" width="800">

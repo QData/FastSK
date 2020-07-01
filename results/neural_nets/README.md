@@ -22,7 +22,7 @@ cd neural_nets
 python run_cnn_hyperTrTune.py 
 ```
 
-## Experimental results comparing FastSK and CharCNN across multiple datasets when varying training size 
+## Some experimental results comparing FastSK and CharCNN across multiple datasets when varying training size 
 
 <img src="trainsize_varyresults/dna.png?raw=true" width="800">
 

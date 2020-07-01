@@ -106,21 +106,21 @@ pip install -r requirements.txt
 pip install ./fastsk
 ```
 
-###### The pip intallation of FastSK has been tested successfully on CentOS, Red Hat and WindowsXP.
+#### The pip intallation of FastSK has been tested successfully on CentOS, Red Hat and WindowsXP.
 On some Mac versions, the installation met issues. We are working on fixing this issue now 
 
 ## Python Version Tutorial
 
-#### Example Jupyter notebook  
+### Example Jupyter notebook  
 - 'demo' folder / FastSK_Demo.ipynb
 
-#### Example python usage script:
+### Example python usage script:
 ```
 cd test
 python run_check.py 
 ```
 
-#### You can check if fastsk library is installed correctly in python shell:
+### You can check if fastsk library is installed correctly in python shell:
 
 ```
 from fastsk import FastSK
@@ -144,14 +144,14 @@ svm = LinearSVC(C=1)
 - We have provided all datasets we used in the subfolder "data"
 - We have provided all scripts we used to generate results under the subfolder "results"
 
-##### Grid Search
-To run a grid search over the hyperparameter space (g, m, and C) to find the optimal parameters, run:
+#### Grid Search for FastSK and gkm-svm baseline
+To run a grid search over the hyperparameter space (g, m, and C) to find the optimal parameters, e.g, one utility code:
 ```
 cd results/
 python run_gridsearch.py
 ```
 
-##### When compared with Deep Learning baselines
+#### When compared with Deep Learning baselines
 + One usage: all datasets with hyperparameter tuning:
 ```
 cd results/neural_nets
@@ -159,7 +159,7 @@ python run_cnn_hyperTrTune.py
 ```
 + We have many other utility codes helping users to run CNN and RNN baselines
 
-##### Some results we obtained comparing FastSK and CharCNN with varying training size. 
+#### Some results we obtained comparing FastSK and CharCNN with varying training size. 
 
 
 <img src="results/neural_nets/trainsize_varyresults/dna.png?raw=true" width="800">
