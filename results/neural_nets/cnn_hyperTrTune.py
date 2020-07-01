@@ -459,8 +459,8 @@ def run_main():
         criterion=criterion,
         epoch=best_epoch)
 
-    summary_str = "Best epoch: {}, Final test acc: {}, Final test auc: {}"
-    summary_str = summary_str.format(best_epoch, test_acc, test_auc)
+    summary_str = "Best epoch: {}, Final test acc: {}, Final test auc: {}, num_train: {}"
+    summary_str = summary_str.format(best_epoch, test_acc, test_auc, num_train)
 
     with open(output_file, 'a+') as f:
         f.write(summary_str + '\n')
