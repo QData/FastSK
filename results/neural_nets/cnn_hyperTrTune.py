@@ -342,6 +342,9 @@ def run_main():
     ## Train and a random validation sets (20% of training samples)
     num_train, num_test = int(args.trn_size*fasta.num_train), fasta.num_test
     num_vali = int(0.2 * num_train)
+    print("num_train = ", num_train)
+    print("num_vali = ", num_vali)
+
     num_train_split = num_train - num_vali
     train_samples, train_labels = fasta.train_samples[:num_train_split], fasta.train_labels[:num_train_split]
     vali_samples, vali_labels = fasta.train_samples[num_train_split:num_train], fasta.train_labels[num_train_split:num_train]
