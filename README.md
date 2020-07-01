@@ -139,9 +139,27 @@ Xtest = fastsk.get_test_kernel()
 svm = LinearSVC(C=1)
 ```
 
+### Experimental Resulst and Baseline setup
 
-#### We compared FastSK and CharCNN with varying training size. 
+- We have provided all datasets we used in the subfolder "data"
+- We have provided all scripts we used to generate results under the subfolder "results"
 
+##### Grid Search
+To run a grid search over the hyperparameter space (g, m, and C) to find the optimal parameters, run:
+```
+cd results/
+python run_gridsearch.py
+```
+
+##### When compared with Deep Learning baselines
++ One usage: all datasets with hyperparameter tuning:
+```
+cd results/neural_nets
+python run_cnn_hyperTrTune.py 
+```
++ We have many other utility codes helping users to run CNN and RNN baselines
+
+##### Some results we obtained comparing FastSK and CharCNN with varying training size. 
 
 
 <img src="results/neural_nets/trainsize_varyresults/dna.png?raw=true" width="800">

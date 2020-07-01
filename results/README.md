@@ -52,6 +52,19 @@ The DNN string classification baseline models are in the `neural_nets` folder.
 ```
 python neural_nets/run_cnn.py --trn ../data/1.1.test.fasta --tst ../data/1.1.test.fasta --batch 64 --file results.txt
 ```
+
++ Or on all datasets:
+```
+cd neural_nets
+python run_cnn_allData.py 
+```
+
++ Or on all datasets with hyperparameter tuning:
+```
+cd neural_nets
+python run_cnn_hyperTrTune.py 
+```
+
 + You do need to have pytorch installed for running the above command. If you don't, please run the following or check  [URL](https://pytorch.org/get-started/locally/)
 ```
 pip install torch torchvision
