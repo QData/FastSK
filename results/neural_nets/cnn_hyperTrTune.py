@@ -37,7 +37,7 @@ def hyper(opt_method, lr, trn_size, trn, tst):
         return parser.parse_args()
 
 
-    args = get_args(opt_method, lr, trn_size)
+    args = get_args(opt_method, lr, trn_size, trn, tst)
     use_cuda = not args.no_cuda and torch.cuda.is_available()
     device = torch.device('cuda' if use_cuda else 'cpu')
     print("device = ", device)
