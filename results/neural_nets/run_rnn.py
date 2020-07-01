@@ -17,7 +17,7 @@ from matplotlib import pyplot as plt
 import matplotlib.ticker as ticker
 import random
 import argparse
-from dataset import Dataset, Vocabulary
+from rnn_dataset import Dataset, Vocabulary
 #from utils import FastaDataset, Vocabulary
 from tqdm import tqdm, trange
 from sklearn import metrics

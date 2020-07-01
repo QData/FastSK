@@ -22,8 +22,8 @@ for dataset in datasets:
     '''s = input("Confirm to train on " + dataset + "\n")
     if s != "y":
         continue'''
-    train_file = osp.join('data/', dataset + '.train.fasta')
-    test_file = osp.join('data/', dataset + '.test.fasta')
+    train_file = osp.join('../../data/', dataset + '.train.fasta')
+    test_file = osp.join('../../data/', dataset + '.test.fasta')
     log_dir = 'log/{}_cnn_results'.format(dataset)
     epochs = 200
 

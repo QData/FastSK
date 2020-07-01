@@ -19,8 +19,8 @@ nlp_datasets = [
 datasets = prot_datasets + dna_datasets + nlp_datasets
 
 for dataset in datasets:
-    train_file = osp.join('../data', dataset + '.train.fasta')
-    test_file = osp.join('../data', dataset + '.test.fasta')
+    train_file = osp.join('../../data/', dataset + '.train.fasta')
+    test_file = osp.join('../../data/', dataset + '.test.fasta')
     log_dir = '{}_cnn_results'.format(dataset)
     epochs = 200
 

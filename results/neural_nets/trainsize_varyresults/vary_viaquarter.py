@@ -17,7 +17,7 @@ nlp_datasets = [
 total = dna_datasets + prot_datasets + nlp_datasets
 
 for s in total:
-    file = 'data/' + s + '.train.fasta'
+    file = '../../data/' + s + '.train.fasta'
     labels, sequences = [], []
 
     # load the data

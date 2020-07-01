@@ -1,4 +1,4 @@
-### dataset.py
+### rnn_dataset.py
 ### A class for containing datasets used by RNN baseline models
 ### Derrick Blakely, December 2018
 
