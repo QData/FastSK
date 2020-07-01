@@ -19,7 +19,7 @@ from utils import AverageMeter, FastaReader
 from models import SeqLSTM, CharacterLevelCNN
 
 #def hyper(opt_method, lr, trn_size, train_file, test_file, datasetTag):
-def get_args(opt_method, lr, trn_size, trn, tst):
+def get_args():
     parser = argparse.ArgumentParser(description='Sequence char-CNN Baselines')
     parser.add_argument('-b', '--batch', type=int, default=64, metavar='N',
         help='input batch size for training (default: 64)')
@@ -31,9 +31,9 @@ def get_args(opt_method, lr, trn_size, trn, tst):
     parser.add_argument('--epochs', type=int, default=20, help='Maximum number of epochs')
     parser.add_argument('--log_dir', type=str, default='./results', 
         help='Directory for storing logs, results, and checkpoints')
-    parser.add_argument('--trn_size', type=float, choices=[0.2, 0.4, 0.6, 0.8, 1.], default=trn_size)
-    parser.add_argument('--opt_mtd', type=str, choices=['sgd', 'adam'], default=opt_method)
-    parser.add_argument('--lr', type=float, choices=[1e-2, 3e-2], default=lr)
+    parser.add_argument('--trn_size', type=float, choices=[0.2, 0.4, 0.6, 0.8, 1.], default=1)
+    parser.add_argument('--opt_mtd', type=str, choices=['sgd', 'adam'], default='sgd')
+    parser.add_argument('--lr', type=float, choices=[1e-2, 3e-2], default=1e-2)
     parser.add_argument('--datasetTag', type=str, default='ZZZ3', help='which data')
     return parser.parse_args()
 

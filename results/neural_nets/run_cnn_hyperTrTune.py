@@ -24,12 +24,16 @@ for dataset in datasets:
     print("train_file = ", train_file)
     test_file = osp.join('../../data/', dataset + '.test.fasta')
     print("test_file = ", test_file)
+
+    log_dir = '{}_cnn_results'.format(dataset)
+
     for trn_size in [1., 0.8, 0.6, 0.4, 0.2]:
     	for opt in ['sgd', 'adam']:
             for lr in [1e-2, 8e-3]: 
                 #hyper(opt, lr, trn_size, train_file, test_file, dataset)
                 command = ['python', 'cnn_hyperTrTune.py', '--trn', str(train_file),
                            '--tst', str(test_file), '--trn_size', str(trn_size), '--lr', str(lr),
-                           '--datasetTag', str(dataset), '--opt_mtd', str(opt), '--epochs', str(20)]                print(' '.join(command))
+                           '--datasetTag', str(dataset), '--log_dir', log_dir,
+                           '--opt_mtd', str(opt), '--epochs', str(20)]                print(' '.join(command))
                 print(' '.join(command))
                 output = subprocess.check_output(command)
