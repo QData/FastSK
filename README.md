@@ -151,12 +151,12 @@ cd results/
 python run_gridsearch.py
 ```
 
-#### When compared with Deep Learning baselines
+#### When comparing with Deep Learning baselines
 + You do need to have pytorch installed
 ```
 pip install torch torchvision
 ```
-+ One usage: all datasets with hyperparameter tuning:
++ One utility code: on all datasets with hyperparameter tuning of charCNN and each configure with 5 random-seeding repeats:
 ```
 cd results/neural_nets
 python run_cnn_hyperTrTune.py 

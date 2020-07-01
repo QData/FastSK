@@ -27,6 +27,12 @@ cd neural_nets
 python run_cnn_hyperTrTune.py 
 ```
 
++ one more possible usage: (on each CNN hyperparameter configration, we repeat 5-random-seeded runs and report average performance numbers)
+```
+cd neural_nets
+python cnn_hyperTrTune.py --trn ../../data/1.1.train.fasta --tst ../../data/1.1.test.fasta --trn_size 1.0 --lr 0.01 --datasetTag 1.1 --opt_mtd sgd --epochs 20
+```
+
 ## Some experimental results comparing FastSK and CharCNN across multiple datasets when varying training size 
 
 <img src="trainsize_varyresults/dna.png?raw=true" width="800">
