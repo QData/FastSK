@@ -139,7 +139,7 @@ Xtest = fastsk.get_test_kernel()
 svm = LinearSVC(C=1)
 ```
 
-### Experimental Resulst and Baseline setup
+### Experimental Results, Baselines, Utility Codes and Setup
 
 - We have provided all datasets we used in the subfolder "data"
 - We have provided all scripts we used to generate results under the subfolder "results"
