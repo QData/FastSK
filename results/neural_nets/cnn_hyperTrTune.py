@@ -18,9 +18,9 @@ from utils import Vocabulary, FastaDataset, CharCnnDataset, collate, get_evaluat
 from utils import AverageMeter, FastaReader
 from models import SeqLSTM, CharacterLevelCNN
 
-def hyper(opt_method, lr, trn_size, trn, tst, dataset):
+def hyper(opt_method, lr, trn_size, train_file, test_file, datasetTag):
     def get_args(opt_method, lr, trn_size, trn, tst):
-        parser = argparse.ArgumentParser(description='equence char-CNN Baselines')
+        parser = argparse.ArgumentParser(description='Sequence char-CNN Baselines')
         parser.add_argument('-b', '--batch', type=int, default=64, metavar='N',
             help='input batch size for training (default: 64)')
         parser.add_argument('--trn', type=str, help='Training file', default='./testdata/ZZZ3.train.fasta')
@@ -34,28 +34,32 @@ def hyper(opt_method, lr, trn_size, trn, tst, dataset):
         parser.add_argument('--trn_size', type=float, choices=[0.2, 0.4, 0.6, 0.8, 1.], default=trn_size)
         parser.add_argument('--opt_mtd', type=str, choices=['sgd', 'adam'], default=opt_method)
         parser.add_argument('--lr', type=float, choices=[1e-2, 3e-2], default=lr)
-        return parser.parse_args()
+        return parser.parse_args(['--opt_mtd', opt_method, '--lr', lr, '--trn_size', trn_size, '--trn', trn, '--tst',  tst])
 
-
-    args = get_args(opt_method, lr, trn_size, trn, tst)
+    args = get_args(opt_method, lr, trn_size, train_file, test_file)
     use_cuda = not args.no_cuda and torch.cuda.is_available()
-    device = torch.device('cuda' if use_cuda else 'cpu')
-    print("device = ", device)
     bsz = args.batch
-    datasetTag = dataset
     train_file = args.trn
-    print("train_file = ", train_file)
     test_file = args.tst
-    print("test_file = ", test_file)
-    epochs = args.epochs
-    highest_auc = 0
-    best_params = {}
+    trn_size = args.trn_size
     num_folds = args.num_folds
     log_dir = args.log_dir
+    output_file = args.file
+    epochs = args.epochs
+
+    device = torch.device('cuda' if use_cuda else 'cpu')
+    print("device = ", device)
+    print("train_file = ", train_file)
+    print("test_file = ", test_file)
+    print("trn_size = ", trn_size)
+    print("opt_method = ", args.opt_mtd)
+    print("lr = ", args.lr)
+
+    highest_auc = 0
+    best_params = {}
     if not osp.exists(log_dir):
         os.makedirs(log_dir)
 
-    output_file = args.file
     if args.file is None:
         
         # output_file = "charcnn_results_{}.out".format(str(date.today()))
