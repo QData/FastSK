@@ -2,7 +2,6 @@ import os.path as osp
 import subprocess
 #from cnn_hyperTrTune import hyper
 
-
 dna_datasets = [
     'CTCF', 'EP300', 'JUND', 'RAD21', 'SIN3A',
     'Pbde', 'EP300_47848', 'KAT2B', 'TP53', 'ZZZ3',
@@ -29,9 +28,8 @@ for dataset in datasets:
     	for opt in ['sgd', 'adam']:
             for lr in [1e-2, 8e-3]: 
                 #hyper(opt, lr, trn_size, train_file, test_file, dataset)
-
-                command = ['python', 'cnn_hyperTrTune.py', '--trn', train_file,
-                '--tst', test_file, '--trn_size', trn_size, '--lr', lr
-                '--datasetTag', dataset, '--opt_mtd', opt, '--epochs', 20]
+                command = ['python', 'cnn_hyperTrTune.py', '--trn', str(train_file),
+                           '--tst', str(test_file), '--trn_size', str(trn_size), '--lr', str(lr),
+                           '--datasetTag', str(dataset), '--opt_mtd', str(opt), '--epochs', str(20)]                print(' '.join(command))
                 print(' '.join(command))
                 output = subprocess.check_output(command)
