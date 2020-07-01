@@ -18,9 +18,9 @@ from utils import Vocabulary, FastaDataset, CharCnnDataset, collate, get_evaluat
 from utils import AverageMeter, FastaReader
 from models import SeqLSTM, CharacterLevelCNN
 
-def hyper(opt_method, lr, trn_size, trn, tst):
+def hyper(opt_method, lr, trn_size, trn, tst, dataset):
     def get_args(opt_method, lr, trn_size, trn, tst):
-        parser = argparse.ArgumentParser(description='Bio-Sequence char-CNN Baselines')
+        parser = argparse.ArgumentParser(description='equence char-CNN Baselines')
         parser.add_argument('-b', '--batch', type=int, default=64, metavar='N',
             help='input batch size for training (default: 64)')
         parser.add_argument('--trn', type=str, help='Training file', default='./testdata/ZZZ3.train.fasta')
@@ -42,6 +42,7 @@ def hyper(opt_method, lr, trn_size, trn, tst):
     device = torch.device('cuda' if use_cuda else 'cpu')
     print("device = ", device)
     bsz = args.batch
+    datasetTag = dataset
     train_file = args.trn
     print("train_file = ", train_file)
     test_file = args.tst
@@ -451,7 +452,7 @@ def hyper(opt_method, lr, trn_size, trn, tst):
                     opt.state_dict()['param_groups'][0]['lr'],
                     args.trn_size)
 
-                torch.save(model.state_dict(), osp.join(log_dir, model_name))
+                torch.save(model.state_dict(), osp.join(log_dir, datasetTag, model_name))
 
         print("Best AUC = {}, Best Epoch = {}".format(best_auc, best_epoch))
 
