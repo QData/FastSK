@@ -33,7 +33,7 @@ def get_args():
         help='Directory for storing logs, results, and checkpoints')
     parser.add_argument('--trn_size', type=float, choices=[0.2, 0.4, 0.6, 0.8, 1.], default=1)
     parser.add_argument('--opt_mtd', type=str, choices=['sgd', 'adam'], default='sgd')
-    parser.add_argument('--lr', type=float, choices=[1e-2, 3e-2], default=1e-2)
+    parser.add_argument('--lr', type=float, choices=[1e-2, 3e-2, 8e-3], default=1e-2)
     parser.add_argument('--datasetTag', type=str, default='ZZZ3', help='which data')
     return parser.parse_args()
 
