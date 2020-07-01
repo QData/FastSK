@@ -21,8 +21,7 @@ datasets = prot_datasets + dna_datasets + nlp_datasets
 for dataset in datasets:
     train_file = osp.join('../../data/', dataset + '.train.fasta')
     test_file = osp.join('../../data/', dataset + '.test.fasta')
-
-	for trn_size in [1., 0.8, 0.6, 0.4, 0.2]:
+    for trn_size in [1., 0.8, 0.6, 0.4, 0.2]:
     	for opt in ['sgd', 'adam']:
         	for lr in [1e-2, 8e-3]: 
             	hyper(opt, lr, trn_size, train_file, test_file)

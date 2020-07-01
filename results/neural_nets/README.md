@@ -10,8 +10,19 @@
 + run_cnn.py runs the charcnn on just one dataset
 + run_rnn.py runs the lstm  on just one dataset
 
++ For instance, one usage:
+```
+cd neural_nets
+python run_cnn_allData.py 
+```
 
-## Experimental results comparing FastSK and CharCNN when varying training size 
++ For instance, another usage:
+```
+cd neural_nets
+python run_cnn_hyperTrTune.py 
+```
+
+## Experimental results comparing FastSK and CharCNN across multiple datasets when varying training size 
 
 <img src="trainsize_varyresults/dna.png?raw=true" width="800">
 
