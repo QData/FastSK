@@ -18,7 +18,7 @@ from utils import Vocabulary, FastaDataset, CharCnnDataset, collate, get_evaluat
 from utils import AverageMeter, FastaReader
 from models import SeqLSTM, CharacterLevelCNN
 
-def hyper(opt_method, lr, trn_size, train_file, test_file, datasetTag):
+#def hyper(opt_method, lr, trn_size, train_file, test_file, datasetTag):
     def get_args(opt_method, lr, trn_size, trn, tst):
         parser = argparse.ArgumentParser(description='Sequence char-CNN Baselines')
         parser.add_argument('-b', '--batch', type=int, default=64, metavar='N',
@@ -36,63 +36,6 @@ def hyper(opt_method, lr, trn_size, train_file, test_file, datasetTag):
         parser.add_argument('--lr', type=float, choices=[1e-2, 3e-2], default=lr)
         parser.add_argument('--datasetTag', type=str, default='ZZZ3', help='which data')
         return parser.parse_args()
-
-    #args = get_args(opt_method, lr, trn_size, train_file, test_file)
-    args = {
-        "batch":64,
-        'trn':train_file, 
-        'tst':test_file,
-        'no_cuda': False,
-        'num_folds': 5,
-        'epochs': 20,
-        'log_dir': './results', 
-        'trn_size':trn_size, 
-        'opt_mtd':opt_method, 
-        'lr':lr, 
-        'datasetTag':datasetTag         
-        }
-
-    bsz = args.batch
-    train_file = args.trn
-    test_file = args.tst
-    trn_size = args.trn_size
-    num_folds = args.num_folds
-    log_dir = args.log_dir
-    output_file = args.file
-    epochs = args.epochs
-    datasetTag = args.datasetTag
-
-    print("train_file = ", train_file)
-    print("test_file = ", test_file)
-    print("trn_size = ", trn_size)
-    print("opt_method = ", args.opt_mtd)
-    print("lr = ", args.lr)
-
-    use_cuda = not args.no_cuda and torch.cuda.is_available()
-    device = torch.device('cuda' if use_cuda else 'cpu')
-    print("device = ", device)
-
-    highest_auc = 0
-    best_params = {}
-    if not osp.exists(log_dir):
-        os.makedirs(log_dir)
-
-    if args.file is None:
-        
-        # output_file = "charcnn_results_{}.out".format(str(date.today()))
-        output_file = "charcnn_results.out"
-        output_file = osp.join(log_dir, output_file)
-
-    if os.path.exists(output_file):
-
-        with open(output_file, 'a+') as f:
-            f.write("{}\nopt:{}, lr:{}, trn: {}, tst: {}, trn_size:{},  batch: {}, out: {}\n".format(datetime.now(),
-                args.opt_mtd, args.lr, train_file, test_file, args.trn_size, bsz, output_file))
-    else:
-        with open(output_file, 'w+') as f:
-            f.write("{}\nopt:{}, lr:{}, trn: {}, tst: {}, trn_size:{},  batch: {}, out: {}\n".format(datetime.now(),
-                args.opt_mtd, args.lr, train_file, test_file, args.trn_size, bsz, output_file))
-
 
     def train_epoch(model, opt, train_loader):
         num_batches = len(train_loader)
@@ -207,6 +150,8 @@ def hyper(opt_method, lr, trn_size, train_file, test_file, datasetTag):
         with open(output_file, 'a+') as f:
             f.write("\n\n" + str(params) + 'num_epochs: ' + str(num_epochs) + '\n' + result + '\n')
 
+        return 
+
 
     # Old utility func
     def run_best(trainset, testset):
@@ -238,6 +183,7 @@ def hyper(opt_method, lr, trn_size, train_file, test_file, datasetTag):
         with open(output_file, 'a+') as f:
             f.write("\n\nFinal model: " + str(best_params) + '\n' + result + '\n')
 
+        return 
 
 
     def train_cnn(model, training_generator, optimizer, criterion, epoch, print_every=25):
@@ -383,7 +329,7 @@ def hyper(opt_method, lr, trn_size, train_file, test_file, datasetTag):
             testset = CharCnnDataset(test_samples, test_labels, max_len, alphabet_size)
 
             ## Initialize Model
-
+        return
 
 
 
@@ -519,7 +465,51 @@ def hyper(opt_method, lr, trn_size, train_file, test_file, datasetTag):
 
         return test_acc, test_auc
 
-    # if __name__ == '__main__':
+
+if __name__ == '__main__':
+    #args = get_args(opt_method, lr, trn_size, train_file, test_file)
+    args = get_args()
+    bsz = args.batch
+    train_file = args.trn
+    test_file = args.tst
+    trn_size = args.trn_size
+    num_folds = args.num_folds
+    log_dir = args.log_dir
+    output_file = args.file
+    epochs = args.epochs
+    datasetTag = args.datasetTag
+
+    print("train_file = ", train_file)
+    print("test_file = ", test_file)
+    print("trn_size = ", trn_size)
+    print("opt_method = ", args.opt_mtd)
+    print("lr = ", args.lr)
+
+    use_cuda = not args.no_cuda and torch.cuda.is_available()
+    device = torch.device('cuda' if use_cuda else 'cpu')
+    print("device = ", device)
+
+    highest_auc = 0
+    best_params = {}
+    if not osp.exists(log_dir):
+        os.makedirs(log_dir)
+
+    if args.file is None:
+        
+        # output_file = "charcnn_results_{}.out".format(str(date.today()))
+        output_file = "charcnn_results.out"
+        output_file = osp.join(log_dir, output_file)
+
+    if os.path.exists(output_file):
+
+        with open(output_file, 'a+') as f:
+            f.write("{}\nopt:{}, lr:{}, trn: {}, tst: {}, trn_size:{},  batch: {}, out: {}\n".format(datetime.now(),
+                args.opt_mtd, args.lr, train_file, test_file, args.trn_size, bsz, output_file))
+    else:
+        with open(output_file, 'w+') as f:
+            f.write("{}\nopt:{}, lr:{}, trn: {}, tst: {}, trn_size:{},  batch: {}, out: {}\n".format(datetime.now(),
+                args.opt_mtd, args.lr, train_file, test_file, args.trn_size, bsz, output_file))
+
     test_acc_list = []
     test_auc_list = []
     for i in range(5):
@@ -533,7 +523,4 @@ def hyper(opt_method, lr, trn_size, train_file, test_file, datasetTag):
     sum_str = "mean_acc: {}, var_acc: {}, mean_auc: {}, var_auc: {}"
     sum_str = sum_str.format(mean_acc, var_acc, mean_auc, var_auc)
     with open(output_file, 'a+') as f:
-        f.write(sum_str + '\n')
-
-
-        
+        f.write(sum_str + '\n')      
