@@ -43,7 +43,9 @@ def hyper(opt_method, lr, trn_size, trn, tst):
     print("device = ", device)
     bsz = args.batch
     train_file = args.trn
+    print("train_file = ", train_file)
     test_file = args.tst
+    print("test_file = ", test_file)
     epochs = args.epochs
     highest_auc = 0
     best_params = {}
