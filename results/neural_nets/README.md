@@ -1,6 +1,11 @@
-# DNA and Protein Classification DNN Baseline Models
++ You do need to have pytorch installed for running the codes in this folder. If you don't, please run the following or check  [URL](https://pytorch.org/get-started/locally/)
+```
+pip install torch torchvision 
+```
 
-+ On DNA and protein sequences, we tried two DNN based sequence  classifier implemented with PyTorch. 
+# We compare FastSK to DNN Baseline Models
+
++ we tried two DNN based sequence  classifier implemented with PyTorch as DNN baselines 
 
 + Originally created for comparison with [FastSK](https://github.com/QData/FastSK), a new string kernel support vector machine classifier for sequence annotation.
 

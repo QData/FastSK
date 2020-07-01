@@ -44,7 +44,7 @@ python run_experiments.py --output-dir ./stdevs --stdev-I --gkm-mode dna
 
 The DNN string classification baseline models are in the `neural_nets` folder.
 
-+ On DNA and protein sequences, we tried two types of DNN based sequence  classifier implemented with PyTorch: LSTM and CharCNN
++ We tried two types of DNN based sequence  classifier implemented with PyTorch: LSTM and CharCNN
 
 + Please install pytorch before running the following command: 
 
