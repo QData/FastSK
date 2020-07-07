@@ -11,14 +11,9 @@ from tqdm import tqdm
 
 from utils import FastskRunner
 
-# min_g, max_g = 4, 15
-# G_VALS = list(range(min_g, max_g + 1))
-# C_VALS = [10 ** i for i in range(-3, 3)]
-
-G_VALS = [10]
-C_VALS = [10 ** i for i in range(-1, 1)]
-
-
+min_g, max_g = 4, 15
+G_VALS = list(range(min_g, max_g + 1))
+C_VALS = [10 ** i for i in range(-3, 3)]
 GRID = []
 for C in C_VALS:
     for g in G_VALS:
