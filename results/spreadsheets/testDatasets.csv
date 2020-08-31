@@ -1,0 +1,10 @@
+dataset,type
+encode/db.GATA1_K562_GATA-1_USC,dna
+encode/BroadGM12878Ctcf,dna
+encode/HaibA549Foxa1V0416102Dex100nm,dna
+encode/HaibGM12878Cebpbsc150V0422111,dna
+encode/SydhGm12878Jund,dna
+encode/SydhGm12878MaxIggmus,dna
+encode/SydhGm12878Yy1,dna
+encode/SydhHepg2Hnf4aForskIn,dna
+encode/SydhK562Gata1Ucd,dna
