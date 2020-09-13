@@ -4,6 +4,7 @@ import subprocess
 import numpy as np
 from fastsk import FastSK
 from sklearn.svm import LinearSVC
+from sklearn.linear_model import LassoCV
 from sklearn.linear_model import LogisticRegression
 from sklearn.calibration import CalibratedClassifierCV
 from sklearn import metrics
@@ -17,15 +18,15 @@ def time_fastsk(g, m, t, data_location, prefix, approx=False, max_iters=None, ti
     reached.
     '''
     fastsk = FastskRunner(prefix, data_location)
-    
+
     start = time.time()
     if timeout:
         if max_iters:
             args = {'t': t, 'approx': approx, 'skip_variance': skip_variance, 'I': max_iters}
         else:
             args = {'t': t, 'approx': approx, 'skip_variance': skip_variance}
-        p = multiprocessing.Process(target=fastsk.compute_train_kernel, 
-            name='TimeFastSK', 
+        p = multiprocessing.Process(target=fastsk.compute_train_kernel,
+            name='TimeFastSK',
             args=(g, m),
             kwargs=args)
         p.start()
@@ -40,7 +41,7 @@ def time_fastsk(g, m, t, data_location, prefix, approx=False, max_iters=None, ti
             fastsk.compute_train_kernel(g, m, t=t, approx=approx, skip_variance=skip_variance)
 
     end = time.time()
-    
+
     return end - start
 
 def fastsk_wrap(dataset, g, m, t, approx, I, delta, skip_variance, C, return_dict):
@@ -68,7 +69,7 @@ def train_and_test_fastsk(dataset, g, m, t, approx, I=50, delta=0.025, skip_vari
         else:
             acc, auc = return_dict['acc'], return_dict['auc']
     else:
-        acc, auc = fastsk.train_and_test(g, m, t=t, I=I, 
+        acc, auc = fastsk.train_and_test(g, m, t=t, I=I,
             approx=approx, skip_variance=skip_variance, C=C)
     end = time.time()
 
@@ -86,7 +87,7 @@ def train_and_test_gkm(g, m, t, prefix, gkm_data, gkm_exec, approx=False, timeou
     if timeout:
         manager = multiprocessing.Manager()
         return_dict = manager.dict()
-        p = multiprocessing.Process(target=gkm_wrap, 
+        p = multiprocessing.Process(target=gkm_wrap,
             name='Train and test Gkm',
             args=(g, m, t, prefix, gkm_data, gkm_exec, approx, timeout, alphabet, return_dict))
         p.start()
@@ -107,7 +108,7 @@ def train_and_test_gkm(g, m, t, prefix, gkm_data, gkm_exec, approx=False, timeou
 
 def time_gkm(g, m, t, prefix, gkm_data, gkm_exec, approx=False, timeout=None, alphabet=None):
     '''Run gkm-SVM2.0 kernel computation. If a timeout is provided,
-    it'll be run as a subprocess, which will be killed when the timeout is 
+    it'll be run as a subprocess, which will be killed when the timeout is
     reached.
     '''
     k = g - m
@@ -152,7 +153,7 @@ def time_blended(k1, k2, prefix, timeout=None):
     return end - start
 
 class Vocabulary(object):
-    """A class for storing the vocabulary of a 
+    """A class for storing the vocabulary of a
     sequence dataset. Maps words or characters to indexes in the
     vocabulary.
     """
@@ -167,7 +168,7 @@ class Vocabulary(object):
         Args:
             token: a letter (for char-level model) or word (for word-level model)
             for which to create a mapping to an integer (the idx).
-        Return: 
+        Return:
             the index of the word. If it's already present, return its
             index. Otherwise, add it before returning the index.
         """
@@ -191,11 +192,11 @@ class FastaUtility():
 
         Parameters
         ----------
-        vocab : 
+        vocab :
         """
         self._vocab = Vocabulary() if vocab is None else vocab
 
-    def read_data(self, data_file, vocab='inferred'):
+    def read_data(self, data_file, vocab='inferred', regression=False):
         r"""Read a file with the FASTA-like format of alternating
         labels lines followed by sequences. For example:
             >1
@@ -204,12 +205,12 @@ class FastaUtility():
             >AAAAAGAT
             >0
             >AGTC
-        
+
         Parameters
         ----------
         data_file : string
             The path to the sequences.
-        vocab : string 
+        vocab : string
 
         Returns
         ----------
@@ -227,8 +228,11 @@ class FastaUtility():
                 if label_line:
                     split = line.split('>')
                     assert len(split) == 2
-                    label = int(split[1])
-                    assert label in [-1, 0, 1]
+                    if regression:
+                        label = split[1]
+                    else:
+                        label = int(split[1])
+                        assert label in [-1, 0, 1]
                     Y.append(label)
                     label_line = False
                 else:
@@ -255,8 +259,8 @@ class ArabicUtility():
         Dialect Identification task format.
         https://www.aclweb.org/anthology/L18-1535/
 
-        There are 26 dialects in one of the tasks, which is 
-        too many for us to handle right now. Instead, we just the 
+        There are 26 dialects in one of the tasks, which is
+        too many for us to handle right now. Instead, we just the
         following 6 cities:
             RAB - Rabat
             BEI - Beirut
@@ -280,12 +284,12 @@ class ArabicUtility():
 
             That is, a sequence of Arabic characters, a tab,
             and a three-letter label/city code.
-        
+
         Parameters
         ----------
         data_file : string
             The path to the sequences.
-        vocab : string 
+        vocab : string
 
         Returns
         ----------
@@ -337,7 +341,7 @@ class FastskRunner():
         self.prefix = prefix
         self.train_file = osp.join(data_location, prefix + '.train.fasta')
         self.test_file = osp.join(data_location, prefix + '.test.fasta')
-        
+
         reader = FastaUtility()
         self.train_seq, self.Ytrain = reader.read_data(self.train_file)
         self.test_seq, Ytest = reader.read_data(self.test_file)
@@ -345,18 +349,18 @@ class FastskRunner():
         self.Ytest = Ytest
 
     def compute_train_kernel(self, g, m, t=20, approx=True, I=100, delta=0.025, skip_variance=False):
-        kernel = FastSK(g=g, m=m, t=t, 
-            approx=approx, 
-            max_iters=I, 
-            delta=delta, 
+        kernel = FastSK(g=g, m=m, t=t,
+            approx=approx,
+            max_iters=I,
+            delta=delta,
             skip_variance=skip_variance)
         kernel.compute_train(self.train_seq)
 
     def train_and_test(self, g, m, t, approx, I=100, delta=0.025, skip_variance=False, C=1):
-        kernel = FastSK(g=g, m=m, t=t, 
-            approx=approx, 
-            max_iters=I, 
-            delta=delta, 
+        kernel = FastSK(g=g, m=m, t=t,
+            approx=approx,
+            max_iters=I,
+            delta=delta,
             skip_variance=skip_variance)
 
         kernel.compute_kernel(self.train_seq, self.test_seq)
@@ -375,6 +379,45 @@ class FastskRunner():
         return acc, auc
 
 
+class FastskRegressor():
+    def __init__(self, dataset, data_location='../data'):
+        self.dataset=dataset
+        self.train_file = osp.join(data_location, prefix + '.train.fasta')
+        self.test_file = osp.join(data_location, prefix + '.test.fasta')
+
+        reader = FastaUtility()
+        self.train_seq, self.Ytrain = reader.read_data(train_file, regression=True)
+        self.test_seq, self.Ytest = reader.read_data(test_file, regression=True)
+        self.Ytrain = np.array(self.Ytrain).astype(np.float)
+        self.Ytest = np.array(self.Ytest).astype(np.float)
+
+    def compute_train_kernel(self, g, m, t=20, approx=True, I=100, delta=0.025, skip_variance=False):
+        kernel = FastSK(g=g, m=m, t=t,
+            approx=approx,
+            max_iters=I,
+            delta=delta,
+            skip_variance=skip_variance)
+        kernel.compute_train(self.train_seq)
+
+    def train_and_test(self, g, m, t, approx, I=100, delta=0.025, skip_variance=False):
+        kernel = FastSK(g=g, m=m, t=t,
+            approx=approx,
+            max_iters=I,
+            delta=delta,
+            skip_variance=skip_variance)
+
+        kernel.compute_kernel(self.train_seq, self.test_seq)
+        self.Xtest = kernel.get_test_kernel()
+        self.Xtest = np.array(self.Xtest).reshape(len(self.Xtest), -1)
+        self.Xtrain = kernel.get_train_kernel()
+        self.Xtrain = np.array(self.Xtrain).reshape(len(self.Xtrain), -1)
+
+        # Can replace Lasso with alternative regression approaches such as SVR
+        model = LassoCV(cv=5,n_jobs=t,random_state=293).fit(self.Xtrain, self.Ytrain)
+        r2 = model.score(self.Xtest, self.Ytest)
+        return r2
+
+
 class GkmRunner():
     def __init__(self, exec_location, data_locaton, dataset, g, k, approx=False, alphabet=None, outdir="./temp"):
         self.exec_location = exec_location
@@ -382,10 +425,10 @@ class GkmRunner():
         self.dataset = dataset
         self.outdir = outdir
         self.g, self.k, self.alphabet = g, k, alphabet
-        
-        '''Important note: 
+
+        '''Important note:
         gkmSVM's -d parameter (max_m) is *not* the same as our
-        m = g - k parameter. It's actually the upper bound of the 
+        m = g - k parameter. It's actually the upper bound of the
         summation shown in equation 3 in the
         2014 gkmSVM paper (ghandi2014enhanced).'''
         if (approx):
@@ -406,7 +449,7 @@ class GkmRunner():
         self.test_neg_file = osp.join(self.dir, self.dataset + '.test.neg.fasta')
         self.train_test_pos_file = osp.join(self.outdir, self.dataset + '.train_test.pos.fasta')
         self.train_test_neg_file = osp.join(self.outdir, self.dataset + '.train_test.neg.fasta')
-        
+
         ## Temp files that gkm creates
         if not osp.exists(self.outdir):
             os.makedirs(self.outdir)
@@ -548,7 +591,7 @@ class GaKCoRunner():
             self.dict_file,
             self.labels_file,
             self.kernel_file]
-            
+
         output = subprocess.check_output(command)
 
     def train_and_test(self, g, m, C=1):
@@ -557,7 +600,7 @@ class GaKCoRunner():
 
         self.Xtrain, self.Xtest = self.read_kernel()
         self.Ytrain, self.Ytest = self.read_labels()
-        
+
         svm = LinearSVC(C=C)
         self.clf = CalibratedClassifierCV(svm, cv=5).fit(self.Xtrain, self.Ytrain)
         acc, auc = self.evaluate_clf()
@@ -661,8 +704,8 @@ class BlendedSpectrumRunner():
             for x in X:
                 f.write(x + '\n')
 
-    
-    def write_seq(self, datafile, mode='train'):        
+
+    def write_seq(self, datafile, mode='train'):
         assert mode in ['train', 'test']
         if mode == 'train':
             outfile = self.train_seq
@@ -680,7 +723,7 @@ class BlendedSpectrumRunner():
                 else:
                     X.append(line.lower())
                     label_line = True
-        
+
         with open(outfile, 'w+') as f:
             for x in X:
                 f.write(x + '\n')
@@ -726,7 +769,7 @@ class BlendedSpectrumRunner():
         self.compute_kernel(k1, k2, mode='train_and_test')
 
         self.Xtrain, self.Xtest = self.read_kernel()
-        
+
         svm = LinearSVC(C=C, class_weight='balanced', max_iter=3000)
         self.clf = CalibratedClassifierCV(svm, cv=5).fit(self.Xtrain, self.Ytrain)
         acc, auc = self.evaluate_clf()
