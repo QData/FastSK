@@ -1,4 +1,4 @@
-# FastSK: Fast and Accurate Sequence Classification and Regression using Support Vector Machine
+# FastSK: fast sequence analysis with gapped string kernels
 
 
 A Python package and gkm-svm string kernel algorithm for training SVM classifiers for gkm based sequence analysis. Built with the FastSK gapped k-mer algorithm, [pybind11](https://github.com/pybind/pybind11), and [LIBSVM](https://github.com/cjlin1/libsvm).
