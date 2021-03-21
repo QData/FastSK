@@ -152,7 +152,7 @@ python run_cnn_hyperTrTune.py
 <img src="results/spreadsheets/Table2.png" width="800">
 
 
-#### Some of our exprimental results comparing FastSK with CharCNN when varying training size. 
+#### Some of our exprimental results comparing FastSK with Character based Convolutional Neural Nets (CharCNN) when varying training size. 
 
 <img src="results/neural_nets/trainsize_varyresults/dna.png" width="800">
 
