@@ -1,7 +1,9 @@
 # FastSK: fast sequence analysis with gapped string kernels
 
 
-A Python package and gkm-svm string kernel algorithm for training SVM classifiers for gkm based sequence analysis. Built with the FastSK gapped k-mer algorithm, [pybind11](https://github.com/pybind/pybind11), and [LIBSVM](https://github.com/cjlin1/libsvm).
+This Github repo provides improved algorithms for implementing gkm-svm string kernel calculations. We provide C++ version of the algorithm implementation and a python wrapper (making to a python package) for the C++ implementation. Our package provides fast and accuate gkm-svm based training SVM classifiers and regressors for gkm string kernel based sequence analysis. 
+
+This Github is built with a novel FastSK gapped k-mer algorithm, [pybind11](https://github.com/pybind/pybind11), and [LIBSVM](https://github.com/cjlin1/libsvm).
 
 ### Citations
 
