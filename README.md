@@ -5,6 +5,9 @@ This Github repo provides improved algorithms for implementing gkm-svm string ke
 
 This Github is built with a novel and fast algorithm design for implementing gapped k-mer algorithm, [pybind11](https://github.com/pybind/pybind11), and [LIBSVM](https://github.com/cjlin1/libsvm).
 
+#### To Do:  a detailed user document, with example input files, output files, code, and perhaps a user group where people can post their questions
+
+
 ### Citations
 
 ```
