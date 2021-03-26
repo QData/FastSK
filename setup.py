@@ -35,8 +35,10 @@ class CMakeBuild(build_ext):
 
     def build_extension(self, ext):
         extdir = os.path.abspath(os.path.dirname(self.get_ext_fullpath(ext.name)))
-        cmake_args = ['-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=' + extdir,
-                      '-DPYTHON_EXECUTABLE=' + sys.executable]
+        cmake_args = [
+            '-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=' + extdir,
+            '-DPYTHON_EXECUTABLE=' + sys.executable
+        ]
 
         cfg = 'Debug' if self.debug else 'Release'
         build_args = ['--config', cfg]
@@ -51,10 +53,14 @@ class CMakeBuild(build_ext):
             build_args += ['--', '-j2']
 
         env = os.environ.copy()
-        env['CXXFLAGS'] = '{} -DVERSION_INFO=\\"{}\\"'.format(env.get('CXXFLAGS', ''),
-                                                              self.distribution.get_version())
+        env['CXXFLAGS'] = '{} -DVERSION_INFO=\\"{}\\"'.format(
+            env.get('CXXFLAGS', ''),
+            self.distribution.get_version()
+        )
+
         if not os.path.exists(self.build_temp):
             os.makedirs(self.build_temp)
+
         subprocess.check_call(['cmake', ext.sourcedir] + cmake_args, cwd=self.build_temp, env=env)
         subprocess.check_call(['cmake', '--build', '.'] + build_args, cwd=self.build_temp)
 
@@ -62,11 +68,11 @@ setup(
     name='fastsk-test',
     version='1.0.0',
     author='Derrick Blakely',
-    author_email='dcb7xz@virginia.edu',
+    author_email='blakelyderrick@gmail.com',
     description='FastSK PyPi Package',
     long_description=long_description,
     long_description_content_type='text/markdown',
-    ext_modules=[CMakeExtension('fastsk')],
-    cmdclass=dict(build_ext=CMakeBuild),
+    ext_modules=[CMakeExtension(name='fastsk')],
+    cmdclass={"build_ext": CMakeBuild},
     zip_safe=False,
 )
