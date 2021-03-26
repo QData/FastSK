@@ -11,7 +11,7 @@
 namespace py = pybind11;
 using namespace std;
 
-PYBIND11_MODULE(fastsk, m) {
+PYBIND11_MODULE(_fastsk, m) {
     py::class_<FastSK>(m, "FastSK")
         .def(py::init<int, int, int, bool, double, int, bool>(), 
             py::arg("g"), 

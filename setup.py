@@ -4,7 +4,7 @@ import sys
 import platform
 import subprocess
 
-from setuptools import setup, Extension
+from setuptools import setup, find_packages, Extension
 from setuptools.command.build_ext import build_ext
 from distutils.version import LooseVersion
 
@@ -72,7 +72,9 @@ setup(
     description='FastSK PyPi Package',
     long_description=long_description,
     long_description_content_type='text/markdown',
-    ext_modules=[CMakeExtension(name='fastsk')],
+    package_dir={'': 'src'},
+    packages=find_packages(where='src'),
+    ext_modules=[CMakeExtension(name='fastsk._fastsk')],
     cmdclass={"build_ext": CMakeBuild},
     zip_safe=False,
 )
