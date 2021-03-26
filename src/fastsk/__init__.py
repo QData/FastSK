@@ -1,2 +1,2 @@
 from ._fastsk import *
-from .module import func
+from .utils import FastaUtility

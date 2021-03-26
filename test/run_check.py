@@ -9,10 +9,9 @@ from sklearn.calibration import CalibratedClassifierCV
 from sklearn.metrics import roc_auc_score
 import numpy as np
 
-from fastsk import FastSK
-from utils import (
+from fastsk import (
+    FastSK,
     FastaUtility,
-
 )
 
 def get_args():
