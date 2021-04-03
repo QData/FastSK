@@ -9,20 +9,21 @@ import torch.nn.functional as F
 
 PAD_IDX = 0
 
+
 def get_evaluation(y_true, y_prob, metrics_list):
     evaluation = {}
     y_pred = np.argmax(y_prob, -1)
-    if 'accuracy' in metrics_list:
-        evaluation['accuracy'] = metrics.accuracy_score(y_true, y_pred)
-    if 'auc' in metrics_list:
-        pos_scores = y_prob[:,1].tolist()
-    
-        '''Exploding gradient can cause logits to
+    if "accuracy" in metrics_list:
+        evaluation["accuracy"] = metrics.accuracy_score(y_true, y_pred)
+    if "auc" in metrics_list:
+        pos_scores = y_prob[:, 1].tolist()
+
+        """Exploding gradient can cause logits to
         contain NaN values, which will make roc_auc_score
         crash. Exploding gradient is avoided if:
             * learning rate < 1
             * we use gradient clipping (see torch.nn.utils.clip_grad_norm)
-        '''
+        """
         try:
             auc = metrics.roc_auc_score(y_true, pos_scores)
         except ValueError as e:
@@ -30,7 +31,7 @@ def get_evaluation(y_true, y_prob, metrics_list):
             print("y_prob = ", y_prob)
             print("y_true = ", y_true)
             exit()
-        evaluation['auc'] = 0
+        evaluation["auc"] = 0
     return evaluation
 
 
@@ -42,6 +43,7 @@ def collate(batch):
     x = pad_sequence(sequences, padding_value=0, batch_first=False)
     y = torch.LongTensor(labels)
     return [x, y, lengths]
+
 
 class AverageMeter(object):
     def __init__(self):
@@ -59,11 +61,13 @@ class AverageMeter(object):
         self.count += n
         self.avg = self.sum / self.count
 
+
 class Vocabulary(object):
-    """A class for storing the vocabulary of a 
+    """A class for storing the vocabulary of a
     sequence dataset. Maps words or characters to indexes in the
     vocabulary.
     """
+
     def __init__(self):
         self._token2idx = {}
         self._idx2token = {}
@@ -77,7 +81,7 @@ class Vocabulary(object):
         Args:
             token: a letter (for char-level model) or word (for word-level model)
             for which to create a mapping to an integer (the idx).
-        Return: 
+        Return:
             the index of the word. If it's already present, return its
             index. Otherwise, add it before returning the index.
         """
@@ -88,8 +92,7 @@ class Vocabulary(object):
         return self._token2idx.get(token)
 
     def size(self):
-        """Return the number tokens in the vocabulary.
-        """
+        """Return the number tokens in the vocabulary."""
         return self._size
 
     def __len__(self):
@@ -98,12 +101,14 @@ class Vocabulary(object):
     def __str__(self):
         return str(self._token2idx)
 
+
 class Fold(data.Dataset):
     """Dataset wrapper for a cross validation fold. Used to
     make cross validation sampling with DataLoader easy.
     Args:
-        
+
     """
+
     def __init__(self, sequences, labels, transform=None):
         self.sequences = sequences
         self.labels = labels
@@ -146,25 +151,24 @@ class FastaDataset(data.Dataset):
         self.max_length = 0
         self._read_data()
         self._folds = []
-        
 
     def __len__(self):
         return len(self.labels)
 
     def __getitem__(self, idx):
         sequence = self.sequences[idx]
-        #sequence = self.padded_sequences[idx]
+        # sequence = self.padded_sequences[idx]
         sequence = sequence if self.transform is None else self.transform(sequence)
         label = self.labels[idx]
         return sequence, label
-    
+
     def get_vocab(self):
         return self._vocab
 
     def split(self, k=5):
         """Shuffle dataset and split into k folds.
         Args:
-            k (int): number of 
+            k (int): number of
         """
 
         # unison shuffle sequences and labels
@@ -184,18 +188,18 @@ class FastaDataset(data.Dataset):
 
     def _read_data(self):
         """Read a file in FASTA format. Specifically, resembles:
-                >0
-                ATCG
-            where the first line is assumed to be a label line.
-            Will read from self._file_path and store sequences in 
-            self.sequences and labels in self.labels.
+            >0
+            ATCG
+        where the first line is assumed to be a label line.
+        Will read from self._file_path and store sequences in
+        self.sequences and labels in self.labels.
         """
-        with open(self.file_path, 'r', encoding='utf-8') as f:
+        with open(self.file_path, "r", encoding="utf-8") as f:
             label_line = True
             for line in f:
                 line = line.strip().lower()
                 if label_line:
-                    split = line.split('>')
+                    split = line.split(">")
                     assert len(split) == 2
                     label = int(split[1])
                     assert label in [-1, 0, 1]
@@ -219,15 +223,19 @@ class FastaDataset(data.Dataset):
         validation set.
         """
         num_folds = len(self._folds)
-        if (idx >= num_folds):
-            raise ValueError("idx must be in range 0-{}, inclusive. Received {}".format(num_folds - 1, idx))
+        if idx >= num_folds:
+            raise ValueError(
+                "idx must be in range 0-{}, inclusive. Received {}".format(
+                    num_folds - 1, idx
+                )
+            )
         train = []
         for i in range(num_folds):
             if i == idx:
                 vali = self._folds[i]
             else:
                 train += self._folds[i]
-                
+
         train_sequences, train_labels = zip(*train)
         vali_sequences, vali_labels = zip(*vali)
         train_fold = Fold(train_sequences, train_labels)
@@ -237,7 +245,6 @@ class FastaDataset(data.Dataset):
 
 
 class FastaReader(object):
-    
     def __init__(self, train_file, test_file, vocab=None):
         self.train_file = train_file
         self.test_file = test_file
@@ -248,20 +255,24 @@ class FastaReader(object):
         self.num_test = 0
 
     def get_data(self):
-        self.train_samples, self.train_labels = self._read_file(self.train_file, shuffle=True)
-        self.test_samples, self.test_labels = self._read_file(self.test_file, shuffle=False)
+        self.train_samples, self.train_labels = self._read_file(
+            self.train_file, shuffle=True
+        )
+        self.test_samples, self.test_labels = self._read_file(
+            self.test_file, shuffle=False
+        )
         self.num_train, self.num_test = len(self.train_samples), len(self.test_samples)
         self.alphabet_size = len(self._vocab)
 
     ## private utility
     def _read_file(self, file, shuffle=True):
         samples, labels = [], []
-        with open(file, 'r', encoding='utf-8') as f:
+        with open(file, "r", encoding="utf-8") as f:
             label_line = True
             for line in f:
                 line = line.strip().lower()
                 if label_line:
-                    split = line.split('>')
+                    split = line.split(">")
                     assert len(split) == 2
                     label = int(split[1])
                     assert label in [-1, 0, 1]
@@ -286,7 +297,6 @@ class FastaReader(object):
 
 
 class CharCnnDataset(data.Dataset):
-    
     def __init__(self, samples, labels, max_len, alphabet_size, transform=None):
         self.max_len, self.alphabet_size = max_len, alphabet_size
         self.transform = transform
@@ -311,7 +321,7 @@ class CharCnnDataset(data.Dataset):
             length = len(seq)
             t = torch.zeros(self.max_len, self.alphabet_size)
             seq = torch.tensor(seq, dtype=torch.long)
-            t[:length,:] = F.one_hot(seq, num_classes=self.alphabet_size)
+            t[:length, :] = F.one_hot(seq, num_classes=self.alphabet_size)
             x.append(t)
 
         assert len(x) == len(y)
@@ -319,18 +329,18 @@ class CharCnnDataset(data.Dataset):
 
     def _read_data(self):
         """Read a file in FASTA format. Specifically, resembles:
-                >0
-                ATCG
-            where the first line is assumed to be a label line.
-            Will read from self._file_path and store sequences in 
-            self.sequences and labels in self.labels.
+            >0
+            ATCG
+        where the first line is assumed to be a label line.
+        Will read from self._file_path and store sequences in
+        self.sequences and labels in self.labels.
         """
-        with open(self.file_path, 'r', encoding='utf-8') as f:
+        with open(self.file_path, "r", encoding="utf-8") as f:
             label_line = True
             for line in f:
                 line = line.strip().lower()
                 if label_line:
-                    split = line.split('>')
+                    split = line.split(">")
                     assert len(split) == 2
                     label = int(split[1])
                     assert label in [-1, 0, 1]
@@ -344,9 +354,8 @@ class CharCnnDataset(data.Dataset):
                     t = torch.zeros(self.max_len, self.alphabet_size)
                     seq = [self._vocab.add(token) for token in seq]
                     seq = torch.tensor(seq, dtype=torch.long)
-                    t[:length,:] = F.one_hot(seq, num_classes=self.alphabet_size)
+                    t[:length, :] = F.one_hot(seq, num_classes=self.alphabet_size)
                     self.sequences.append(t)
                     label_line = True
 
         assert len(self.sequences) == len(self.labels)
-        

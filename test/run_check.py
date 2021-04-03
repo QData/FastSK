@@ -14,23 +14,25 @@ from fastsk import (
     FastaUtility,
 )
 
+
 def get_args():
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        '--train',
+        "--train",
         type=str,
-        default='../data/EP300.train.fasta',
-        help='training sequences file'
+        default="../data/EP300.train.fasta",
+        help="training sequences file",
     )
     parser.add_argument(
-        '--test',
+        "--test",
         type=str,
-        default='../data/EP300.test.fasta',
-        help='test sequences file'
+        default="../data/EP300.test.fasta",
+        help="test sequences file",
     )
     args = parser.parse_args()
 
     return args
+
 
 def main(args):
     ## Compute kernel matrix
@@ -52,14 +54,13 @@ def main(args):
     Xseq, Ytest = reader.read_data(args.test)
 
     acc = clf.score(Xtest, Ytest)
-    probs = clf.predict_proba(Xtest)[:,1]
+    probs = clf.predict_proba(Xtest)[:, 1]
     auc = roc_auc_score(Ytest, probs)
 
     print("Linear SVM:\n\tAcc = {}, AUC = {}".format(acc, auc))
-    assert auc >= 0.9, (
-        "AUC is not correct. Should be >= 0.9. Received: {}".format(auc)
-    )
+    assert auc >= 0.9, "AUC is not correct. Should be >= 0.9. Received: {}".format(auc)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     args = get_args()
     main(args)

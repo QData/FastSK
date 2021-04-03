@@ -5,5 +5,8 @@ requires = [
     "pybind11>=2.6.0",
     "cmake",
 ]
-
 build-backend = "setuptools.build_meta"
+
+[tool.black]
+line-length = 88
+target-version = ['py35']

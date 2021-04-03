@@ -1,4 +1,4 @@
-'''
+"""
 Derrick Blakely - September 2019
 
 This script covers experiments on our
@@ -7,7 +7,7 @@ DNA datasets.
 Note that gkm-SVM2.0 must be recompiled
 with a larger alphabet size if running
 on a dataset besides DNA.
-'''
+"""
 
 import subprocess
 
@@ -29,12 +29,21 @@ experiments = [
 ]
 
 for e in experiments:
-    command = ["python", "run_gkm.py", 
-        "--dir", "our_data/", 
-        "--prefix", e["dataset"],
-        "--outdir", "temp",
-        "-g", str(e["g"]),
-        "-m", str(e["m"]),
-        "--results", "dna_results.out"]
-    print(' '.join(command))
+    command = [
+        "python",
+        "run_gkm.py",
+        "--dir",
+        "our_data/",
+        "--prefix",
+        e["dataset"],
+        "--outdir",
+        "temp",
+        "-g",
+        str(e["g"]),
+        "-m",
+        str(e["m"]),
+        "--results",
+        "dna_results.out",
+    ]
+    print(" ".join(command))
     output = subprocess.check_output(command)

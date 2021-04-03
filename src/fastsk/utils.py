@@ -1,5 +1,4 @@
-
-class FastaUtility():
+class FastaUtility:
     def __init__(self, vocab=None):
         r"""
         Initialize a helper object for parsing datasets in FASTA-like format.
@@ -10,7 +9,7 @@ class FastaUtility():
         """
         self._vocab = Vocabulary() if vocab is None else vocab
 
-    def read_data(self, data_file, vocab='inferred', regression=False):
+    def read_data(self, data_file, vocab="inferred", regression=False):
         r"""Read a file with the FASTA-like format of alternating
         labels lines followed by sequences. For example:
             >1
@@ -33,14 +32,14 @@ class FastaUtility():
         Y : list
             list of labels
         """
-        assert vocab.lower() in ['dna', 'protein', 'inferred']
+        assert vocab.lower() in ["dna", "protein", "inferred"]
         X, Y = [], []
-        with open (data_file, 'r') as f:
+        with open(data_file, "r") as f:
             label_line = True
             for line in f:
                 line = line.strip().lower()
                 if label_line:
-                    split = line.split('>')
+                    split = line.split(">")
                     assert len(split) == 2
                     if regression:
                         label = split[1]
