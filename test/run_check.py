@@ -35,9 +35,15 @@ def get_args():
 
 
 def main(args):
+    ## Get data
+    reader = FastaUtility()
+    Xtrain, Ytrain = reader.read_data(args.train)
+    Xtest, Ytest = reader.read_data(args.test)
+    Ytest = np.array(Ytest).reshape(-1, 1)
+
     ## Compute kernel matrix
     fastsk = FastSK(g=10, m=6, t=1, approx=True)
-    fastsk.compute_kernel(args.train, args.test)
+    fastsk.compute_kernel(Xtrain, Xtest)
 
     Xtrain = fastsk.get_train_kernel()
     Xtest = fastsk.get_test_kernel()
@@ -45,14 +51,11 @@ def main(args):
     reader = FastaUtility()
     Xseq, Ytrain = reader.read_data(args.train)
 
-    ## Use linear SVM
+    ## Train a linear SVM
     svm = LinearSVC(C=1)
     clf = CalibratedClassifierCV(svm, cv=5).fit(Xtrain, Ytrain)
 
     ## Evaluate
-    reader = FastaUtility()
-    Xseq, Ytest = reader.read_data(args.test)
-
     acc = clf.score(Xtest, Ytest)
     probs = clf.predict_proba(Xtest)[:, 1]
     auc = roc_auc_score(Ytest, probs)

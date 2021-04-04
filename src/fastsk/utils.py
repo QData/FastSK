@@ -1,3 +1,40 @@
+"""Utils for reading fasta files
+"""
+
+class Vocabulary(object):
+    """A class for storing the vocabulary of a
+    sequence dataset. Maps words or characters to indexes in the
+    vocabulary.
+    """
+
+    def __init__(self):
+        self._token2idx = {}
+        self._token2idx[0] = 0
+        self._size = len(self._token2idx)
+
+    def add(self, token):
+        """
+        Add a token to the vocabulary.
+        Args:
+            token: a letter (for char-level model) or word (for word-level model)
+            for which to create a mapping to an integer (the idx).
+        Return:
+            the index of the word. If it's already present, return its
+            index. Otherwise, add it before returning the index.
+        """
+        if token not in self._token2idx:
+            self._token2idx[token] = self._size
+            self._size += 1
+        return self._token2idx.get(token)
+
+    def size(self):
+        """Return the number tokens in the vocabulary."""
+        return self._size
+
+    def __str__(self):
+        return str(self._token2idx)
+
+
 class FastaUtility:
     def __init__(self, vocab=None):
         r"""

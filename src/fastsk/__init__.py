@@ -1,2 +1,2 @@
-from ._fastsk import *
+from ._fastsk import FastSK
 from .utils import FastaUtility

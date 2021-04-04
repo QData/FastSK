@@ -1,81 +1,131 @@
+# import os
+# import re
+# import sys
+# import platform
+# import subprocess
+
+# from setuptools import setup, find_packages, Extension
+# from setuptools.command.build_ext import build_ext
+# from distutils.version import LooseVersion
+
+# from pybind11.setup_helpers import Pybind11Extension
+
+# with open("README.md") as f:
+#     long_description = f.read()
+
+
+# class CMakeExtension(Extension):
+#     def __init__(self, name, sourcedir=""):
+#         Extension.__init__(self, name, sources=[])
+#         self.sourcedir = os.path.abspath(sourcedir)
+
+
+# class CMakeBuild(build_ext):
+#     def run(self):
+#         try:
+#             out = subprocess.check_output(["cmake", "--version"])
+#         except OSError:
+#             raise RuntimeError(
+#                 "CMake must be installed to build the following extensions: "
+#                 + ", ".join(e.name for e in self.extensions)
+#             )
+
+#         if platform.system() == "Windows":
+#             cmake_version = LooseVersion(
+#                 re.search(r"version\s*([\d.]+)", out.decode()).group(1)
+#             )
+#             if cmake_version < "3.1.0":
+#                 raise RuntimeError("CMake >= 3.1.0 is required on Windows")
+
+#         for ext in self.extensions:
+#             self.build_extension(ext)
+
+#     def build_extension(self, ext):
+#         extdir = os.path.abspath(os.path.dirname(self.get_ext_fullpath(ext.name)))
+
+#         cmake_args = [
+#             "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=" + extdir,
+#             "-DPYTHON_EXECUTABLE=" + sys.executable,
+#         ]
+
+#         cfg = "Debug" if self.debug else "Release"
+#         build_args = ["--config", cfg]
+
+#         if platform.system() == "Windows":
+#             cmake_args += [
+#                 "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_{}={}".format(cfg.upper(), extdir)
+#             ]
+#             if sys.maxsize > 2 ** 32:
+#                 cmake_args += ["-A", "x64"]
+#             build_args += ["--", "/m"]
+#         else:
+#             cmake_args += ["-DCMAKE_BUILD_TYPE=" + cfg]
+#             build_args += ["--", "-j2"]
+
+#         env = os.environ.copy()
+#         env["CXXFLAGS"] = '{} -DVERSION_INFO=\\"{}\\"'.format(
+#             env.get("CXXFLAGS", ""), self.distribution.get_version()
+#         )
+
+#         if not os.path.exists(self.build_temp):
+#             os.makedirs(self.build_temp)
+
+#         subprocess.check_call(
+#             ["cmake", ext.sourcedir] + cmake_args, cwd=self.build_temp, env=env
+#         )
+#         subprocess.check_call(
+#             ["cmake", "--build", "."] + build_args, cwd=self.build_temp
+#         )
+
+
+# setup(
+#     name="fastsk-test",
+#     version="1.0.0",
+#     author="Derrick Blakely",
+#     author_email="blakelyderrick@gmail.com",
+#     description="FastSK PyPi Package",
+#     long_description=long_description,
+#     long_description_content_type="text/markdown",
+#     package_dir={"": "src"},
+#     packages=find_packages(where="src"),
+#     ext_modules=[CMakeExtension(name="fastsk._fastsk")],
+#     cmdclass={"build_ext": CMakeBuild},
+#     zip_safe=False,
+# )
+
+
 import os
 import re
 import sys
 import platform
 import subprocess
+import glob
 
 from setuptools import setup, find_packages, Extension
-from setuptools.command.build_ext import build_ext
 from distutils.version import LooseVersion
 
-from pybind11.setup_helpers import Pybind11Extension
+from pybind11.setup_helpers import Pybind11Extension, build_ext
 
-with open("README.md") as f:
+with open('README.md') as f:
     long_description = f.read()
 
 
-class CMakeExtension(Extension):
-    def __init__(self, name, sourcedir=""):
-        Extension.__init__(self, name, sources=[])
-        self.sourcedir = os.path.abspath(sourcedir)
+def get_sources():
+    return sorted([
+        "src/fastsk/_fastsk/bindings.cpp",
+        "src/fastsk/_fastsk/fastsk.cpp",
+        "src/fastsk/_fastsk/fastsk_kernel.cpp",
+        "src/fastsk/_fastsk/shared.cpp",
+        #"src/fastsk/_fastsk/libsvm-code/svm.cpp",
+        #"src/fastsk/_fastsk/libsvm-code/eval.cpp",
+    ])
 
-
-class CMakeBuild(build_ext):
-    def run(self):
-        try:
-            out = subprocess.check_output(["cmake", "--version"])
-        except OSError:
-            raise RuntimeError(
-                "CMake must be installed to build the following extensions: "
-                + ", ".join(e.name for e in self.extensions)
-            )
-
-        if platform.system() == "Windows":
-            cmake_version = LooseVersion(
-                re.search(r"version\s*([\d.]+)", out.decode()).group(1)
-            )
-            if cmake_version < "3.1.0":
-                raise RuntimeError("CMake >= 3.1.0 is required on Windows")
-
-        for ext in self.extensions:
-            self.build_extension(ext)
-
-    def build_extension(self, ext):
-        extdir = os.path.abspath(os.path.dirname(self.get_ext_fullpath(ext.name)))
-        cmake_args = [
-            "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=" + extdir,
-            "-DPYTHON_EXECUTABLE=" + sys.executable,
-        ]
-
-        cfg = "Debug" if self.debug else "Release"
-        build_args = ["--config", cfg]
-
-        if platform.system() == "Windows":
-            cmake_args += [
-                "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_{}={}".format(cfg.upper(), extdir)
-            ]
-            if sys.maxsize > 2 ** 32:
-                cmake_args += ["-A", "x64"]
-            build_args += ["--", "/m"]
-        else:
-            cmake_args += ["-DCMAKE_BUILD_TYPE=" + cfg]
-            build_args += ["--", "-j2"]
-
-        env = os.environ.copy()
-        env["CXXFLAGS"] = '{} -DVERSION_INFO=\\"{}\\"'.format(
-            env.get("CXXFLAGS", ""), self.distribution.get_version()
-        )
-
-        if not os.path.exists(self.build_temp):
-            os.makedirs(self.build_temp)
-
-        subprocess.check_call(
-            ["cmake", ext.sourcedir] + cmake_args, cwd=self.build_temp, env=env
-        )
-        subprocess.check_call(
-            ["cmake", "--build", "."] + build_args, cwd=self.build_temp
-        )
-
+ext_modules = [
+    Pybind11Extension(
+        name="fastsk._fastsk",
+        sources=get_sources()
+    ),
+]
 
 setup(
     name="fastsk-test",
@@ -87,7 +137,8 @@ setup(
     long_description_content_type="text/markdown",
     package_dir={"": "src"},
     packages=find_packages(where="src"),
-    ext_modules=[CMakeExtension(name="fastsk._fastsk")],
-    cmdclass={"build_ext": CMakeBuild},
+    ext_modules=ext_modules,
+    cmdclass={"build_ext": build_ext},
     zip_safe=False,
 )
+

@@ -1,15 +1,13 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl_bind.h>
 #include <pybind11/stl.h>
-#include <pybind11/numpy.h>
 #include "fastsk.hpp"
-#include <iostream>
-#include <assert.h>
 #include <string>
 #include <vector>
 
 namespace py = pybind11;
 using namespace std;
+
 
 PYBIND11_MODULE(_fastsk, m) {
     py::class_<FastSK>(m, "FastSK")
@@ -23,22 +21,6 @@ PYBIND11_MODULE(_fastsk, m) {
             py::arg("skip_variance")=false
         )
         .def("compute_kernel",
-            (void (FastSK::*)(const string, const string)) &FastSK::compute_kernel,
-            py::arg("Xtrain"),
-            py::arg("Xtest")
-        )
-        .def("compute_kernel",
-            (void (FastSK::*)(const string, const string, const string)) &FastSK::compute_kernel,
-            py::arg("Xtrain"),
-            py::arg("Xtest"),
-            py::arg("dictionary_file")
-        )
-        // .def("compute_kernel",
-        //     (void (FastSK::*)(vector<string>, vector<string>)) &FastSK::compute_kernel,
-        //     py::arg("Xtrain"),
-        //     py::arg("Xtest")
-        // )
-        .def("compute_kernel",
             (void (FastSK::*)(vector<vector<int> >, vector<vector<int> >)) &FastSK::compute_kernel,
             py::arg("Xtrain"),
             py::arg("Xtest")
@@ -50,7 +32,7 @@ PYBIND11_MODULE(_fastsk, m) {
         .def("get_train_kernel", &FastSK::get_train_kernel)
         .def("get_test_kernel", &FastSK::get_test_kernel)
         .def("get_stdevs", &FastSK::get_stdevs)
-        .def("save_kernel", &FastSK::save_kernel)
+        .def("save_kernel", &FastSK::save_kernel);
         .def("fit", &FastSK::fit,
             py::arg("C")=1.0,
             py::arg("nu")=0.5,
