@@ -20,23 +20,6 @@ This Github is built with a novel and fast algorithm design for implementing gap
 * CMake >= 3.1
 
 
-## Installation and Use via Make from the Pure C++ Version
-If you prefer to use pure C++ instead of Python, you can clone this repository:
-```
-git clone --recursive https://github.com/QData/FastSK.git
-```
-then run
-```
-cd FastSK
-make
-```
-A `fastsk` executable will be installed to the `bin` directory, which you can use for kernel computation and inference. For example:
-```
-./bin/fastsk -g 10 -m 6 -C 1 -t 1 -a data/EP300.train.fasta data/EP300.test.fasta
-```
-This will run the approximate kernel algorithm on the EP300 TFBS dataset using a feature length of `g = 10` with up to `m = 6` mismatches. It will then train and evaluate an SVM classifier with the SVM parameter `C = 1`.
-
-
 ## Installation via Pip Install (Linux and MacOS)
 
 Clone this repository and run:
