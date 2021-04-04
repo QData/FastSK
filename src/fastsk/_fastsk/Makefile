@@ -1,5 +1,5 @@
 CXX = g++
-CXXFLAGS = -lpthread -pthread -std=c++11 -O3 -Wno-write-strings -D_GNU_SOURCE
+CXXFLAGS = -lpthread -pthread -std=c++11 -O3 -Wall -Wpedantic -Wno-write-strings -D_GNU_SOURCE
 
 .SUFFIXES: .o .cpp
 OFILES = main.o fastsk.o fastsk_kernel.o shared.o libsvm-code/eval.o libsvm-code/svm.o libsvm-code/svm-predict.o

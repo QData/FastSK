@@ -116,8 +116,8 @@ def get_sources():
         "src/fastsk/_fastsk/fastsk.cpp",
         "src/fastsk/_fastsk/fastsk_kernel.cpp",
         "src/fastsk/_fastsk/shared.cpp",
-        #"src/fastsk/_fastsk/libsvm-code/svm.cpp",
-        #"src/fastsk/_fastsk/libsvm-code/eval.cpp",
+        "src/fastsk/_fastsk/libsvm-code/svm.cpp",
+        "src/fastsk/_fastsk/libsvm-code/eval.cpp",
     ])
 
 ext_modules = [

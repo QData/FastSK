@@ -361,81 +361,81 @@ double binary_class_cross_validation(const svm_problem *prob, const svm_paramete
 }
 
 
-void binary_class_predict(FILE *input, FILE *output){
-	int    total = 0;
-	int    *labels;
-	int    max_nr_attr = 64;
-	struct svm_node *x = Malloc(struct svm_node, max_nr_attr);
-	dvec_t dec_values;
-	ivec_t true_labels;
+// void binary_class_predict(FILE *input, FILE *output){
+// 	int    total = 0;
+// 	int    *labels;
+// 	int    max_nr_attr = 64;
+// 	struct svm_node *x = Malloc(struct svm_node, max_nr_attr);
+// 	dvec_t dec_values;
+// 	ivec_t true_labels;
 
 
-	int svm_type=svm_get_svm_type(model);
+// 	int svm_type=svm_get_svm_type(model);
 	
-	if (svm_type==NU_SVR || svm_type==EPSILON_SVR){
-		fprintf(stderr, "wrong svm type.");
-		exit(1);
-	}
+// 	if (svm_type==NU_SVR || svm_type==EPSILON_SVR){
+// 		fprintf(stderr, "wrong svm type.");
+// 		exit(1);
+// 	}
 
-	labels = Malloc(int, svm_get_nr_class(model));
-	svm_get_labels(model, labels);
+// 	labels = Malloc(int, svm_get_nr_class(model));
+// 	svm_get_labels(model, labels);
 	
-	max_line_len = 1024;
-	line = (char *)malloc(max_line_len*sizeof(char));
-	while(readline(input) != NULL)
-	{
-		int i = 0;
-		double target_label, predict_label;
-		char *idx, *val, *label, *endptr;
-		int inst_max_index = -1; // strtol gives 0 if wrong format, and precomputed kernel has <index> start from 0
+// 	max_line_len = 1024;
+// 	line = (char *)malloc(max_line_len*sizeof(char));
+// 	while(readline(input) != NULL)
+// 	{
+// 		int i = 0;
+// 		double target_label, predict_label;
+// 		char *idx, *val, *label, *endptr;
+// 		int inst_max_index = -1; // strtol gives 0 if wrong format, and precomputed kernel has <index> start from 0
 
-		label = strtok(line," \t");
-		target_label = strtod(label,&endptr);
-		if(endptr == label)
-			exit_input_error(total+1);
+// 		label = strtok(line," \t");
+// 		target_label = strtod(label,&endptr);
+// 		if(endptr == label)
+// 			exit_input_error(total+1);
 
-		while(1)
-		{
-			if(i>=max_nr_attr - 2)	// need one more for index = -1
-			{
-				max_nr_attr *= 2;
-				x = (struct svm_node *) realloc(x,max_nr_attr*sizeof(struct svm_node));
-			}
+// 		while(1)
+// 		{
+// 			if(i>=max_nr_attr - 2)	// need one more for index = -1
+// 			{
+// 				max_nr_attr *= 2;
+// 				x = (struct svm_node *) realloc(x,max_nr_attr*sizeof(struct svm_node));
+// 			}
 
-			idx = strtok(NULL,":");
-			val = strtok(NULL," \t");
+// 			idx = strtok(NULL,":");
+// 			val = strtok(NULL," \t");
 
-			if(val == NULL)
-				break;
-			errno = 0;
-			x[i].index = (int) strtol(idx,&endptr,10);
-			if(endptr == idx || errno != 0 || *endptr != '\0' || x[i].index <= inst_max_index)
-				exit_input_error(total+1);
-			else
-				inst_max_index = x[i].index;
+// 			if(val == NULL)
+// 				break;
+// 			errno = 0;
+// 			x[i].index = (int) strtol(idx,&endptr,10);
+// 			if(endptr == idx || errno != 0 || *endptr != '\0' || x[i].index <= inst_max_index)
+// 				exit_input_error(total+1);
+// 			else
+// 				inst_max_index = x[i].index;
 
-			errno = 0;
-			x[i].value = strtod(val,&endptr);
-			if(endptr == val || errno != 0 || (*endptr != '\0' && !isspace(*endptr)))
-				exit_input_error(total+1);
+// 			errno = 0;
+// 			x[i].value = strtod(val,&endptr);
+// 			if(endptr == val || errno != 0 || (*endptr != '\0' && !isspace(*endptr)))
+// 				exit_input_error(total+1);
 
-			++i;
-		}
-		x[i].index = -1;
+// 			++i;
+// 		}
+// 		x[i].index = -1;
 
-		predict_label = svm_predict(model,x);
-		fprintf(output,"%g\n",predict_label);
+// 		predict_label = svm_predict(model,x);
+// 		fprintf(output,"%g\n",predict_label);
 
 
-		double dec_value;
-		svm_predict_values(model, x, &dec_value);
-		true_labels.push_back((target_label > 0)? 1: -1);
-		if(labels[0] <= 0) dec_value *= -1;
-		dec_values.push_back(dec_value);
-	}	
+// 		double dec_value;
+// 		svm_predict_values(model, x, &dec_value);
+// 		true_labels.push_back((target_label > 0)? 1: -1);
+// 		if(labels[0] <= 0) dec_value *= -1;
+// 		dec_values.push_back(dec_value);
+// 	}	
 
-	validation_function(dec_values, true_labels);
+// 	validation_function(dec_values, true_labels);
 
-	free(labels);
-	free(x);
-}
+// 	free(labels);
+// 	free(x);
+// }
