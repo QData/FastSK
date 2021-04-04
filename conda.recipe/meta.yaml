@@ -29,5 +29,5 @@ test:
     - fastsk
 
 about:
-  summary: An example project built with pybind11.
+  summary: FastSK conda package
   license_file: LICENSE
