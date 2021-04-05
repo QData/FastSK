@@ -9,11 +9,6 @@ This Github is built with a novel and fast algorithm design for implementing gap
 
 ## Prerequisites
 
-**On Unix (Linux, OS X)**
-
-* A compiler with C++11 support
-* CMake >= 2.8.12
-
 **On Windows**
 
 * Visual Studio 2015 (required for all Python versions, see notes below)
@@ -29,7 +24,6 @@ cd FastSK
 pip install -r requirements.txt
 pip install .
 ```
-
 
 #### The pip intallation of FastSK has been tested successfully on CentOS, Red Hat and WindowsXP.
 On some Mac versions, the installation met issues. We are working on fixing this issue now 
