@@ -44,19 +44,9 @@ python run_check.py
 
 ```
 from fastsk import FastSK
-from sklearn.svm import LinearSVC
-from sklearn.calibration import CalibratedClassifierCV
-import numpy as np
 
 ## Compute kernel matrix
 fastsk = FastSK(g=10, m=6, t=1, approx=True)
-fastsk.compute_kernel('data/EP300.train.fasta', 'data/EP300.test.fasta')
-
-Xtrain = fastsk.get_train_kernel()
-Xtest = fastsk.get_test_kernel()
-
-## Use linear SVM
-svm = LinearSVC(C=1)
 ```
 
 ### Experimental Results, Baselines, Utility Codes and Setup
