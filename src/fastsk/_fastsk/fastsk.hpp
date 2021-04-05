@@ -5,7 +5,6 @@
 #include <string>
 #include "fastsk_kernel.hpp"
 #include "libsvm-code/svm.h"
-#include "libsvm-code/eval.h"
 
 using namespace std;
 
@@ -52,9 +51,6 @@ class FastSK {
 
 public:
     FastSK(int, int, int, bool, double, int, bool);
-    void compute_kernel(const string, const string, const string);
-    void compute_kernel(const string, const string);
-    void compute_kernel(vector<string>, vector<string>);
     void compute_kernel(vector<vector<int> >, vector<vector<int> >);
     void compute_train(vector<vector<int> > Xtrain);
     vector<vector<double> > get_train_kernel();

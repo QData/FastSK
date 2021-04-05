@@ -12,9 +12,9 @@ extern "C" {
 double binary_class_cross_validation(const struct svm_problem *prob, const struct svm_parameter *param, int nr_fold);
 
 /* predict function */
-void binary_class_predict(FILE *input, FILE *output); 
+//void binary_class_predict(FILE *input, FILE *output); 
 
-extern struct svm_model* model;
+//extern struct svm_model* model;
 void exit_input_error(int line_num);
 
 #ifdef __cplusplus

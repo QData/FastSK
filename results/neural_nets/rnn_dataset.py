@@ -9,14 +9,16 @@ import random
 import string
 from torchnlp.word_to_vector import GloVe
 
-CACHE = '.word_vectors_cache'
+CACHE = ".word_vectors_cache"
+
 
 def glove_embedding(size):
-    glove = GloVe('6B', size, cache=CACHE)
+    glove = GloVe("6B", size, cache=CACHE)
     stoi = {tok: i for i, tok in enumerate(glove.itos)}
     rows, cols = glove.vectors.shape
     embedding = nn.Embedding(rows, cols, _weight=glove.vectors)
     return embedding, stoi, glove.itos
+
 
 class Vocabulary(object):
     def __init__(self):
@@ -52,11 +54,19 @@ class Vocabulary(object):
     def __len__(self):
         return self.size
 
+
 class Dataset(object):
-    def __init__(self, train_file, test_file, dictionary_file=None, 
-        use_cuda=False, word_model=False, vocab=None):
-        
-        self.device = torch.device('cuda' if use_cuda else 'cpu')
+    def __init__(
+        self,
+        train_file,
+        test_file,
+        dictionary_file=None,
+        use_cuda=False,
+        word_model=False,
+        vocab=None,
+    ):
+
+        self.device = torch.device("cuda" if use_cuda else "cpu")
         self.word_model = word_model
 
         # use pre-trained glove embeddings
@@ -73,7 +83,7 @@ class Dataset(object):
     def get_dict(self, dict_file):
         dictionary = {}
         num = 0
-        with open(dict_file, 'r', encoding='utf-8') as f:
+        with open(dict_file, "r", encoding="utf-8") as f:
             for line in f:
                 line = line.strip().lower()
                 assert len(line) == 1
@@ -89,24 +99,26 @@ class Dataset(object):
         numerical_seqs = []
         labels = []
         nlp_exclude = set(string.punctuation)
-        with open(datafile, 'r', encoding='utf-8') as f:
-            label_line = True # first line is assumed to be a label line
+        with open(datafile, "r", encoding="utf-8") as f:
+            label_line = True  # first line is assumed to be a label line
             for line in f:
                 line = line.strip().lower()
                 if label_line:
-                    split = line.split('>')
+                    split = line.split(">")
                     assert len(split) == 2
                     label = int(split[1])
                     assert label == 0 or label == 1
-                    label_tensor = torch.tensor([label], dtype=torch.long, device=self.device)
+                    label_tensor = torch.tensor(
+                        [label], dtype=torch.long, device=self.device
+                    )
                     labels.append(label_tensor)
                     label_line = False
                 else:
                     if self.word_model:
-                        line = ''.join(c for c in line if c not in nlp_exclude)
+                        line = "".join(c for c in line if c not in nlp_exclude)
                         seq = line.split()
                     else:
-                        seq = list(line) # character-level model
+                        seq = list(line)  # character-level model
                     seq = [self.vocab.add(token) for token in seq]
                     seq = torch.tensor(seq, dtype=torch.long, device=self.device)
                     numerical_seqs.append(seq)
@@ -116,8 +128,7 @@ class Dataset(object):
         return numerical_seqs, labels
 
     def get_batch(self, batch_size, training_data=True):
-        """Retrieve a random batch of the given batch_size
-        """
+        """Retrieve a random batch of the given batch_size"""
         xbatch = []
         ybatch = []
         max_idx = self.n_train - 1 if training_data else self.n_test - 1
@@ -126,4 +137,3 @@ class Dataset(object):
             xbatch.append(self.xtrain[rand] if training_data else self.xtest[rand])
             ybatch.append(self.ytrain[rand] if training_data else self.ytest[rand])
         return xbatch, ybatch
-        

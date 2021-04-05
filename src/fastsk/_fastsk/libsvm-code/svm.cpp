@@ -9,7 +9,7 @@
 #include <locale.h>
 #include "svm.h"
 #include "eval.h"
-#include "../fastsk_kernel.hpp"
+//#include "../fastsk_kernel.hpp"
 
 int libsvm_version = LIBSVM_VERSION;
 typedef float Qfloat;

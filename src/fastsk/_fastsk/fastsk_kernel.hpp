@@ -2,7 +2,6 @@
 #define FASTSK_KERNEL_H
 
 #include "shared.h"
-#include "libsvm-code/svm.h"
 #include <thread>
 
 typedef struct kernel_params {
@@ -37,7 +36,6 @@ public:
     double get_variance(unsigned int*, double*, double *, int, int, int);
 };
 
-svm_model* train_model(double*, int*, kernel_params*, svm_parameter*);
 double* construct_test_kernel(int, int, double*);
 
 #endif

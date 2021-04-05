@@ -112,10 +112,10 @@ int main(int argc, char* argv[]) {
         dictionary_file = argv[arg_num++];
     }
 
-    FastSK* fastsk = new FastSK(g, m, t, approx, delta, max_iters, skip_variance);  
-    fastsk->compute_kernel(train_file, test_file, dictionary_file);
+    //FastSK* fastsk = new FastSK(g, m, t, approx, delta, max_iters, skip_variance);  
+    //fastsk->compute_kernel(train_file, test_file, dictionary_file);
 
-    fastsk->fit(C, nu, eps, kernel_type);
+    //fastsk->fit(C, nu, eps, kernel_type);
     
-    double auc = fastsk->score("auc");
+    //double auc = fastsk->score("auc");
 }

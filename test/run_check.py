@@ -1,43 +1,69 @@
-from fastsk import FastSK
-from sklearn.svm import LinearSVC
-from sklearn.calibration import CalibratedClassifierCV
-import numpy as np
-from utils import *
+"""Quick validation script to compute a gapped kmer kernel
+and train a classifier.
+"""
 
 import argparse
 
-if __name__ == '__main__':
+from sklearn.svm import LinearSVC
+from sklearn.calibration import CalibratedClassifierCV
+from sklearn.metrics import roc_auc_score
+import numpy as np
 
-	parser = argparse.ArgumentParser()
+from fastsk import (
+    FastSK,
+    FastaUtility,
+)
 
-	parser.add_argument('--train', default='../data/EP300.train.fasta',
-		help='training sequences file')
-	parser.add_argument('--test', default='../data/EP300.test.fasta',
-		help='test sequences file')
 
-	args = parser.parse_args()
+def get_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--train",
+        type=str,
+        default="../data/EP300.train.fasta",
+        help="training sequences file",
+    )
+    parser.add_argument(
+        "--test",
+        type=str,
+        default="../data/EP300.test.fasta",
+        help="test sequences file",
+    )
+    args = parser.parse_args()
 
-	## Compute kernel matrix
-	fastsk = FastSK(g=10, m=6, t=1, approx=True)
-	fastsk.compute_kernel(args.train, args.test)
+    return args
 
-	Xtrain = fastsk.get_train_kernel()
-	Xtest = fastsk.get_test_kernel()
 
-	reader = FastaUtility()
-	Xseq, Ytrain = reader.read_data(args.train)
+def main(args):
+    ## Get data
+    reader = FastaUtility()
+    Xtrain, Ytrain = reader.read_data(args.train)
+    Xtest, Ytest = reader.read_data(args.test)
+    Ytest = np.array(Ytest).reshape(-1, 1)
 
-	## Use linear SVM
-	svm = LinearSVC(C=1)
-	clf = CalibratedClassifierCV(svm, cv=5).fit(Xtrain, Ytrain)
+    ## Compute kernel matrix
+    fastsk = FastSK(g=10, m=6, t=1, approx=True)
+    fastsk.compute_kernel(Xtrain, Xtest)
 
-	## Evaluate
-	reader = FastaUtility()
-	Xseq, Ytest = reader.read_data(args.test)
+    Xtrain = fastsk.get_train_kernel()
+    Xtest = fastsk.get_test_kernel()
 
-	acc = clf.score(Xtest, Ytest)
-	probs = clf.predict_proba(Xtest)[:,1]
-	auc = metrics.roc_auc_score(Ytest, probs)
+    reader = FastaUtility()
+    Xseq, Ytrain = reader.read_data(args.train)
 
-	print("Linear SVM:\n\tAcc = {}, AUC = {}".format(acc, auc))
-	assert auc >= 0.9, 'AUC is not correct.'
+    ## Train a linear SVM
+    svm = LinearSVC(C=1)
+    clf = CalibratedClassifierCV(svm, cv=5).fit(Xtrain, Ytrain)
+
+    ## Evaluate
+    acc = clf.score(Xtest, Ytest)
+    probs = clf.predict_proba(Xtest)[:, 1]
+    auc = roc_auc_score(Ytest, probs)
+
+    print("Linear SVM:\n\tAcc = {}, AUC = {}".format(acc, auc))
+    assert auc >= 0.9, "AUC is not correct. Should be >= 0.9. Received: {}".format(auc)
+
+
+if __name__ == "__main__":
+    args = get_args()
+    main(args)

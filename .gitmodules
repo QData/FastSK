@@ -1,3 +1,0 @@
-[submodule "fastsk/pybind11"]
-	path = fastsk/pybind11
-	url = https://github.com/pybind/pybind11
