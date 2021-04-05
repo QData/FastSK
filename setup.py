@@ -21,7 +21,7 @@ extras["test"] = [
 
 # For developers, install development tools along with all optional dependencies.
 extras["dev"] = (
-    extras["docs"] + extras["test"] + extras["optional"]
+    extras["docs"] + extras["test"] 
 )
 
 setuptools.setup(
@@ -34,14 +34,14 @@ setuptools.setup(
     license="MIT",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/QData/textattack",
+    url="https://github.com/QData/FastSk",
     packages=setuptools.find_namespace_packages(
         exclude=[
             "build*",
+            "data*",
             "docs*",
             "dist*",
-            "examples*",
-            "outputs*",
+            "results*",
             "tests*",
         ]
     ),
