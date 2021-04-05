@@ -101,6 +101,10 @@ python run_cnn_hyperTrTune.py
 <img src="results/neural_nets/trainsize_varyresults/nlp.png" width="800">
 
 
+#### To Do: 
+* a detailed user document, with example input files, output files, code, and perhaps a user group where people can post their questions
+
+
 ### Citations
 
 If you find this tool useful, please cite us!

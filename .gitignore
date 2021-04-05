@@ -1,0 +1,45 @@
+# cache for test output
+.cache
+
+# compiled python files
+__pycache__/
+
+# run logs
+outputs/
+
+# IDE files
+.c9*
+.idea/
+
+# Jupyter notebook files
+.ipynb_checkpoints/
+
+# Sphinx documentation
+docs/_build/
+
+# Packaging
+*.egg-info/
+
+# Files from IDES
+.*.py
+
+# TF Hub modules
+tensorflow-hub
+
+# for Macs
+.DS_Store
+
+# build outputs for PyPI
+build/
+dist/
+
+# Weights & Biases outputs
+wandb/
+
+# checkpoints
+checkpoints/
+
+# vim
+*.swp
+
+.vscode
