@@ -1,7 +1,7 @@
 # Minimal makefile for Sphinx documentation
 #
 
-# First run "sphinx-apidoc  -f -o apidoc -d 6 -E -T -M ../FastSK" 
+# First run "sphinx-apidoc  -f -o apidoc -d 6 -E -T -M ../src/fastsk" 
 # Then run "make html"
 
 # You can set these variables from the command line, and also
