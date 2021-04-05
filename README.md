@@ -31,7 +31,8 @@ On some Mac versions, the installation met issues. We are working on fixing this
 ## Python Version Tutorial
 
 ### Example Jupyter notebook  
-- 'demo' folder / FastSK_Demo.ipynb
+- 'docs/2demo/fastDemo.ipynb'
+
 
 ### Example python usage script:
 ```
@@ -126,3 +127,23 @@ If you find this tool useful, please cite us!
     eprint = {https://academic.oup.com/bioinformatics/article-pdf/36/Supplement\_2/i857/35337038/btaa817.pdf},
 }
 ```
+
+
+
+
+### Legacy: If you prefer using the executable made from the Pure C++ source code (without python wrapper or R wrapper)
+
+- you can clone this repository:
+```
+git clone --recursive https://github.com/QData/FastSK.git
+```
+then run
+```
+cd FastSK
+make
+```
+A `fastsk` executable will be installed to the `bin` directory, which you can use for kernel computation and inference. For example:
+```
+./bin/fastsk -g 10 -m 6 -C 1 -t 1 -a data/EP300.train.fasta data/EP300.test.fasta
+```
+This will run the approximate kernel algorithm on the EP300 TFBS dataset using a feature length of `g = 10` with up to `m = 6` mismatches. It will then train and evaluate an SVM classifier with the SVM parameter `C = 1`.
