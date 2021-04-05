@@ -1,7 +1,6 @@
 FastSK Documentation
 =======================================
 
-
 .. toctree::
    :maxdepth: 6
    :caption: About
@@ -15,13 +14,18 @@ FastSK Documentation
    :caption: Get Started
 
    Installation <1start/installation>
-   Basic Usage <1start/command_line_usage.md>
-   FastSK End-To-End Tutorial <2demo/fastDemo.ipynb>
-   Contributing <1start/support>
+
+.. toctree::
+   :maxdepth: 6
+   :caption: Notebook tutorials
+
+   Basic Python Use: <2demo/fastDemo.ipynb>
+   Basic CLI Usage <1start/command_line_usage.md>
 
 .. toctree::
    :maxdepth: 6
    :glob:
    :caption: Developer Guide
-   
+
+   Contributing <1start/support>  
    apidoc/fastsk

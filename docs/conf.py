@@ -89,3 +89,4 @@ add_module_names = True
 
 # Sort members by group
 autodoc_member_order = "groupwise"
+nbsphinx_allow_errors = True
