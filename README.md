@@ -1,4 +1,4 @@
-# FastSK: fast sequence analysis with gapped string kernels
+# FastSK: fast sequence analysis with gapped string kernels (Fast-GKM-SVM)
 
 
 This Github repo provides improved algorithms for implementing gkm-svm string kernel calculations. We provide C++ version of the algorithm implementation and a python wrapper (making to a python package) for the C++ implementation. Our package provides fast and accuate gkm-svm based training SVM classifiers and regressors for gkm string kernel based sequence analysis. 
