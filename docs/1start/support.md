@@ -1,9 +1,6 @@
 How can I contribute to FastSK?
 ============================================
 
-*This documentation page is adapted from [FastSK Github CONTRIBUTING.md](https://github.com/QData/FastSK/blob/master/CONTRIBUTING.md). for detailed information on contributing*
-
-
 We welcome contributions from all members of the community– and there are lots
 of ways to help without editing the code! Answering questions, helping others, 
 reaching out and improving the documentations are immensely valuable to the 
@@ -13,9 +10,6 @@ It also helps us if you spread the word: reference the library from blog posts
 on the awesome projects it made possible, shout out on Twitter every time it has
 helped you, or simply star the repo to say "thank you".
 
-## Slack Channel
-
-For help and realtime updates related to FastSK, please [join the FastSK Slack](https://join.slack.com/t/FastSK/shared_invite/zt-ez3ts03b-Nr55tDiqgAvCkRbbz8zz9g)!
 
 ## Ways to contribute
 

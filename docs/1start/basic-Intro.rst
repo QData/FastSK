@@ -11,17 +11,16 @@ What is FastSK?
 Where should I start?
 ----------------------
 
-This is a great question, and one we get a lot. First of all, almost everything in FastSK can be done in two ways: via the command-line or via the Python API. If you're looking to integrate FastSK into an existing project, the Python API is likely for you. If you'd prefer to use built-in functionality end-to-end, then you can just use the command-line API.
+This is a great question, and one we get a lot. First of all, almost everything in FastSK can be done in two ways: via the command-line or via the Python API. If you're looking to integrate FastSK into an existing project, the Python API is likely for you. If you'd prefer to use built-in functionality end-to-end, then you can just use the python library API.
 
 
-
-For future developers, visit the :ref:`Installation <installation>` page for more details about installing FastSK onto your own computer. To start making contributions, read the detailed instructions `here <https://github.com/QData/FastSK/blob/master/CONTRIBUTING.md>`__.
+For future developers, visit the :ref:`Installation <installation>` page for more details about installing FastSK onto your own computer. To start making contributions, read the detailed instructions `here <https://FastSK.readthedocs.io/en/latest/1start/support.html>`__.
 
 
 Features
 ------------
 FastSK has some other features that make it a pleasure to use:
 
-- :ref:`baseline ` for running baselines of fastsk 
-- :ref:`data `, a utility class for tools for preprocessing strings to fasta format
+- :ref:`baseline ` for running baselines 
+- :ref:`data `, a utility class for tools preprocessing strings fasta format
 

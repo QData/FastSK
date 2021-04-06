@@ -5,7 +5,7 @@ This Github repo provides improved algorithms for implementing gkm-svm string ke
 
 This Github is built with a novel and fast algorithm design for implementing gapped k-mer algorithm, [pybind11](https://github.com/pybind/pybind11), and [LIBSVM](https://github.com/cjlin1/libsvm).
 
-#### More details of algorithms and results now in: [https://academic.oup.com/bioinformatics/article/36/Supplement_2/i857/6055916](https://academic.oup.com/bioinformatics/article/36/Supplement_2/i857/6055916)
+#### More details of algorithms and results now in: [Bioinformatics 2020](https://academic.oup.com/bioinformatics/article/36/Supplement_2/i857/6055916)
 
 ## Prerequisites
 
@@ -101,7 +101,7 @@ python run_cnn_hyperTrTune.py
 If you find this tool useful, please cite us!
 
 ```
-@article{10.1093/bioinformatics/btaa817,
+@article{fast-gkm-svm,
     author = {Blakely, Derrick and Collins, Eamon and Singh, Ritambhara and Norton, Andrew and Lanchantin, Jack and Qi, Yanjun},
     title = "{FastSK: fast sequence analysis with gapped string kernels}",
     journal = {Bioinformatics},
