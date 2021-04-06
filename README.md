@@ -20,13 +20,14 @@ This Github is built with a novel and fast algorithm design for implementing gap
 Clone this repository and run:
 
 ```bash
+git clone --recursive https://github.com/QData/FastSK.git
 cd FastSK
 pip install -r requirements.txt
 pip install .
 ```
 
-#### The pip intallation of FastSK has been tested successfully on CentOS, Red Hat and WindowsXP.
-On some Mac versions, the installation met issues. We are working on fixing this issue now 
+#### The pip intallation of FastSK has been tested successfully on CentOS, Red Hat, MacOS and WindowsXP.
+
 
 ## Python Version Tutorial
 
