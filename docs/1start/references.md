@@ -3,6 +3,8 @@ How to Cite FastSK
 
 ## Main Paper:  FastSK: [Bioinformatics 2020](https://academic.oup.com/bioinformatics/article/36/Supplement_2/i857/6055916)
 
+### [Our Presentation Summary on FastSK ](https://github.com/QData/FastSK/blob/master/docs/Bioinformatics2020_FastSK.pdf)
+
 ### Our Github on FastSK: [https://github.com/QData/FastSK](https://github.com/QData/FastSK)
 
 - Citations

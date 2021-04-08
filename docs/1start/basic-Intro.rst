@@ -19,6 +19,9 @@ For future developers, visit the :ref:`Installation <installation>` page for mor
 
 Features
 ------------
+
+- `Presentation Summary on FastSK <https://github.com/QData/FastSK/blob/master/docs/Bioinformatics2020_FastSK.pdf>`__
+
 FastSK has some other features that make it a pleasure to use:
 
 - :ref:`baseline ` for running baselines 
