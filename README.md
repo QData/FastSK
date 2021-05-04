@@ -17,7 +17,14 @@ This Github is built with a novel and fast algorithm design for implementing gap
 
 ## Installation via Pip Install (Linux and MacOS)
 
-Clone this repository and run:
+#### Way 1: from Pypi
+
+```bash
+pip install fastsk
+```
+
+
+#### Way 2: Clone this repository and run:
 
 ```bash
 git clone --recursive https://github.com/QData/FastSK.git
@@ -34,13 +41,6 @@ pip install .
 ### Example Jupyter notebook  
 - 'docs/2demo/fastDemo.ipynb'
 
-
-### Example python usage script:
-```
-cd test
-python run_check.py 
-```
-
 ### You can check if fastsk library is installed correctly in python shell:
 
 ```
@@ -49,6 +49,14 @@ from fastsk import FastSK
 ## Compute kernel matrix
 fastsk = FastSK(g=10, m=6, t=1, approx=True)
 ```
+
+
+### Example python usage script: (assuming you have cloned FastSK.git)
+```
+cd test
+python run_check.py 
+```
+
 
 ### Experimental Results, Baselines, Utility Codes and Setup
 
