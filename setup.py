@@ -53,7 +53,7 @@ ext_modules = [
 
 setup(
     name="fastsk",
-    version="0.0.1",
+    version="0.0.2",
     author="QData Lab at the University of Virginia",
     author_email="yanjun@virginia.edu",
     description="A library for generating gkm-svm faster",
