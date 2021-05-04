@@ -1,6 +1,7 @@
 """Utils for reading fasta files
 """
 
+
 class Vocabulary(object):
     """A class for storing the vocabulary of a
     sequence dataset. Maps words or characters to indexes in the

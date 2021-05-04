@@ -1,6 +1,5 @@
 # FastSK: fast sequence analysis with gapped string kernels (Fast-GKM-SVM)
 
-
 This Github repo provides improved algorithms for implementing gkm-svm string kernel calculations. We provide C++ version of the algorithm implementation and a python wrapper (making to a python package) for the C++ implementation. Our package provides fast and accuate gkm-svm based training SVM classifiers and regressors for gkm string kernel based sequence analysis. 
 
 This Github is built with a novel and fast algorithm design for implementing gapped k-mer algorithm, [pybind11](https://github.com/pybind/pybind11), and [LIBSVM](https://github.com/cjlin1/libsvm).
@@ -9,10 +8,9 @@ This Github is built with a novel and fast algorithm design for implementing gap
 
 ## Prerequisites
 
-**On Windows**
-
-* Visual Studio 2015 (required for all Python versions, see notes below)
-* CMake >= 3.1
+* Python 3.6+
+* setuptools version 42 or greater (run `pip install --upgrade setuptools`)
+* `pybind11` (run `pip install pybind11`)
 
 
 ## Installation via Pip Install (Linux and MacOS)
@@ -23,18 +21,16 @@ This Github is built with a novel and fast algorithm design for implementing gap
 pip install fastsk
 ```
 
-
 #### Way 2: Clone this repository and run:
 
 ```bash
-git clone --recursive https://github.com/QData/FastSK.git
+git clone https://github.com/QData/FastSK.git
 cd FastSK
 pip install -r requirements.txt
 pip install .
 ```
 
-#### The pip intallation of FastSK has been tested successfully on CentOS, Red Hat, MacOS and WindowsXP.
-
+#### The pip intallation of FastSK has been tested successfully on CentOS, Red Hat, MacOS.
 
 ## Python Version Tutorial
 
@@ -126,9 +122,6 @@ If you find this tool useful, please cite us!
     eprint = {https://academic.oup.com/bioinformatics/article-pdf/36/Supplement\_2/i857/35337038/btaa817.pdf},
 }
 ```
-
-
-
 
 ### Legacy: If you prefer using the executable made from the Pure C++ source code (without python wrapper or R wrapper)
 

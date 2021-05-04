@@ -5,20 +5,15 @@ from setuptools import setup, find_packages, Extension
 from distutils.version import LooseVersion
 from pybind11.setup_helpers import Pybind11Extension, build_ext
 
-#from docs import conf as docs_conf
+# from docs import conf as docs_conf
 
-with open('README.md') as f:
+with open("README.md") as f:
     long_description = f.read()
 
 
 extras = {}
 # Packages required for installing docs.
-extras["docs"] = [
-    "recommonmark",
-    "nbsphinx",
-    "sphinx-autobuild",
-    "sphinx-rtd-theme"
-]
+extras["docs"] = ["recommonmark", "nbsphinx", "sphinx-autobuild", "sphinx-rtd-theme"]
 # Packages required for formatting code & running tests.
 extras["test"] = [
     "black==20.8b1",
@@ -30,25 +25,24 @@ extras["test"] = [
 ]
 
 # For developers, install development tools along with all optional dependencies.
-extras["dev"] = (
-    extras["docs"] + extras["test"] 
-)
+extras["dev"] = extras["docs"] + extras["test"]
+
 
 def get_cpp_sources():
-    return sorted([
-        "src/fastsk/_fastsk/bindings.cpp",
-        "src/fastsk/_fastsk/fastsk.cpp",
-        "src/fastsk/_fastsk/fastsk_kernel.cpp",
-        "src/fastsk/_fastsk/shared.cpp",
-        "src/fastsk/_fastsk/libsvm-code/svm.cpp",
-        "src/fastsk/_fastsk/libsvm-code/eval.cpp",
-    ])
+    return sorted(
+        [
+            "src/fastsk/_fastsk/bindings.cpp",
+            "src/fastsk/_fastsk/fastsk.cpp",
+            "src/fastsk/_fastsk/fastsk_kernel.cpp",
+            "src/fastsk/_fastsk/shared.cpp",
+            "src/fastsk/_fastsk/libsvm-code/svm.cpp",
+            "src/fastsk/_fastsk/libsvm-code/eval.cpp",
+        ]
+    )
+
 
 ext_modules = [
-    Pybind11Extension(
-        name="fastsk._fastsk",
-        sources=get_cpp_sources()
-    ),
+    Pybind11Extension(name="fastsk._fastsk", sources=get_cpp_sources()),
 ]
 
 setup(
