@@ -53,7 +53,7 @@ ext_modules = [
 
 setup(
     name="fastsk",
-    #version=docs_conf.release,
+    version="0.0.2",
     author="QData Lab at the University of Virginia",
     author_email="yanjun@virginia.edu",
     description="A library for generating gkm-svm faster",
@@ -73,6 +73,17 @@ setup(
         "Operating System :: OS Independent",
     ],
     python_requires=">=3.6",
-    install_requires=open("requirements.txt").readlines(),
+    install_requires=[
+        "certifi",
+        "joblib",
+        "numpy",
+        "pandas",
+        "python-dateutil",
+        "pytz",
+        "scikit-learn",
+        "scipy",
+        "six",
+        "tqdm",
+    ],
     zip_safe=False,
 )
