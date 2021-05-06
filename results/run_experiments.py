@@ -31,6 +31,8 @@ MAXTIME = 1800
 # Default locations for finding baseline programs
 GKM_DATA = "./baselines/gkm_data"
 GKM_EXEC = "./baselines/gkmsvm"
+LSGKM_DATA = "./baselines/gkm_data"
+LSGKM_EXEC = "./baselines/lsgkm-master/src"
 FASTSK_DATA = "../data/"
 BLENDED_EXEC = "./baselines/String_Kernel_Package/code/"
 PROT_DICT = "../data/full_prot.dict.txt"
@@ -53,6 +55,12 @@ def get_args():
         action="store_true",
         default=False,
         help="Run kernel time vs g experiments",
+    )
+    parser.add_argument(
+        "--g-time-full",
+        action="store_true",
+        default=False,
+        help="Run full train and test time vs g experiments",
     )
     parser.add_argument(
         "--I-auc",
@@ -468,6 +476,173 @@ def run_g_time_experiments(params, output_dir):
         if type_ == "protein":
             g_time_experiment(dataset, output_dir, type_)
 
+def g_time_experiment_full(dataset, output_dir):
+    """
+    Time training and predicting for
+    - FastSK-Exact 8 thread
+    - FastSK-Approx 8 thread
+    - gkm-Exact 8 thread
+    - gkm-Approx 8 thread
+    - LSGKM-Exact 8 thread
+    - LSGKM-Approx 8 thread
+    """
+    output_csv = osp.join(output_dir, dataset + "_g_times_dec14.csv")
+    results = {
+        "g": [],
+        "k": [],
+        "m": [],
+        "FastSK-Exact": [],
+        "FastSK-Approx": [],
+        "gkm-Exact": [],
+        "gkm-Approx": [],
+        "LSGKM-Exact": [], 
+        "LSGKM-Approx": [],
+    }
+
+    # min_g, max_g = 6, 20
+    # k = 
+    
+    min_g, max_g = 11, 11
+    k = 7
+
+    skip_fastsk_exact = False
+    skip_fastsk_approx = False
+
+    skip_gkm_exact = True
+    skip_gkm_approx = True 
+
+    skip_lsgkm_exact = False
+    skip_lsgkm_approx = True
+
+    for g in range(min_g, max_g + 1):
+        m = g - k
+        max_I = int(special.comb(g, m))
+
+        fastsk_exact_acc, fastsk_exact_auc, fastsk_exact = 0, 0, 0
+        fastsk_approx_acc, fastsk_approx_auc, fastsk_approx = 0, 0, 0
+        gkm_exact_acc, gkm_exact_auc, gkm_exact = 0, 0, 0
+        gkm_approx_acc, gkm_approx_auc, gkm_approx = 0, 0, 0
+        lsgkm_exact_acc, lsgkm_exact_auc, lsgkm_exact = 0, 0, 0
+        lsgkm_approx_acc, lsgkm_approx_auc, lsgkm_approx = 0, 0, 0
+
+        ## FastSK-Exact
+        if not skip_fastsk_exact:
+            fastsk_exact_acc, fastsk_exact_auc, fastsk_exact = train_and_test_fastsk(
+                dataset=dataset,
+                g=g,
+                m=m,
+                t=4,
+                approx=False,
+                timeout=TIMEOUT,
+            )
+            if fastsk_exact >= MAXTIME and g > 8:
+                skip_fastsk_exact = True
+            print(f"Accuracy = {fastsk_exact_acc}, AUC = {fastsk_exact_auc}")
+
+        ## FastSK-Approx
+        if not skip_fastsk_approx:
+            fastsk_approx_acc, fastsk_approx_auc, fastsk_approx = train_and_test_fastsk(
+                dataset=dataset,
+                g=g,
+                m=m,
+                t=4,
+                approx=True,
+                timeout=TIMEOUT,
+            )
+            if fastsk_approx >= MAXTIME and g > 8:
+                skip_fastsk_approx = True
+            print(f"Accuracy = {fastsk_approx_acc}, AUC = {fastsk_approx_auc}")
+
+        ## gkm-Exact
+        if not skip_gkm_exact:
+            gkm_exact_acc, gkm_exact_auc, gkm_exact = train_and_test_gkm(
+                g,
+                m,
+                t=4,
+                gkm_data=GKM_DATA,
+                gkm_exec=GKM_EXEC,
+                prefix=dataset,
+                approx=False,
+                timeout=TIMEOUT,
+                alphabet=PROT_DICT,
+            )
+            if gkm_exact >= MAXTIME and g > 8:
+                skip_gkm_exact = True
+
+        ## gkm-Approx, max_d = 3
+        if not skip_gkm_approx:
+            gkm_approx_acc, gkm_approx_auc, gkm_approx = train_and_test_gkm(
+                g,
+                m,
+                t=4,
+                gkm_data=GKM_DATA,
+                gkm_exec=GKM_EXEC,
+                prefix=dataset,
+                approx=True,
+                timeout=TIMEOUT,
+                alphabet=PROT_DICT,
+            )
+            if gkm_approx >= MAXTIME and g > 8:
+                skip_gkm_approx = True
+
+        ## LSGKM-Exact
+        if not skip_lsgkm_exact:
+            lsgkm_exact_acc, lsgkm_exact_auc, lsgkm_exact = train_and_test_lsgkm(
+                g,
+                m,
+                t=4,
+                lsgkm_data=LSGKM_DATA,
+                lsgkm_exec=LSGKM_EXEC,
+                prefix=dataset,
+                approx=False,
+                timeout=TIMEOUT,
+                alphabet=PROT_DICT,
+            )
+            if lsgkm_exact >= MAXTIME and g > 8:
+                skip_lsgkm_exact = True
+
+        ## LSGKM-Approx
+        if not skip_lsgkm_approx:
+            lsgkm_approx_acc, lsgkm_approx_auc, lsgkm_approx = train_and_test_lsgkm(
+                g,
+                m,
+                t=4,
+                lsgkm_data=LSGKM_DATA,
+                lsgkm_exec=LSGKM_EXEC,
+                prefix=dataset,
+                approx=True,
+                timeout=TIMEOUT,
+                alphabet=PROT_DICT,
+            )
+            if lsgkm_approx >= MAXTIME and g > 8:
+                skip_lsgkm_approx = True
+    
+
+        ## Save results
+        results["g"].append(g)
+        results["k"].append(k)
+        results["m"].append(m)
+        results["FastSK-Exact"].append((fastsk_exact_acc, fastsk_exact_auc, fastsk_exact))
+        results["FastSK-Approx"].append((fastsk_approx_acc, fastsk_approx_auc, fastsk_approx))
+        results["gkm-Exact"].append((gkm_exact_acc, gkm_exact_auc, gkm_exact))
+        results["gkm-Approx"].append((gkm_approx_acc, gkm_approx_auc, gkm_approx))
+        results["LSGKM-Exact"].append((lsgkm_exact_acc, lsgkm_exact_auc, lsgkm_exact))
+        results["LSGKM-Approx"].append((lsgkm_approx_acc, lsgkm_approx_auc, lsgkm_approx ))
+
+        print("{} - g = {}, m = {}".format(dataset, g, m))
+        print(results)
+
+        df = pd.DataFrame(results)
+        df.to_csv(output_csv, index=False)
+
+
+def run_g_time_experiments_full(params, output_dir):
+    for p in params:
+        dataset, type_ = p["Dataset"], p["type"]
+        if type_ == "dna":
+            g_time_experiment_full(dataset, output_dir)
+            break
+
 
 def I_experiment(dataset, g, m, k, C):
     output_csv = dataset + "_vary_I.csv"
@@ -587,6 +762,8 @@ def g_auc_experiment(dataset, output_dir, C, type_):
         #'fastsk_approx_i50_auc': [],
         #'gkm_approx_acc': [],
         #'gkm_approx_auc': [],
+        "lsgkm_approx_acc": [],
+        "lsgkm_approx_auc": []
     }
 
     train_file = osp.join("../data", dataset + ".train.fasta")
@@ -600,7 +777,7 @@ def g_auc_experiment(dataset, output_dir, C, type_):
 
     gkm_alphabet = GKM_PROT_DICT if type_ == "protein" else None
 
-    skip_fastsk, skip_gkm = False, True
+    skip_fastsk, skip_gkm, skip_lsgkm = False, True, False
 
     for g in range(k, max_g + 1):
         #### Run experiments
@@ -642,11 +819,28 @@ def g_auc_experiment(dataset, output_dir, C, type_):
                 skip_gkm = True
         else:
             gkm_approx_acc, gkm_approx_auc = 0, 0
+            
+        if not skip_lsgkm:
+            lsgkm_approx_acc, lsgkm_approx_auc, lsgkmtime = train_and_test_lsgkm(
+                g=g,
+                m=m,
+                t=20,
+                prefix=dataset,
+                lsgkm_data=LSGKM_DATA,
+                lsgkm_exec=LSGKM_EXEC,
+                approx=True,
+                timeout=TIMEOUT,
+                alphabet=gkm_alphabet,
+            )
+            if lsgkmtime >= TIMEOUT:
+                skip_lsgkm = True
+        else:
+            lsgkm_approx_acc, lsgkm_approx_auc = 0, 0
 
         #### Log results
 
-        log_str = "\n\ng = {}, m = {}, fastsk auc = {}, gkm approx auc = {}\n\n"
-        print(log_str.format(g, m, fsk_auc, gkm_approx_auc))
+        log_str = "\n\ng = {}, m = {}, fastsk auc = {}, gkm approx auc = {}, lsgkm approx auc = {}\n\n"
+        print(log_str.format(g, m, fsk_auc, gkm_approx_auc, lsgkm_approx_auc))
 
         results["g"].append(g)
         results["k"].append(k)
@@ -655,6 +849,8 @@ def g_auc_experiment(dataset, output_dir, C, type_):
         results["fastsk_approx_conv_auc"].append(fsk_auc)
         # results['gkm_approx_acc'].append(gkm_approx_acc)
         # results['gkm_approx_auc'].append(gkm_approx_auc)
+        results['lsgkm_approx_acc'].append(lsgkm_approx_acc)
+        results['lsgkm_approx_auc'].append(lsgkm_approx_auc)
 
         df = pd.DataFrame(results)
         df.to_csv(output_csv, index=False)
@@ -1016,6 +1212,8 @@ if args.m_time:
     run_m_time_experiments(params, args.output_dir)
 if args.g_time:
     run_g_time_experiments(params, args.output_dir)
+if args.g_time_full:
+    run_g_time_experiments_full(params, args.output_dir)
 if args.I_auc:
     run_I_experiments(params)
 if args.stdev_I:
