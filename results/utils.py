@@ -181,6 +181,54 @@ def time_gkm(
 
     return end - start
 
+def lsgkm_wrap(
+    g, m, t, prefix, lsgkm_data, lsgkm_exec, approx, timeout, alphabet, return_dict
+):
+    k = g - m
+    lsgkm = LsGkmRunner(lsgkm_exec, lsgkm_data, prefix, g, k, m, approx, alphabet, "./temp")
+    acc, auc = lsgkm.train_and_test(t)
+    return_dict["acc"] = acc
+    return_dict["auc"] = auc
+
+
+def train_and_test_lsgkm(
+    g, m, t, prefix, lsgkm_data, lsgkm_exec, approx=False, timeout=None, alphabet=None
+):
+    start = time.time()
+    if timeout:
+        manager = multiprocessing.Manager()
+        return_dict = manager.dict()
+        p = multiprocessing.Process(
+            target=lsgkm_wrap,
+            name="Train and test LS-GKM",
+            args=(
+                g,
+                m,
+                t,
+                prefix,
+                lsgkm_data,
+                lsgkm_exec,
+                approx,
+                timeout,
+                alphabet,
+                return_dict,
+            ),
+        )
+        p.start()
+        p.join(timeout)
+        if p.is_alive():
+            p.terminate()
+            p.join()
+        if return_dict.values() == []:
+            acc, auc = 0, 0
+        else:
+            acc, auc = return_dict["acc"], return_dict["auc"]
+    else:
+        k = g - m
+        lsgkm = LsGkmRunner(gkm_exec, gkm_data, prefix, g, k, approx, alphabet, "./temp")
+        acc, auc = lsgkm.train_and_test(t)
+    end = time.time()
+    return acc, auc, end - start
 
 def time_gakco(g, m, type_, prefix, timeout=None):
     gakco_exec = "./baselines/GaKCo-SVM/bin/GaKCo"
@@ -587,6 +635,149 @@ class GkmRunner:
         self.compute_train_kernel(t)
         self.train_svm()
         self.classify()
+        acc, auc = self.evaluate()
+        return acc, auc
+
+    def read_preds(self, file):
+        preds = []
+        with open(file, "r") as f:
+            for line in f:
+                line = line.split()
+                assert len(line) == 2
+                preds.append(float(line[1]))
+        return preds
+
+    def get_accuracy(self, pos_preds, neg_preds):
+        accuracy = 0
+        num_correct = 0
+        num_pred = len(pos_preds) + len(neg_preds)
+        for pred in pos_preds:
+            if pred > 0:
+                num_correct += 1
+        for pred in neg_preds:
+            if pred <= 0:
+                num_correct += 1
+        return num_correct / num_pred
+
+    def get_auc(self, pos_preds, neg_preds):
+        ytrue = [1 for _ in pos_preds] + [-1 for _ in neg_preds]
+        yscore = [score for score in pos_preds] + [score for score in neg_preds]
+        auc = metrics.roc_auc_score(ytrue, yscore)
+        return auc
+
+class LsGkmRunner:
+    def __init__(
+        self,
+        exec_location,
+        data_locaton,
+        dataset,
+        g,
+        k,
+        m,
+        approx=False,
+        alphabet=None,
+        outdir="./temp",
+    ):
+        self.exec_location = exec_location
+        self.dir = data_locaton
+        self.dataset = dataset
+        self.outdir = outdir
+        self.g, self.k, self.m, self.alphabet = g, k, m, alphabet
+
+        if approx:
+            """By default, their approximation algorithm truncates the
+            summation from eq. 3 to a value of 3 mismatches.
+            """
+            self.max_m = min(3, g - k)
+        else:
+            """If using the exact algo, the summation runs from
+            0 to l (their l is our g), but m <= l - k
+            """
+            self.max_m = self.m
+
+        ## Data files
+        self.train_pos_file = osp.join(self.dir, self.dataset + ".train.pos.fasta")
+        self.train_neg_file = osp.join(self.dir, self.dataset + ".train.neg.fasta")
+        self.test_pos_file = osp.join(self.dir, self.dataset + ".test.pos.fasta")
+        self.test_neg_file = osp.join(self.dir, self.dataset + ".test.neg.fasta")
+        self.train_test_pos_file = osp.join(
+            self.outdir, self.dataset + ".train_test.pos.fasta"
+        )
+        self.train_test_neg_file = osp.join(
+            self.outdir, self.dataset + ".train_test.neg.fasta"
+        )
+
+        ## Temp files that lsgkm creates
+        if not osp.exists(self.outdir):
+            os.makedirs(self.outdir)
+        self.svm_file_prefix = osp.join(self.outdir, "svmtrain")
+        self.svm_train_file = self.svm_file_prefix + ".model.txt"
+        self.pos_pred_file = osp.join(self.outdir, self.dataset + ".preds.pos.out")
+        self.neg_pred_file = osp.join(self.outdir, self.dataset + ".preds.neg.out")
+
+
+    def train_svm(self, t):
+        execute = osp.join(self.exec_location, "gkmtrain")
+        command = [
+            execute,
+            "-l",
+            str(self.g),
+            "-k",
+            str(self.k),
+            "-d",
+            str(self.max_m),
+            "-t", 
+            str(2),
+             "-T", 
+            str(t),
+            "-R",
+            self.train_pos_file,
+            self.train_neg_file,
+            self.svm_file_prefix,
+        ]
+        print(" ".join(command))
+        output = subprocess.check_output(command)
+
+    def predict(self, t):
+        ## pos predictions
+        execute = osp.join(self.exec_location, "gkmpredict")
+        command = [
+            execute,
+            "-v", 
+            str(0),
+            "-T", 
+            str(t)
+        ]
+        command += [self.test_pos_file, self.svm_train_file, self.pos_pred_file]
+        print(" ".join(command))
+        subprocess.check_output(command)
+
+        # get neg preds
+        command = [
+            execute,
+            "-v", 
+            str(0),
+            "-T", 
+            str(t)
+        ]
+        command += [self.test_neg_file, self.svm_train_file, self.neg_pred_file]
+        print(" ".join(command))
+        subprocess.check_output(command)
+
+    def evaluate(self):
+        pos_preds = self.read_preds(self.pos_pred_file)
+        neg_preds = self.read_preds(self.neg_pred_file)
+
+        print("Computing accuracy...")
+        acc = self.get_accuracy(pos_preds, neg_preds)
+        print("Computing AUC...")
+        auc = self.get_auc(pos_preds, neg_preds)
+        print("Accuracy = {}, AUC = {}".format(acc, auc))
+        return acc, auc
+
+    def train_and_test(self, t=20):
+        self.train_svm(t)
+        self.predict(t)
         acc, auc = self.evaluate()
         return acc, auc
 
